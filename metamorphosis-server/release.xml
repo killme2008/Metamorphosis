@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly>
+	<id>metamorphosis-server</id>
+	<formats>
+		<format>dir</format>
+		<format>tar.gz</format>
+	</formats>
+	<fileSets>
+		<fileSet>
+			<includes>
+				<include>metamorphosis-server/bin/*</include>
+				<include>metamorphosis-server/conf/*</include>
+				<include>metamorphosis-server/logs/*</include>
+			</includes>
+			<excludes>
+				<exclude>**/src/**</exclude>
+				<exclude>**/target/**</exclude>
+				<exclude>**/.*/**</exclude>
+			</excludes>
+		</fileSet>
+	</fileSets>
+	<moduleSets>
+		<moduleSet>
+			<includes>
+				<include>com.taobao.metamorphosis:metamorphosis-commons</include>
+				<include>com.taobao.metamorphosis:metamorphosis-server</include>
+			</includes>
+			<binaries>
+				<outputDirectory>metamorphosis-server/lib/</outputDirectory>
+				<unpack>false</unpack>
+				<dependencySets>
+					<dependencySet>
+						<outputDirectory>metamorphosis-server/lib</outputDirectory>
+					</dependencySet>
+				</dependencySets><!-- -->
+			</binaries>
+		</moduleSet>
+	</moduleSets>
+
+</assembly>

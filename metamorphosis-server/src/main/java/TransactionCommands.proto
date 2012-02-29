@@ -1,0 +1,39 @@
+/**
+*
+*事务命令协议结构
+*在本目录下执行 protoc -I=./  --java_out=./ TransactionCommands.proto 
+*/
+package com.taobao.tddl.dbproxy.protocol;
+
+option java_package = "com.taobao.metamorphosis.server.transaction.store";
+option java_outer_classname = "TransactionCommands";
+option optimize_for = CODE_SIZE;
+enum TxCommandType{
+	APPEND_MSG=1;
+	TX_OP=2;
+}
+
+message TxCommand{
+	required TxCommandType cmdType=1;
+	required bytes cmd_content=2;
+	optional bool force=3 [default = false];
+}
+
+message AppendMessageCommand{
+  	required int64 message_id=1;
+  	required bytes put_command=2;
+}
+enum TransactionType{
+	XA_PREPARE = 1;
+	XA_COMMIT = 2;
+	XA_ROLLBACK = 3;
+	LOCAL_COMMIT = 4;
+ 	LOCAL_ROLLBACK = 5;
+}
+
+message TransactionOperation{
+	required TransactionType type=1;
+	required bool was_prepared=2;
+	required string transaction_id=3;
+	optional int32 data_length=4;  //额外数据的长度
+}

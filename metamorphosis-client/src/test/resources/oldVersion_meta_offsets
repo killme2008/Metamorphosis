@@ -1,0 +1,1 @@
+{"test-grp":[{"offset":0,"partition":{"partition":0,"brokerId":100,"acked":false,"rollback":true,"autoAck":false},"topic":"test-topic"},{"offset":130835445,"partition":{"partition":0,"brokerId":101},"topic":"test-topic"}]}
