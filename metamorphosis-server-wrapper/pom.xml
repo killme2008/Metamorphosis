@@ -53,18 +53,6 @@
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
 		</dependency>
-
-
-		<dependency>
-			<groupId>org.apache.thrift</groupId>
-			<artifactId>thrift</artifactId>
-			<version>1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.zookeeper</groupId>
-			<artifactId>recipes</artifactId>
-			<version>1.0</version>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.zookeeper</groupId>
 			<artifactId>zookeeper</artifactId>
