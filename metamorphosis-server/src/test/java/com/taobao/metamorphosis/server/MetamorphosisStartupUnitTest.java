@@ -86,13 +86,13 @@ public class MetamorphosisStartupUnitTest {
 
         assertEquals("delete,77", config.getTopicConfig("test1").getDeletePolicy());
 
-        assertEquals("127.0.0.1:2183", config.getZkConfig().zkConnect);
+        assertEquals("127.0.0.1:2181", config.getZkConfig().zkConnect);
         assertEquals(30000, config.getZkConfig().zkSessionTimeoutMs);
         assertEquals(40000, config.getZkConfig().zkConnectionTimeoutMs);
         assertEquals(5000, config.getZkConfig().zkSyncTimeMs);
 
-        assertEquals("metamorphosis.test.zkConfig", config.getDiamondZKDataId());
-        assertEquals("boyan", config.getDiamondZKGroup());
+        assertEquals("metamorphosis.zkConfig", config.getDiamondZKDataId());
+        assertEquals("DEFAULT_GROUP", config.getDiamondZKGroup());
         assertEquals("delete,999", config.getDeletePolicy());
 
         final TopicConfig topicConfig1 = config.getTopicConfig("test1");
