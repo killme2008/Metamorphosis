@@ -87,6 +87,7 @@ public class SlaveConsumerZooKeeperUnitTest {
         // "metamorphosis.testZkConfig", (ManagerListener) null);
         this.zkConfig = new ZKConfig();// DiamondUtils.getZkConfig(this.diamondManager,
                                        // 10000);
+        this.zkConfig.zkConnect="localhost:2181";
         this.client =
                 new ZkClient(this.zkConfig.zkConnect, this.zkConfig.zkSessionTimeoutMs,
                     this.zkConfig.zkConnectionTimeoutMs, new ZkUtils.StringSerializer());
