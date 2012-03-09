@@ -86,7 +86,7 @@ public class MetamorphosisStartupUnitTest {
 
         assertEquals("delete,77", config.getTopicConfig("test1").getDeletePolicy());
 
-        assertEquals("localhost:2183", config.getZkConfig().zkConnect);
+        assertEquals("127.0.0.1:2183", config.getZkConfig().zkConnect);
         assertEquals(30000, config.getZkConfig().zkSessionTimeoutMs);
         assertEquals(40000, config.getZkConfig().zkConnectionTimeoutMs);
         assertEquals(5000, config.getZkConfig().zkSyncTimeMs);
