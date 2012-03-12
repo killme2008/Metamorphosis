@@ -22,6 +22,8 @@ import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 
@@ -34,7 +36,7 @@ import org.apache.log4j.Logger;
  * 
  */
 public final class MyMBeanServer {
-    private static final Logger log = Logger.getLogger(MyMBeanServer.class);
+    private final Log log = LogFactory.getLog(MyMBeanServer.class);
     private MBeanServer mbs = null;
 
     private static MyMBeanServer me = new MyMBeanServer();

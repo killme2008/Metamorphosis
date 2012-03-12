@@ -21,6 +21,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import com.taobao.metamorphosis.utils.codec.Deserializer;
@@ -33,7 +35,7 @@ import com.taobao.metamorphosis.utils.codec.Deserializer;
  */
 public class JavaDeserializer implements Deserializer {
 
-    private final Logger logger = Logger.getLogger(JavaDeserializer.class);
+    private final Log logger = LogFactory.getLog(JavaDeserializer.class);
 
 
     /**

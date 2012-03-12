@@ -26,6 +26,8 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 
@@ -36,7 +38,7 @@ import org.apache.log4j.Logger;
  * 
  */
 public class UniqId {
-    private static final Logger log = Logger.getLogger(UniqId.class);
+    private final Log log = LogFactory.getLog(UniqId.class);
     private static char[] digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
     private static UniqId me = new UniqId();
     private String hostAddr;

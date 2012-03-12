@@ -20,6 +20,8 @@ package com.taobao.metamorphosis.utils.codec.impl;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import com.caucho.hessian.io.HessianInput;
@@ -33,7 +35,7 @@ import com.taobao.metamorphosis.utils.codec.Deserializer;
  */
 public class Hessian1Deserializer implements Deserializer {
 
-    private final Logger logger = Logger.getLogger(Hessian1Deserializer.class);
+    private final Log logger = LogFactory.getLog(Hessian1Deserializer.class);
 
 
     /**

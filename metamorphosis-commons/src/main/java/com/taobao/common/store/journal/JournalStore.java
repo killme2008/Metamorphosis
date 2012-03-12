@@ -37,6 +37,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import com.taobao.common.store.Store;
@@ -63,7 +65,7 @@ import com.taobao.common.store.util.Util;
  * @author dogun (yuexuqiang at gmail.com)
  */
 public class JournalStore implements Store, JournalStoreMBean {
-    static Logger log = Logger.getLogger(JournalStore.class);
+    private final Log log = LogFactory.getLog(JournalStore.class);
 
     public static final int FILE_SIZE = 1024 * 1024 * 64; // 20M
     // public static final int ONE_DAY = 1000 * 60 * 60 * 24;
@@ -866,7 +868,7 @@ public class JournalStore implements Store, JournalStoreMBean {
                 JournalStore.this.check();
             }
             catch (final Exception ex) {
-                JournalStore.log.warn("check error:", ex);
+                log.warn("check error:", ex);
             }
         }
     }

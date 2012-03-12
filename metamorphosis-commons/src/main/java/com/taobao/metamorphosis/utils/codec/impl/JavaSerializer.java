@@ -21,6 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import com.taobao.metamorphosis.utils.codec.Serializer;
@@ -33,7 +35,7 @@ import com.taobao.metamorphosis.utils.codec.Serializer;
  */
 public class JavaSerializer implements Serializer {
 
-    private final Logger logger = Logger.getLogger(JavaSerializer.class);
+    private final Log logger = LogFactory.getLog(JavaSerializer.class);
 
 
     /**

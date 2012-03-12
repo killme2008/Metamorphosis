@@ -20,6 +20,8 @@ package com.taobao.common.store.journal.impl;
 import java.io.IOException;
 import java.util.Map.Entry;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.Logger;
 
 import com.taobao.common.store.journal.OpItem;
@@ -39,7 +41,7 @@ import com.taobao.common.store.util.LRUHashMap.EldestEntryHandler;
 public class NotifyEldestEntryHandler implements EldestEntryHandler<BytesKey, OpItem> {
 
     private OpItemHashMap diskMap;
-    static Logger log = Logger.getLogger(NotifyEldestEntryHandler.class);
+    private final Log log = LogFactory.getLog(NotifyEldestEntryHandler.class);
 
 
     public NotifyEldestEntryHandler(final int capacity, final String cacheFilePath) throws IOException {
