@@ -23,6 +23,7 @@
 
   <modules>
 	<module>metamorphosis-client</module>
+	<module>metamorphosis-client-extension</module>
 	<module>metamorphosis-server</module>
 	<module>metamorphosis-commons</module>
 	<module>metamorphosis-server-wrapper</module>
@@ -113,6 +114,11 @@
 	  <dependency>
 		<groupId>${pom.groupId}</groupId>
 		<artifactId>metamorphosis-client</artifactId>
+		<version>${project.version}</version>
+	  </dependency>
+	  <dependency>
+		<groupId>${pom.groupId}</groupId>
+		<artifactId>metamorphosis-client-extension</artifactId>
 		<version>${project.version}</version>
 	  </dependency>
 	  <dependency>
