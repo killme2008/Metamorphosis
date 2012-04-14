@@ -17,6 +17,9 @@
  */
 package com.taobao.metamorphosis.client;
 
+import java.net.InetSocketAddress;
+import java.util.Map;
+
 import com.taobao.metamorphosis.client.consumer.ConsumerConfig;
 import com.taobao.metamorphosis.client.consumer.MessageConsumer;
 import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
@@ -93,6 +96,54 @@ public interface MessageSessionFactory extends Shutdownable {
      * @return
      */
     public MessageConsumer createConsumer(ConsumerConfig consumerConfig);
+
+
+    /**
+     * Get statistics information from all brokers in this session factory.
+     * 
+     * @return statistics result
+     * @since 1.4.2
+     */
+    public Map<InetSocketAddress, StatsResult> getStats() throws InterruptedException;
+
+
+    /**
+     * Get item statistics information from all brokers in this session factory.
+     * 
+     * @param item
+     *            stats item,could be "topics","realtime","offsets" or a special
+     *            topic
+     * @return statistics result
+     * @since 1.4.2
+     */
+    public Map<InetSocketAddress, StatsResult> getStats(String item) throws InterruptedException;
+
+
+    /**
+     * Get statistics information from special broker.If the broker is not
+     * connected in this session factory,it will return null.
+     * 
+     * @param target
+     *            stats broker
+     * @return statistics result
+     * @since 1.4.2
+     */
+    public StatsResult getStats(InetSocketAddress target) throws InterruptedException;
+
+
+    /**
+     * Get item statistics information from special broker.If the broker is not
+     * connected in this session factory,it will return null.
+     * 
+     * @param target
+     *            stats broker
+     * @param item
+     *            stats item,could be "topics","realtime","offsets" or a special
+     *            topic
+     * @return statistics result
+     * @since 1.4.2
+     */
+    public StatsResult getStats(InetSocketAddress target, String item) throws InterruptedException;
 
 
     /**

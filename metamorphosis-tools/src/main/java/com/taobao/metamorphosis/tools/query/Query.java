@@ -54,6 +54,7 @@ public class Query {
     // DiamondManager diamondManager;
     ZKConfig zkConfig;
     MetaZookeeper metaZookeeper;
+    private String brokerId;
     static final Log log = LogFactory.getLog(Query.class);
 
 
@@ -62,8 +63,17 @@ public class Query {
 
 
     public String queryOffset(final OffsetQueryDO queryDO) {
+        normalizeQuery(queryDO);
         final OffsetStorageQuery query = this.chooseQuery(queryDO.getType());
         return query.getOffset(queryDO);
+    }
+
+
+    private void normalizeQuery(final OffsetQueryDO queryDO) {
+        String partition = queryDO.getPartition();
+        if (partition.indexOf("-") < 0) {
+            queryDO.setPartition(this.brokerId + "-" + partition);
+        }
     }
 
 
@@ -135,9 +145,9 @@ public class Query {
     private ZKConfig initZkConfig(final String serverConf) throws IOException {
         final Properties serverProperties =
                 com.taobao.metamorphosis.utils.Utils.getResourceAsProperties(serverConf, "GBK");
-
+        brokerId = serverProperties.getProperty("brokerId");
         final String zkConnect = serverProperties.getProperty("zk.zkConnect");
-        final String zkRoot = serverProperties.getProperty("zk.zkConnect");
+        final String zkRoot = serverProperties.getProperty("zk.zkRoot");
         if (!StringUtil.empty(zkConnect)) {
             final int zkSessionTimeoutMs = Integer.parseInt(serverProperties.getProperty("zk.zkSessionTimeoutMs"));
             final int zkConnectionTimeoutMs =

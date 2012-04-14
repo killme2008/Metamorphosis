@@ -115,7 +115,7 @@ public class DeletePartitionFiles extends ShellTool {
         startOption.setRequired(true);
         Option endOption = new Option("end", true, "end partition number");
         endOption.setRequired(true);
-        Option forceOption = new Option("f", false, "是否需要确认");
+        Option forceOption = new Option("f", false, "whether to force deleting files,default is false.");
 
         return CommandLineUtils.parseCmdLine(args, new Options().addOption(dataDirOption).addOption(topicOption)
             .addOption(startOption).addOption(endOption).addOption(forceOption));

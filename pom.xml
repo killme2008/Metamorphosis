@@ -71,7 +71,7 @@
 		<configuration>
 		  <finalName>taobao</finalName>
 		  <descriptors>
-			<descriptor>metamorphosis-server/release.xml</descriptor>
+			<!-- <descriptor>metamorphosis-server/release.xml</descriptor> -->
 			<descriptor>metamorphosis-server-wrapper/release.xml</descriptor>
 		  </descriptors>
 		</configuration>

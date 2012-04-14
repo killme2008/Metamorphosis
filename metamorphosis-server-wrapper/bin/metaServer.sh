@@ -25,10 +25,10 @@ function start_server() {
     chown -R $AS_USER $LOG_DIR
 
    	echo "Starting meta broker..."
-   	echo "$JAVA $ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+   	echo "$JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
    	  -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup -f $BASE_DIR/conf/server.ini"
     
-    nohup $JAVA $ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+    nohup $JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
       -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup -f $BASE_DIR/conf/server.ini $@ 2>&1 >>$LOG_FILE &	
 	sleep 1;
 	tail -f $LOG_FILE
@@ -49,28 +49,91 @@ function stop_server() {
 	echo "Stop meta broker successfully." 
 }
 
-function reload_config() {
-	echo "Reloading broker config..."
-    $JAVA $ARGS com.taobao.metamorphosis.tools.shell.ReloadConfig -host 127.0.0.1 -port $JMX_PORT
+function status(){
+    if [ -n "`ps ax | grep -i 'com.taobao.metamorphosis.ServerStartup' |grep java | grep -v grep | awk '{print $1}'`" ]; then
+       echo "Meta broker is running."
+    else
+       echo "Meta broker was stopped."   
+    fi
 }
 
-case "$1" in
+function reload_config() {
+	echo "Reloading broker config..."
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.ReloadConfig -host 127.0.0.1 -port $JMX_PORT $@
+}
+
+function open_partitions() {
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.OpenPartitionsTool -host 127.0.0.1 -port $JMX_PORT $@
+}
+
+function close_partitions() {
+	echo $@
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.ClosePartitionsTool -host 127.0.0.1 -port $JMX_PORT $@
+}
+
+function delete_partitions() {
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.DeletePartitionFiles $@
+}
+
+function move_partitions() {
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.MovePartitionFiles $@
+}
+
+function do_query() {
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.query.Bootstrap -s $BASE_DIR/conf/server.ini $@
+}
+
+function help() {
+    echo "Usage: metaServer.sh {start|status|stop|restart|reload|open-partitions|close-partitions|move-partitions|delete-partitions|query}" >&2
+    echo "       start:             start the broker server"
+    echo "       stop:              stop the broker server"
+    echo "       status:            get broker current status,running or stopped."
+    echo "       restart:           restart the broker server"
+    echo "       reload:            reload broker config file server.ini when adding new topics etc."
+    echo "       open-partitions:   open partitions which were closed by close-partitions for topic"
+    echo "       close-partitions:  close partitions for topic,closed partitions can not put messages until reopen them by open-partitions"
+    echo "       query:             start command shell for querying offsets from zookeeper"     
+}
+
+command=$1
+shift 1
+case $command in
     start)
-        start_server;
+        start_server $@;
         ;;    
     stop)
-        stop_server;
+        stop_server $@;
         ;;
     reload)
-        reload_config;
+        reload_config $@;
         ;;    
     restart)
         $0 stop
         $0 start
         ;;
-    
+    status)
+    	status $@;
+        ;;    
+    query)
+        do_query $@;
+        ;;
+    open-partitions)
+        open_partitions $@;
+        ;;
+    close-partitions)
+        close_partitions $@;
+        ;;
+    delete-partitions)
+        delete_partitions $@;
+        ;;
+    move-partitions)
+        move_partitions $@;
+        ;;
+    help)
+        help;
+        ;;
     *)
-        echo "Usage: metaServer.sh {start|status|stop|restart|reload|stats}" >&2
-        exit 1
+        help;
+        exit 1;
         ;;
 esac
