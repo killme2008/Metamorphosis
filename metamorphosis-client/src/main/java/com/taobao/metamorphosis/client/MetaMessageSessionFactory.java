@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.lang.StringUtils;
@@ -80,6 +81,7 @@ import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
  * @Date 2011-8-4
  */
 public class MetaMessageSessionFactory implements MessageSessionFactory {
+    private static final int STATS_OPTIMEOUT = 3000;
     protected RemotingClientWrapper remotingClient;
     private final MetaClientConfig metaClientConfig;
     private volatile ZkClient zkClient;
@@ -528,7 +530,8 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
                     if (target == null || target.equals(sockAddr)) {
                         BooleanCommand resp =
                                 (BooleanCommand) remotingClient.invokeToGroup(group,
-                                    new StatsCommand(OpaqueGenerator.getNextOpaque(), item));
+                                    new StatsCommand(OpaqueGenerator.getNextOpaque(), item), STATS_OPTIMEOUT,
+                                    TimeUnit.MILLISECONDS);
                         if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
                             String body = resp.getErrorMsg();
                             if (body != null) {
@@ -577,7 +580,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
 
     @Override
     public StatsResult getStats(InetSocketAddress target) throws InterruptedException {
-        return this.getStats(null, null);
+        return this.getStats(target, null);
     }
 
 
