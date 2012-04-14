@@ -83,13 +83,18 @@ function do_query() {
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.query.Bootstrap -s $BASE_DIR/conf/server.ini $@
 }
 
+function do_stats() {
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.BrokerStatsTool -config $BASE_DIR/conf/server.ini $@
+}
+ 
 function help() {
-    echo "Usage: metaServer.sh {start|status|stop|restart|reload|open-partitions|close-partitions|move-partitions|delete-partitions|query}" >&2
+    echo "Usage: metaServer.sh {start|status|stop|restart|reload|stats|open-partitions|close-partitions|move-partitions|delete-partitions|query}" >&2
     echo "       start:             start the broker server"
     echo "       stop:              stop the broker server"
     echo "       status:            get broker current status,running or stopped."
     echo "       restart:           restart the broker server"
     echo "       reload:            reload broker config file server.ini when adding new topics etc."
+    echo "       stats:             get current broker's statistics"
     echo "       open-partitions:   open partitions which were closed by close-partitions for topic"
     echo "       close-partitions:  close partitions for topic,closed partitions can not put messages until reopen them by open-partitions"
     echo "       query:             start command shell for querying offsets from zookeeper"     
@@ -128,6 +133,9 @@ case $command in
         ;;
     move-partitions)
         move_partitions $@;
+        ;;
+    stats)
+        do_stats $@;
         ;;
     help)
         help;
