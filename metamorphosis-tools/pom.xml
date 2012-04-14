@@ -1,11 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<parent>
+		<artifactId>metamorphosis-all</artifactId>
+		<groupId>com.taobao.metamorphosis</groupId>
+		<version>1.4.0.3-SNAPSHOT</version>
+	</parent>
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.taobao.metamorphosis</groupId>
+	<name>metamorphosis-tools v${project.version}</name>
 	<packaging>jar</packaging>
 	<artifactId>metamorphosis-tools</artifactId>
-	<name>metamorphosis-tools</name>
-	<version>1.4.0.taocode-SNAPSHOT</version>
+
 	<build>
 		<finalName>metamorphosis-tools</finalName>
 		<plugins>
@@ -41,18 +45,15 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.4</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client</artifactId>
-			<version>1.4.0.taocode-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-server</artifactId>
-			<version>1.4.0.taocode-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ini4j</groupId>

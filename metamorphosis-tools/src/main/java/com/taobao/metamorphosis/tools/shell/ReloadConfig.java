@@ -67,7 +67,7 @@ public class ReloadConfig extends ShellTool {
                     new Options().addOption("host", true, "host").addOption("port", true, "port"));
 
         String host = commandLine.getOptionValue("host", "127.0.0.1");
-        int port = Integer.parseInt(commandLine.getOptionValue("port", "9999"));
+        int port = Integer.parseInt(commandLine.getOptionValue("port", "9123"));
 
         JMXClient jmxClient = JMXClient.getJMXClient(host, port);
 
