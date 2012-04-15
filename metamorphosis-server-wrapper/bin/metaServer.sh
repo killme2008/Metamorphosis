@@ -1,13 +1,27 @@
 #!/bin/bash
 
 #project directory
-BASE_DIR=$(dirname $0)
 
-if [ ${BASE_DIR:0:1} == \. ]; then
-   BASE_DIR=${BASE_DIR/\./$(pwd)}
+if [ -z "$BASE_DIR" ] ; then
+  ## resolve links - $0 may be a link to maven's home
+  PRG="$0"
+
+  # need this for relative symlinks
+  while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+      PRG="$link"
+    else
+      PRG="`dirname "$PRG"`/$link"
+    fi
+  done
+  BASE_DIR=`dirname "$PRG"`/..
+
+  # make it fully qualified
+  BASE_DIR=`cd "$BASE_DIR" && pwd`
+  #echo "Meta broker is at $BASE_DIR"
 fi
-
-export BASE_DIR=$BASE_DIR/..
 
 source $BASE_DIR/bin/env.sh
 
@@ -63,10 +77,10 @@ function start_server() {
 	    	;;	            		
     esac
     
-   	echo "$JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+   	echo "$JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
    	  -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup $config_files"
     sleep 1
-    nohup $JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+    nohup $JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
       -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup $config_files 2>&1 >>$LOG_FILE &	
     echo $! > $PID_FILE
     chmod 755 $PID_FILE
@@ -128,11 +142,11 @@ function move_partitions() {
 }
 
 function do_query() {
-    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.query.Bootstrap -s $BASE_DIR/conf/server.ini $@
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.query.Bootstrap -s server.ini $@
 }
 
 function do_stats() {
-    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.BrokerStatsTool -config $BASE_DIR/conf/server.ini $@
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.BrokerStatsTool -config server.ini $@
 }
  
 function help() {

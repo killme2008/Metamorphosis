@@ -21,6 +21,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.management.ManagementFactory;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -247,6 +248,12 @@ public class StatsManager implements Service {
             }
             this.append(sb, topic, "partitions", partitionCount, "message_count", sum);
         }
+        List<String> configTopics = this.metaConfig.getTopics();
+        for (String topic : configTopics) {
+            if (!stores.containsKey(topic)) {
+                this.append(sb, topic, "unused");
+            }
+        }
     }
 
 
@@ -257,6 +264,7 @@ public class StatsManager implements Service {
 
     private void appendSystemStatsInfo(final StringBuilder sb) {
         this.append(sb, "pid", this.getPid());
+        this.append(sb, "broker_id", this.metaConfig.getBrokerId());
         this.append(sb, "port", this.getServerPort());
         this.append(sb, "uptime", this.getUpTime());
         this.append(sb, "version", this.getVersion());

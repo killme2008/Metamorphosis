@@ -1,14 +1,5 @@
 #!/bin/bash
 
-#project directory
-BASE_DIR=$(dirname $0)
-
-if [ ${BASE_DIR:0:1} == \. ]; then
-   BASE_DIR=${BASE_DIR/\./$(pwd)}
-fi
-
-export BASE_DIR=$BASE_DIR/..
-
 #Config your java home
 #JAVA_HOME=/opt/jdk/
 
@@ -19,7 +10,7 @@ else
 fi
 
 #JMX port
-meta_home=$(cd $BASE_DIR;pwd)
+meta_home=$BASE_DIR
 
 #Broker JMX port
 export JMX_PORT=9123
@@ -31,11 +22,11 @@ BROKER_JVM_ARGS="-Xmx512m -Xms512m -server -Dmeta.home=$meta_home -cp $CLASSPATH
 TOOLS_JVM_ARGS="-Xmx128m -Xms128m -Dmeta.home=$meta_home -cp $CLASSPATH "
 
 if [ -z "$BROKER_ARGS" ]; then
-  export BROKER_ARGS="$BROKER_JVM_ARGS -Dlog4j.configuration=$BASE_DIR/bin/log4j.properties"
+  export BROKER_ARGS="$BROKER_JVM_ARGS -Dlog4j.configuration=file:$BASE_DIR/bin/log4j.properties"
 fi
 
 if [ -z "$TOOLS_ARGS" ]; then
-  export TOOLS_ARGS="$TOOLS_JVM_ARGS -Dlog4j.configuration=$BASE_DIR/bin/tools_log4j.properties"
+  export TOOLS_ARGS="$TOOLS_JVM_ARGS -Dlog4j.configuration=file:$BASE_DIR/bin/tools_log4j.properties"
 fi
 
 

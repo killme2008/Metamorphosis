@@ -25,13 +25,11 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -111,7 +109,7 @@ public class MessageStoreManager implements Service {
             for (final ConcurrentHashMap<Integer, MessageStore> map : MessageStoreManager.this.stores.values()) {
                 for (final MessageStore store : map.values()) {
                     if (this.unflushInterval != MessageStoreManager.this.metaConfig.getTopicConfig(store.getTopic())
-                        .getUnflushInterval()) {
+                            .getUnflushInterval()) {
                         continue;
                     }
                     try {
@@ -129,7 +127,7 @@ public class MessageStoreManager implements Service {
             new ConcurrentHashMap<String, ConcurrentHashMap<Integer, MessageStore>>();
     private final MetaConfig metaConfig;
     private ScheduledThreadPoolExecutor scheduledExecutorService;// =
-                                                                 // Executors.newScheduledThreadPool(2);
+    // Executors.newScheduledThreadPool(2);
     static final Log log = LogFactory.getLog(MessageStoreManager.class);
 
     private final DeletePolicy deletePolicy;
@@ -223,7 +221,7 @@ public class MessageStoreManager implements Service {
 
         this.scheduledExecutorService.purge();
         log.info("Schedule flush task finished. CorePoolSize=" + this.scheduledExecutorService.getCorePoolSize()
-                + ",current pool size=" + this.scheduledExecutorService.getPoolSize());
+            + ",current pool size=" + this.scheduledExecutorService.getPoolSize());
     }
 
 
@@ -273,7 +271,7 @@ public class MessageStoreManager implements Service {
                 final TopicConfig topicConfig = metaConfig.getTopicConfig(topic);
                 final String deletePolicy =
                         topicConfig != null ? topicConfig.getDeletePolicy() : metaConfig.getDeletePolicy();
-                this.deletePolicyMap.put(topic, DeletePolicyFactory.getDeletePolicy(deletePolicy));
+                        this.deletePolicyMap.put(topic, DeletePolicyFactory.getDeletePolicy(deletePolicy));
             }
         }
 
@@ -293,7 +291,7 @@ public class MessageStoreManager implements Service {
     public long getTotalMessagesCount() {
         long rt = 0;
         for (final ConcurrentHashMap<Integer/* partition */, MessageStore> subMap : MessageStoreManager.this.stores
-            .values()) {
+                .values()) {
             if (subMap != null) {
                 for (final MessageStore msgStore : subMap.values()) {
                     if (msgStore != null) {
@@ -307,7 +305,14 @@ public class MessageStoreManager implements Service {
 
 
     public int getTopicCount() {
-        return this.stores.size();
+        List<String> topics = this.metaConfig.getTopics();
+        int count = this.stores.size();
+        for (String topic : topics) {
+            if (!this.stores.containsKey(topic)) {
+                count++;
+            }
+        }
+        return count;
     }
 
 
@@ -390,37 +395,6 @@ public class MessageStoreManager implements Service {
     }
 
 
-    /**
-     * 计算下个执行周期的delay时间.每天执行两次：早上6点或者晚上6点
-     * 
-     * @return
-     */
-    @Deprecated
-    private long calcDelay() {
-        final Calendar date = new GregorianCalendar();
-        date.setTime(new Date());
-        final long currentTime = date.getTime().getTime();
-
-        date.set(Calendar.HOUR_OF_DAY, 6);
-        date.set(Calendar.MINUTE, 0);
-        date.set(Calendar.SECOND, 0);
-
-        long delay = date.getTimeInMillis() - currentTime;
-        // 超过早上6点，求距离下午6点时间
-        if (delay < 0) {
-            date.set(Calendar.HOUR_OF_DAY, 18);
-            date.set(Calendar.MINUTE, 0);
-            date.set(Calendar.SECOND, 0);
-            delay = date.getTimeInMillis() - currentTime;
-            // 超过晚上6点，加上12个小时等待明天早上6点
-            if (delay < 0) {
-                delay += HALF_DAY;
-            }
-        }
-        return delay;
-    }
-
-
     public int getNumPartitions(final String topic) {
         final TopicConfig topicConfig = this.metaConfig.getTopicConfig(topic);
         return topicConfig != null ? topicConfig.getNumPartitions() : this.metaConfig.getNumPartitions();
@@ -439,7 +413,7 @@ public class MessageStoreManager implements Service {
             }
         }
         for (final ConcurrentHashMap<Integer/* partition */, MessageStore> subMap : MessageStoreManager.this.stores
-            .values()) {
+                .values()) {
             if (subMap != null) {
                 for (final MessageStore msgStore : subMap.values()) {
                     if (msgStore != null) {
@@ -448,7 +422,7 @@ public class MessageStoreManager implements Service {
                         }
                         catch (final Throwable e) {
                             log.error("Try to run close  " + msgStore.getTopic() + "," + msgStore.getPartition()
-                                    + " failed", e);
+                                + " failed", e);
                         }
                     }
                 }
@@ -480,17 +454,17 @@ public class MessageStoreManager implements Service {
             final TopicConfig topicConfig = this.metaConfig.getTopicConfig(topic);
             final String deleteWhen =
                     topicConfig != null ? topicConfig.getDeleteWhen() : this.metaConfig.getDeleteWhen();
-            JobInfo jobInfo = jobs.get(deleteWhen);
-            if (jobInfo == null) {
-                final JobDetail job = newJob(DeleteJob.class).build();
-                job.getJobDataMap().put(DeleteJob.TOPICS, new HashSet<String>());
-                job.getJobDataMap().put(DeleteJob.STORE_MGR, this);
-                final Trigger trigger = newTrigger().withSchedule(cronSchedule(deleteWhen)).forJob(job).build();
-                jobInfo = new JobInfo(job, trigger);
-                jobs.put(deleteWhen, jobInfo);
-            }
-            // 添加本topic
-            ((Set<String>) jobInfo.job.getJobDataMap().get(DeleteJob.TOPICS)).add(topic);
+                    JobInfo jobInfo = jobs.get(deleteWhen);
+                    if (jobInfo == null) {
+                        final JobDetail job = newJob(DeleteJob.class).build();
+                        job.getJobDataMap().put(DeleteJob.TOPICS, new HashSet<String>());
+                        job.getJobDataMap().put(DeleteJob.STORE_MGR, this);
+                        final Trigger trigger = newTrigger().withSchedule(cronSchedule(deleteWhen)).forJob(job).build();
+                        jobInfo = new JobInfo(job, trigger);
+                        jobs.put(deleteWhen, jobInfo);
+                    }
+                    // 添加本topic
+                    ((Set<String>) jobInfo.job.getJobDataMap().get(DeleteJob.TOPICS)).add(topic);
         }
 
         for (final JobInfo jobInfo : jobs.values()) {
@@ -567,7 +541,7 @@ public class MessageStoreManager implements Service {
         }
         if (partition < 0 || partition >= this.getNumPartitions(topic)) {
             log.warn("Wrong partition " + partition + ",valid partitions (0," + (this.getNumPartitions(topic) - 1)
-                    + ")");
+                + ")");
             throw new WrongPartitionException("wrong partition " + partition);
         }
         ConcurrentHashMap<Integer/* partition */, MessageStore> map = this.stores.get(topic);
