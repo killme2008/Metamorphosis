@@ -15,45 +15,93 @@ AS_USER=`whoami`
 LOG_DIR=$BASE_DIR/logs
 LOG_FILE=$LOG_DIR/metaServer.log
 PID_DIR=$BASE_DIR/logs
+PID_FILE=$PID_DIR/.run.pid
+
+function running(){
+	if [ -f "$PID_FILE" ]; then
+		pid=$(cat $PID_FILE)
+		process=`ps aux | grep $pid | grep -v grep`;
+		if [ "$process" == "" ]; then
+	    	return 1;
+		else
+			return 0;
+		fi
+	else
+		return 1
+	fi	
+}
 
 function start_server() {
+	if running; then
+		echo "Broker is running."
+		exit 1
+	fi
 
     mkdir -p $PID_DIR
     touch $LOG_FILE
     mkdir -p $LOG_DIR
     chown -R $AS_USER $PID_DIR
     chown -R $AS_USER $LOG_DIR
-
-   	echo "Starting meta broker..."
-   	echo "$JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
-   	  -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup -f $BASE_DIR/conf/server.ini"
     
+    config_files="-f $BASE_DIR/conf/server.ini"
+    
+    case $1 in
+    	slave)
+    		echo "Starting meta broker as an asynchronous replication slave...";
+    		config_files="$config_files -Fmetaslave=$BASE_DIR/conf/async_slave.properties";
+    		;;
+	    samsa)
+	        echo "Starting meta broker as a synchronous replication master...";
+	        config_files="$config_files -Fsamsa=$BASE_DIR/conf/samsa_master.properties";
+	        ;;
+	    gregor)
+	        echo "Starting meta broker as a synchronous replication slave...";
+	        config_files="$config_files -Fgregor=$BASE_DIR/conf/gregor_slave.properties";
+	        ;;
+	    *)
+	    	echo "Starting meta broker..."
+	    	;;	            		
+    esac
+    
+   	echo "$JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
+   	  -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup $config_files"
+    sleep 1
     nohup $JAVA $BROKER_ARGS -Dcom.sun.management.jmxremote  -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false \
-      -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup -f $BASE_DIR/conf/server.ini $@ 2>&1 >>$LOG_FILE &	
+      -Dcom.sun.management.jmxremote.port=$JMX_PORT com.taobao.metamorphosis.ServerStartup $config_files 2>&1 >>$LOG_FILE &	
+    echo $! > $PID_FILE
+    chmod 755 $PID_FILE
 	sleep 1;
 	tail -f $LOG_FILE
 }
 
 function stop_server() {
+	if ! running; then
+		echo "Broker is not running."
+		exit 1
+	fi
 	count=0
-	while [ -n "`ps ax | grep -i 'com.taobao.metamorphosis.ServerStartup' |grep java | grep -v grep | awk '{print $1}'`" ]
+	pid=$(cat $PID_FILE)
+	while running;
 	do
 	  let count=$count+1
+	  echo "Stopping meta broker $count times"
 	  if [ $count -gt 5 ]; then
-	      ps ax | grep -i 'com.taobao.metamorphosis.ServerStartup' |grep java | grep -v grep | awk '{print $1}' | xargs kill -9
+	  	  echo "kill -9 $pid"
+	      kill -9 $pid
 	  else
-	      ps ax | grep -i 'com.taobao.metamorphosis.ServerStartup' |grep java | grep -v grep | awk '{print $1}' | xargs kill 
+	      kill $pid
 	  fi
 	  sleep 2;
 	done	
 	echo "Stop meta broker successfully." 
+	rm $PID_FILE
 }
 
 function status(){
-    if [ -n "`ps ax | grep -i 'com.taobao.metamorphosis.ServerStartup' |grep java | grep -v grep | awk '{print $1}'`" ]; then
+    if running; then
        echo "Meta broker is running."
     else
-       echo "Meta broker was stopped."   
+       echo "Meta broker was stopped."  
     fi
 }
 
@@ -89,7 +137,10 @@ function do_stats() {
  
 function help() {
     echo "Usage: metaServer.sh {start|status|stop|restart|reload|stats|open-partitions|close-partitions|move-partitions|delete-partitions|query}" >&2
-    echo "       start:             start the broker server"
+    echo "       start [type]:             start the broker server"
+    echo "             slave               start the broker as an asynchronous replication slave."
+    echo "             gregor              start the broker as an synchronous replication slave."
+    echo "             samsa               start the broker as an synchronous replication master."
     echo "       stop:              stop the broker server"
     echo "       status:            get broker current status,running or stopped."
     echo "       restart:           restart the broker server"
@@ -113,8 +164,8 @@ case $command in
         reload_config $@;
         ;;    
     restart)
-        $0 stop
-        $0 start
+        $0 stop $@
+        $0 start $@
         ;;
     status)
     	status $@;
