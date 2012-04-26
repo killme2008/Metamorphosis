@@ -18,6 +18,7 @@
 package com.taobao.metamorphosis.client;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 
 import com.taobao.metamorphosis.client.consumer.ConsumerConfig;
@@ -25,6 +26,7 @@ import com.taobao.metamorphosis.client.consumer.MessageConsumer;
 import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
 import com.taobao.metamorphosis.client.producer.MessageProducer;
 import com.taobao.metamorphosis.client.producer.PartitionSelector;
+import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 
@@ -156,5 +158,14 @@ public interface MessageSessionFactory extends Shutdownable {
      * @return
      */
     public MessageConsumer createConsumer(ConsumerConfig consumerConfig, OffsetStorage offsetStorage);
+
+
+    /**
+     * Get partitions list for topic
+     * 
+     * @param topic
+     * @return partitions list
+     */
+    public List<Partition> getPartitionsForTopic(String topic);
 
 }

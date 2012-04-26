@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -57,6 +59,7 @@ import com.taobao.metamorphosis.client.producer.PartitionSelector;
 import com.taobao.metamorphosis.client.producer.ProducerZooKeeper;
 import com.taobao.metamorphosis.client.producer.RoundRobinPartitionSelector;
 import com.taobao.metamorphosis.client.producer.SimpleMessageProducer;
+import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.exception.InvalidConsumerConfigException;
 import com.taobao.metamorphosis.exception.InvalidOffsetStorageException;
 import com.taobao.metamorphosis.exception.MetaClientException;
@@ -115,7 +118,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     public RemotingClientWrapper getRemotingClient() {
-        return remotingClient;
+        return this.remotingClient;
     }
 
 
@@ -125,7 +128,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     public SubscribeInfoManager getSubscribeInfoManager() {
-        return subscribeInfoManager;
+        return this.subscribeInfoManager;
     }
 
 
@@ -135,7 +138,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     public MetaClientConfig getMetaClientConfig() {
-        return metaClientConfig;
+        return this.metaClientConfig;
     }
 
 
@@ -145,7 +148,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     public ProducerZooKeeper getProducerZooKeeper() {
-        return producerZooKeeper;
+        return this.producerZooKeeper;
     }
 
 
@@ -155,7 +158,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     public ConsumerZooKeeper getConsumerZooKeeper() {
-        return consumerZooKeeper;
+        return this.consumerZooKeeper;
     }
 
 
@@ -165,7 +168,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     public RecoverManager getRecoverStorageManager() {
-        return recoverManager;
+        return this.recoverManager;
     }
 
 
@@ -175,46 +178,46 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     public CopyOnWriteArrayList<Shutdownable> getChildren() {
-        return children;
+        return this.children;
     }
 
 
     public MetaMessageSessionFactory(final MetaClientConfig metaClientConfig) throws MetaClientException {
         super();
-        checkConfig(metaClientConfig);
+        this.checkConfig(metaClientConfig);
         this.metaClientConfig = metaClientConfig;
         final ClientConfig clientConfig = new ClientConfig();
         clientConfig.setTcpNoDelay(false);
         clientConfig.setWireFormatType(new MetamorphosisWireFormatType());
         clientConfig.setMaxScheduleWrittenBytes(Runtime.getRuntime().maxMemory() / 3);
         try {
-            remotingClient = new RemotingClientWrapper(RemotingFactory.connect(clientConfig));
+            this.remotingClient = new RemotingClientWrapper(RemotingFactory.connect(clientConfig));
         }
         catch (final NotifyRemotingException e) {
             throw new NetworkException("Create remoting client failed", e);
         }
         // 如果有设置，则使用设置的url并连接，否则使用zk发现服务器
         if (this.metaClientConfig.getServerUrl() != null) {
-            connectServer(this.metaClientConfig);
+            this.connectServer(this.metaClientConfig);
         }
         else {
-            initZooKeeper();
+            this.initZooKeeper();
         }
 
-        producerZooKeeper = new ProducerZooKeeper(metaZookeeper, remotingClient, zkClient, metaClientConfig);
-        sessionIdGenerator = new IdGenerator();
+        this.producerZooKeeper = new ProducerZooKeeper(this.metaZookeeper, this.remotingClient, this.zkClient, metaClientConfig);
+        this.sessionIdGenerator = new IdGenerator();
         // modify by wuhua
-        consumerZooKeeper = initConsumerZooKeeper(remotingClient, zkClient, zkConfig);
-        zkClientChangedListeners.add(producerZooKeeper);
-        zkClientChangedListeners.add(consumerZooKeeper);
-        subscribeInfoManager = new SubscribeInfoManager();
-        recoverManager = new RecoverStorageManager(this.metaClientConfig, subscribeInfoManager);
-        shutdownHook = new Thread() {
+        this.consumerZooKeeper = this.initConsumerZooKeeper(this.remotingClient, this.zkClient, this.zkConfig);
+        this.zkClientChangedListeners.add(this.producerZooKeeper);
+        this.zkClientChangedListeners.add(this.consumerZooKeeper);
+        this.subscribeInfoManager = new SubscribeInfoManager();
+        this.recoverManager = new RecoverStorageManager(this.metaClientConfig, this.subscribeInfoManager);
+        this.shutdownHook = new Thread() {
 
             @Override
             public void run() {
                 try {
-                    isHutdownHookCalled = true;
+                    MetaMessageSessionFactory.this.isHutdownHookCalled = true;
                     MetaMessageSessionFactory.this.shutdown();
                 }
                 catch (final MetaClientException e) {
@@ -223,14 +226,14 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             }
 
         };
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        Runtime.getRuntime().addShutdownHook(this.shutdownHook);
     }
 
 
     // add by wuhua
     protected ConsumerZooKeeper initConsumerZooKeeper(final RemotingClientWrapper remotingClientWrapper,
             final ZkClient zkClient2, final ZKConfig config) {
-        return new ConsumerZooKeeper(metaZookeeper, remotingClient, zkClient, zkConfig);
+        return new ConsumerZooKeeper(this.metaZookeeper, this.remotingClient, this.zkClient, this.zkConfig);
     }
 
 
@@ -243,8 +246,8 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
 
     private void connectServer(final MetaClientConfig metaClientConfig) throws NetworkException {
         try {
-            remotingClient.connect(metaClientConfig.getServerUrl());
-            remotingClient.awaitReadyInterrupt(metaClientConfig.getServerUrl());
+            this.remotingClient.connect(metaClientConfig.getServerUrl());
+            this.remotingClient.awaitReadyInterrupt(metaClientConfig.getServerUrl());
         }
         catch (final NotifyRemotingException e) {
             throw new NetworkException("Connect to " + metaClientConfig.getServerUrl() + " failed", e);
@@ -257,20 +260,20 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
 
     private void initZooKeeper() throws MetaClientException {
         // 优先使用设置的zookeepr，其次从diamond获取
-        zkConfig = null;
-        if (metaClientConfig.getZkConfig() != null) {
-            zkConfig = metaClientConfig.getZkConfig();
+        this.zkConfig = null;
+        if (this.metaClientConfig.getZkConfig() != null) {
+            this.zkConfig = this.metaClientConfig.getZkConfig();
 
         }
         else {
-            zkConfig = loadZkConfigFromDiamond();
+            this.zkConfig = this.loadZkConfigFromDiamond();
 
         }
-        if (zkConfig != null) {
-            zkClient =
-                    new ZkClient(zkConfig.zkConnect, zkConfig.zkSessionTimeoutMs, zkConfig.zkConnectionTimeoutMs,
+        if (this.zkConfig != null) {
+            this.zkClient =
+                    new ZkClient(this.zkConfig.zkConnect, this.zkConfig.zkSessionTimeoutMs, this.zkConfig.zkConnectionTimeoutMs,
                         new ZkUtils.StringSerializer());
-            metaZookeeper = new MetaZookeeper(zkClient, zkConfig.zkRoot);
+            this.metaZookeeper = new MetaZookeeper(this.zkClient, this.zkConfig.zkRoot);
         }
         else {
             throw new MetaClientException("No zk config offered");
@@ -285,29 +288,29 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      */
     @Override
     public void shutdown() throws MetaClientException {
-        if (shutdown) {
+        if (this.shutdown) {
             return;
         }
-        shutdown = true;
+        this.shutdown = true;
         // if (this.diamondManager != null) {
         // this.diamondManager.close();
         // }
-        recoverManager.shutdown();
+        this.recoverManager.shutdown();
         // this.localMessageStorageManager.shutdown();
-        for (final Shutdownable child : children) {
+        for (final Shutdownable child : this.children) {
             child.shutdown();
         }
         try {
-            remotingClient.stop();
+            this.remotingClient.stop();
         }
         catch (final NotifyRemotingException e) {
             throw new NetworkException("Stop remoting client failed", e);
         }
-        if (zkClient != null) {
-            zkClient.close();
+        if (this.zkClient != null) {
+            this.zkClient.close();
         }
-        if (!isHutdownHookCalled) {
-            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        if (!this.isHutdownHookCalled) {
+            Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
         }
 
     }
@@ -435,13 +438,13 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         if (partitionSelector == null) {
             throw new IllegalArgumentException("Null partitionSelector");
         }
-        return this.addChild(new SimpleMessageProducer(this, remotingClient, partitionSelector, producerZooKeeper,
-            sessionIdGenerator.generateId()));
+        return this.addChild(new SimpleMessageProducer(this, this.remotingClient, partitionSelector, this.producerZooKeeper,
+            this.sessionIdGenerator.generateId()));
     }
 
 
     protected <T extends Shutdownable> T addChild(final T child) {
-        children.add(child);
+        this.children.add(child);
         return child;
     }
 
@@ -453,26 +456,26 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @param child
      */
     public <T extends Shutdownable> void removeChild(final T child) {
-        children.remove(child);
+        this.children.remove(child);
     }
 
 
     private synchronized MessageConsumer createConsumer0(final ConsumerConfig consumerConfig,
             final OffsetStorage offsetStorage, final RecoverManager recoverManager0) {
         if (consumerConfig.getServerUrl() == null) {
-            consumerConfig.setServerUrl(metaClientConfig.getServerUrl());
+            consumerConfig.setServerUrl(this.metaClientConfig.getServerUrl());
         }
         if (offsetStorage == null) {
             throw new InvalidOffsetStorageException("Null offset storage");
         }
         // 必要时启动recover
         if (!recoverManager0.isStarted()) {
-            recoverManager0.start(metaClientConfig);
+            recoverManager0.start(this.metaClientConfig);
         }
-        checkConsumerConfig(consumerConfig);
-        return this.addChild(new SimpleMessageConsumer(this, remotingClient, consumerConfig, consumerZooKeeper,
-            producerZooKeeper, subscribeInfoManager, recoverManager0, offsetStorage,
-            createLoadBalanceStrategy(consumerConfig)));
+        this.checkConsumerConfig(consumerConfig);
+        return this.addChild(new SimpleMessageConsumer(this, this.remotingClient, consumerConfig, this.consumerZooKeeper,
+            this.producerZooKeeper, this.subscribeInfoManager, recoverManager0, offsetStorage,
+            this.createLoadBalanceStrategy(consumerConfig)));
     }
 
 
@@ -493,31 +496,31 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             final RecoverManager recoverManager0) {
         OffsetStorage offsetStorageCopy = offsetStorage;
         if (offsetStorageCopy == null) {
-            offsetStorageCopy = new ZkOffsetStorage(metaZookeeper, zkClient);
-            zkClientChangedListeners.add((ZkOffsetStorage) offsetStorageCopy);
+            offsetStorageCopy = new ZkOffsetStorage(this.metaZookeeper, this.zkClient);
+            this.zkClientChangedListeners.add((ZkOffsetStorage) offsetStorageCopy);
         }
 
-        return createConsumer0(consumerConfig, offsetStorageCopy, recoverManager0 != null ? recoverManager0
-                : recoverManager);
+        return this.createConsumer0(consumerConfig, offsetStorageCopy, recoverManager0 != null ? recoverManager0
+                : this.recoverManager);
 
     }
 
 
     @Override
     public MessageConsumer createConsumer(final ConsumerConfig consumerConfig, final OffsetStorage offsetStorage) {
-        return this.createConsumer(consumerConfig, offsetStorage, recoverManager);
+        return this.createConsumer(consumerConfig, offsetStorage, this.recoverManager);
     }
 
 
     @Override
     public Map<InetSocketAddress, StatsResult> getStats(String item) throws InterruptedException {
-        return getStats0(null, item);
+        return this.getStats0(null, item);
     }
 
 
     private Map<InetSocketAddress, StatsResult> getStats0(InetSocketAddress target, String item)
             throws InterruptedException {
-        Set<String> groups = remotingClient.getGroupSet();
+        Set<String> groups = this.remotingClient.getGroupSet();
         if (groups == null || groups.size() <= 1) {
             return Collections.emptyMap();
         }
@@ -529,13 +532,13 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
                     InetSocketAddress sockAddr = new InetSocketAddress(uri.getHost(), uri.getPort());
                     if (target == null || target.equals(sockAddr)) {
                         BooleanCommand resp =
-                                (BooleanCommand) remotingClient.invokeToGroup(group,
+                                (BooleanCommand) this.remotingClient.invokeToGroup(group,
                                     new StatsCommand(OpaqueGenerator.getNextOpaque(), item), STATS_OPTIMEOUT,
                                     TimeUnit.MILLISECONDS);
                         if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
                             String body = resp.getErrorMsg();
                             if (body != null) {
-                                parseStatsValues(sockAddr, rt, group, body);
+                                this.parseStatsValues(sockAddr, rt, group, body);
                             }
                         }
                     }
@@ -574,7 +577,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
 
     @Override
     public StatsResult getStats(InetSocketAddress target, String item) throws InterruptedException {
-        return getStats0(target, item).get(target);
+        return this.getStats0(target, item).get(target);
     }
 
 
@@ -583,6 +586,17 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         return this.getStats(target, null);
     }
 
+    @Override
+    public List<Partition> getPartitionsForTopic(String topic) {
+        if (this.metaZookeeper != null) {
+            List<String> topics = new ArrayList<String>(1);
+            topics.add(topic);
+            return this.metaZookeeper.getPartitionsForTopicsFromMaster(topics).get(topic);
+        }
+        else {
+            throw new IllegalStateException("Could not talk with zookeeper to get partitions list");
+        }
+    }
 
     /*
      * (non-Javadoc)
