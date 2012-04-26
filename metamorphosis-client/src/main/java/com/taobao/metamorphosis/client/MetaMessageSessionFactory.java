@@ -591,7 +591,13 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         if (this.metaZookeeper != null) {
             List<String> topics = new ArrayList<String>(1);
             topics.add(topic);
-            return this.metaZookeeper.getPartitionsForTopicsFromMaster(topics).get(topic);
+            List<Partition> rt = this.metaZookeeper.getPartitionsForTopicsFromMaster(topics).get(topic);
+            if (rt == null) {
+                return Collections.emptyList();
+            }
+            else {
+                return rt;
+            }
         }
         else {
             throw new IllegalStateException("Could not talk with zookeeper to get partitions list");
