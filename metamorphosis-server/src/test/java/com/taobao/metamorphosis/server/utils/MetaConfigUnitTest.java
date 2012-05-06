@@ -40,11 +40,11 @@ public class MetaConfigUnitTest {
     @Test
     public void testIsSlave() {
         MetaConfig metaConfig = new MetaConfig();
-        metaConfig.setSlaveId(1);
+        metaConfig.setSlaveConfig(new SlaveConfig(1));
         Assert.assertTrue(metaConfig.isSlave());
 
         metaConfig = new MetaConfig();
-        metaConfig.setSlaveId(-2);
+        metaConfig.setSlaveConfig(new SlaveConfig(-2));
         Assert.assertFalse(metaConfig.isSlave());
 
         Assert.assertFalse(new MetaConfig().isSlave());

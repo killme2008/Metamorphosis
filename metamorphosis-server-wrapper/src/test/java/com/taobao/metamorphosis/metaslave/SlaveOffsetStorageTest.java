@@ -35,6 +35,7 @@ import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
 import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.server.utils.SlaveConfig;
 
 
 /**
@@ -104,7 +105,7 @@ public class SlaveOffsetStorageTest {
                 new OffsetCommand(topic, GROUP, partition, 0, OpaqueGenerator.getNextOpaque()))).andReturn(resp);
         OpaqueGenerator.resetOpaque();
         final MetaConfig config = new MetaConfig();
-        config.setSlaveGroup(GROUP);
+        config.setSlaveConfig(new SlaveConfig(0, GROUP, 500, true));
         EasyMock.expect(this.broker.getMetaConfig()).andReturn(config);
         this.mocksControl.replay();
         final TopicPartitionRegInfo info = this.slaveOffsetStorage.load(topic, "ss", new Partition(0, partition));
@@ -147,7 +148,7 @@ public class SlaveOffsetStorageTest {
                 new OffsetCommand(topic, GROUP, partition, 0, OpaqueGenerator.getNextOpaque()))).andReturn(resp);
         OpaqueGenerator.resetOpaque();
         final MetaConfig config = new MetaConfig();
-        config.setSlaveGroup(GROUP);
+        config.setSlaveConfig(new SlaveConfig(0, GROUP, 500, true));
         EasyMock.expect(this.broker.getMetaConfig()).andReturn(config);
         this.mocksControl.replay();
         final TopicPartitionRegInfo info = this.slaveOffsetStorage.load(topic, "ss", new Partition(0, partition));
@@ -169,7 +170,7 @@ public class SlaveOffsetStorageTest {
         EasyMock.expect(this.slaveZooKeeper.getMasterServerUrl()).andReturn(masterUrl);
         EasyMock.expect(this.remotingClient.isConnected(masterUrl)).andReturn(true);
         EasyMock.expect(this.remotingClient.invokeToGroup(masterUrl, new OffsetCommand(topic, GROUP, partition, 0, 0)))
-            .andThrow(new Exception("unknown error when invoke"));
+        .andThrow(new Exception("unknown error when invoke"));
         this.mocksControl.replay();
         this.slaveOffsetStorage.load(topic, "ss", new Partition(0, partition));
         this.mocksControl.verify();

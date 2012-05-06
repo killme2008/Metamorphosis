@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -24,6 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import com.taobao.metamorphosis.AbstractBrokerPlugin;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
+import com.taobao.metamorphosis.server.utils.SlaveConfig;
 
 
 /**
@@ -59,12 +60,16 @@ public class MetamorphosisSlaveBroker extends AbstractBrokerPlugin {
 
 
     private void putSlaveProperties(final MetaMorphosisBroker broker, final Properties props) {
-        broker.getMetaConfig().setSlaveId(Integer.parseInt(props.getProperty("slaveId")));
+        SlaveConfig slaveConfig = new SlaveConfig();
+        slaveConfig.setSlaveId(Integer.parseInt(props.getProperty("slaveId")));
         if (StringUtils.isNotBlank(props.getProperty("slaveGroup"))) {
-            broker.getMetaConfig().setSlaveGroup(props.getProperty("slaveGroup"));
+            slaveConfig.setSlaveGroup(props.getProperty("slaveGroup"));
         }
         if (StringUtils.isNotBlank(props.getProperty("slaveMaxDelayInMills"))) {
-            broker.getMetaConfig().setSlaveMaxDelayInMills(Integer.parseInt(props.getProperty("slaveMaxDelayInMills")));
+            slaveConfig.setSlaveMaxDelayInMills(Integer.parseInt(props.getProperty("slaveMaxDelayInMills")));
+        }
+        if (StringUtils.isNotBlank(props.getProperty("autoSyncMasterConfig"))) {
+            slaveConfig.setAutoSyncMasterConfig(Boolean.valueOf(props.getProperty("autoSyncMasterConfig")));
         }
 
         // 重新设置BrokerIdPath，以便注册到slave的路径

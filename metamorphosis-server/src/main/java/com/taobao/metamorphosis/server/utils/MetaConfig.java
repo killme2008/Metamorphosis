@@ -60,17 +60,11 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     private int unflushInterval = 10000;
     private int maxSegmentSize = 1 * 1024 * 1024 * 1024;
     private int maxTransferSize = 1024 * 1024;
-    // slave编号,大于等于0表示作为slave启动
-    private int slaveId = -1;
-    // 作为slave启动时向master订阅消息的group,如果没配置则默认为meta-slave-group
-    private String slaveGroup = "meta-slave-group";
-    // slave数据同步的最大延时,单位毫秒
-    private long slaveMaxDelayInMills = 500;
 
     private List<String> topics = new ArrayList<String>();
 
-    // private Map<String/* topic */, Integer> topicPartitions = new
-    // HashMap<String, Integer>();
+    // Async slave config
+    private SlaveConfig slaveConfig;
 
     private int getProcessThreadCount = 10 * Runtime.getRuntime().availableProcessors();
 
@@ -128,6 +122,21 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     public int getQuartzThreadCount() {
         return this.quartzThreadCount;
+    }
+
+
+    public SlaveConfig getSlaveConfig() {
+        return this.slaveConfig;
+    }
+
+
+    public int getSlaveId() {
+        return this.slaveConfig == null ? -1 : this.slaveConfig.getSlaveId();
+    }
+
+
+    public void setSlaveConfig(SlaveConfig slaveConfig) {
+        this.slaveConfig = slaveConfig;
     }
 
 
@@ -218,11 +227,6 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     public void setDiamondZKDataId(final String diamondZKDataId) {
         this.diamondZKDataId = diamondZKDataId;
-    }
-
-
-    public void setSlaveGroup(final String slaveGroup) {
-        this.slaveGroup = slaveGroup;
     }
 
 
@@ -631,10 +635,10 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
                 + this.diamondZKGroup + ", getProcessThreadCount=" + this.getProcessThreadCount + ", hostName="
                 + this.hostName + ", maxSegmentSize=" + this.maxSegmentSize + ", maxTransferSize="
                 + this.maxTransferSize + ", numPartitions=" + this.numPartitions + ", putProcessThreadCount="
-                + this.putProcessThreadCount + ", serverPort=" + this.serverPort + ", slaveGroup=" + this.slaveGroup
-                + ", slaveId=" + this.slaveId + ", statTopicSet=" + this.statTopicSet + ", topicDeletePolicy="
-                + ", topics=" + this.topics + ", unflushInterval=" + this.unflushInterval + ", unflushThreshold="
-                + this.unflushThreshold + ", zkConfig=" + this.zkConfig + "]";
+                + this.putProcessThreadCount + ", serverPort=" + this.serverPort + ", slaveConfig=" + this.slaveConfig
+                + ", statTopicSet=" + this.statTopicSet + ", topicDeletePolicy=" + ", topics=" + this.topics
+                + ", unflushInterval=" + this.unflushInterval + ", unflushThreshold=" + this.unflushThreshold
+                + ", zkConfig=" + this.zkConfig + "]";
     }
 
 
@@ -678,24 +682,8 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     }
 
 
-    public int getSlaveId() {
-        return this.slaveId;
-    }
-
-
     public boolean isSlave() {
-        return this.slaveId >= 0;
-    }
-
-
-    /** just for test */
-    public void setSlaveId(final int slaveId) {
-        this.slaveId = slaveId;
-    }
-
-
-    public String getSlaveGroup() {
-        return this.slaveGroup;
+        return this.getSlaveId() >= 0;
     }
 
     private final Map<String/* topic */, Set<Integer/* partition */>> closedPartitionMap =
@@ -762,15 +750,5 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     public Map<String, TopicConfig> getTopicConfigMap() {
         return this.topicConfigMap;
-    }
-
-
-    public long getSlaveMaxDelayInMills() {
-        return this.slaveMaxDelayInMills;
-    }
-
-
-    public void setSlaveMaxDelayInMills(final long slaveMaxDelayInMills) {
-        this.slaveMaxDelayInMills = slaveMaxDelayInMills;
     }
 }

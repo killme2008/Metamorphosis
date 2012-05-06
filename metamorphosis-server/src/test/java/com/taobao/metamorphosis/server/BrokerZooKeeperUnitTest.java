@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import com.taobao.metamorphosis.network.RemotingUtils;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.server.utils.SlaveConfig;
 import com.taobao.metamorphosis.utils.ZkUtils;
 
 
@@ -195,7 +196,7 @@ public class BrokerZooKeeperUnitTest {
     private BrokerZooKeeper createSlaveBrokerZooKeeper() {
         MetaConfig slaveMetaConfig = new MetaConfig();
         slaveMetaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
-        slaveMetaConfig.setSlaveId(0);
+        slaveMetaConfig.setSlaveConfig(new SlaveConfig(0));
         this.slaveBrokerZooKeeper = new BrokerZooKeeper(slaveMetaConfig);
         return this.slaveBrokerZooKeeper;
     }

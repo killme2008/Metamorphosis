@@ -51,7 +51,7 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         final int opaque = 0;
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(null);
         this.conn.response(new BooleanCommand(opaque, HttpStatus.NotFound, "The topic `" + this.topic
-                + "` in partition `" + partition + "` is not exists"));
+            + "` in partition `" + partition + "` is not exists"));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
 
@@ -73,7 +73,7 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(
             new MessageStore(this.topic, partition, this.metaConfig, null));
         this.conn
-            .response(new BooleanCommand(opaque, HttpStatus.BadRequest, "Bad request,invalid max size:" + maxSize));
+        .response(new BooleanCommand(opaque, HttpStatus.BadRequest, "Bad request,invalid max size:" + maxSize));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
 
@@ -226,38 +226,41 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         this.mocksControl.verify();
     }
 
-
-    @Test
-    public void testHandleRequestPartitionClosedSlave() throws Exception {
-        final int partition = 1;
-        final int opaque = 0;
-        final int maxSize = 1024;
-        final long offset = 10;
-
-        this.metaConfig.setTopics(Arrays.asList(this.topic));
-        this.metaConfig.closePartitions(this.topic, partition, partition);
-
-        final MessageStore store = this.mocksControl.createMock(MessageStore.class);
-        EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
-        final MessageSet set = this.mocksControl.createMock(MessageSet.class);
-        EasyMock.expect(store.slice(offset, maxSize)).andReturn(set);
-
-        final GetCommand request =
-                new GetCommand(this.topic, this.metaConfig.getSlaveGroup(), partition, offset, maxSize, opaque);
-        // this.conn.response(new BooleanCommand(request.getOpaque(),
-        // HttpStatus.Forbidden, "partition["
-        // + this.metaConfig.getBrokerId() + "-" + request.getPartition() +
-        // "] have been closed"));
-        set.write(request, this.sessionContext);
-        EasyMock.expectLastCall();
-
-        this.mocksControl.replay();
-
-        this.getProcessor.handleRequest(request, this.conn);
-        this.mocksControl.verify();
-        assertEquals(0, this.statsManager.getCmdGetMiss());
-        assertEquals(1, this.statsManager.getCmdGets());
-        assertEquals(0, this.statsManager.getCmdOffsets());
-    }
+    //
+    // @Test
+    // public void testHandleRequestPartitionClosedSlave() throws Exception {
+    // final int partition = 1;
+    // final int opaque = 0;
+    // final int maxSize = 1024;
+    // final long offset = 10;
+    //
+    // this.metaConfig.setTopics(Arrays.asList(this.topic));
+    // this.metaConfig.closePartitions(this.topic, partition, partition);
+    //
+    // final MessageStore store =
+    // this.mocksControl.createMock(MessageStore.class);
+    // EasyMock.expect(this.storeManager.getMessageStore(this.topic,
+    // partition)).andReturn(store);
+    // final MessageSet set = this.mocksControl.createMock(MessageSet.class);
+    // EasyMock.expect(store.slice(offset, maxSize)).andReturn(set);
+    //
+    // final GetCommand request =
+    // new GetCommand(this.topic, this.metaConfig.getSlaveGroup(), partition,
+    // offset, maxSize, opaque);
+    // // this.conn.response(new BooleanCommand(request.getOpaque(),
+    // // HttpStatus.Forbidden, "partition["
+    // // + this.metaConfig.getBrokerId() + "-" + request.getPartition() +
+    // // "] have been closed"));
+    // set.write(request, this.sessionContext);
+    // EasyMock.expectLastCall();
+    //
+    // this.mocksControl.replay();
+    //
+    // this.getProcessor.handleRequest(request, this.conn);
+    // this.mocksControl.verify();
+    // assertEquals(0, this.statsManager.getCmdGetMiss());
+    // assertEquals(1, this.statsManager.getCmdGets());
+    // assertEquals(0, this.statsManager.getCmdOffsets());
+    // }
 
 }

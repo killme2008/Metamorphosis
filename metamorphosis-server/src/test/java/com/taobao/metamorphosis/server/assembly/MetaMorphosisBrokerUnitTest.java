@@ -34,6 +34,7 @@ import com.taobao.gecko.service.config.ClientConfig;
 import com.taobao.metamorphosis.network.MetamorphosisWireFormatType;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.server.utils.SlaveConfig;
 import com.taobao.metamorphosis.server.utils.TopicConfig;
 import com.taobao.metamorphosis.utils.ZkUtils;
 
@@ -108,7 +109,7 @@ public class MetaMorphosisBrokerUnitTest {
 
     @Test
     public void testStartStop_slave() throws Exception {
-        this.metaConfig.setSlaveId(0);
+        this.metaConfig.setSlaveConfig(new SlaveConfig(0));
         this.broker = new MetaMorphosisBroker(this.metaConfig);
         this.broker.start();
         // start twice,no problem

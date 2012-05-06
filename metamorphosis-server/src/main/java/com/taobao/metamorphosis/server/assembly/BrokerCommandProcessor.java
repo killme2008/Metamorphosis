@@ -167,7 +167,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
                     1);
                 if (this.cb != null) {
                     this.cb.putComplete(new BooleanCommand(this.request.getOpaque(), HttpStatus.InternalServerError,
-                        "put message failed"));
+                            "put message failed"));
                 }
             }
 
@@ -350,7 +350,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
     protected String genPutResultString(final int partition, final long messageId, final long offset) {
         final StringBuilder sb =
                 new StringBuilder(ByteUtils.stringSize(offset) + ByteUtils.stringSize(messageId)
-                        + ByteUtils.stringSize(partition) + 2);
+                    + ByteUtils.stringSize(partition) + 2);
         sb.append(messageId).append(" ").append(partition).append(" ").append(offset);
         return sb.toString();
     }
@@ -368,11 +368,10 @@ public class BrokerCommandProcessor implements CommandProcessor {
         final String topic = request.getTopic();
         this.statsManager.statsGet(topic, group, 1);
 
-        // 如果分区被关闭并且不是slave发起的请求,禁止读数据 --wuhua
-        if (this.metaConfig.isClosedPartition(topic, request.getPartition())
-                && !request.getGroup().equals(this.metaConfig.getSlaveGroup())) {
+        // 如果分区被关闭,禁止读数据 --wuhua
+        if (this.metaConfig.isClosedPartition(topic, request.getPartition())) {
             log.warn("can not get message for topic=" + topic + " from partition " + request.getPartition()
-                    + ",it closed,");
+                + ",it closed,");
             return new BooleanCommand(request.getOpaque(), HttpStatus.Forbidden, "Partition["
                     + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed");
         }
@@ -381,7 +380,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
         if (store == null) {
             this.statsManager.statsGetMiss(topic, group, 1);
             return new BooleanCommand(request.getOpaque(), HttpStatus.NotFound, "The topic `" + topic
-                    + "` in partition `" + request.getPartition() + "` is not exists");
+                + "` in partition `" + request.getPartition() + "` is not exists");
         }
         if (request.getMaxSize() <= 0) {
             return new BooleanCommand(request.getOpaque(), HttpStatus.BadRequest, "Bad request,invalid max size:"
@@ -419,7 +418,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
                 final long requestOffset = request.getOffset();
                 if (requestOffset > maxOffset && (this.tellMaxOffset || requestOffset == Long.MAX_VALUE)) {
                     log.info("offset[" + requestOffset + "] is exceeded,tell the client real max offset: " + maxOffset
-                            + ",topic=" + topic + ",group=" + group);
+                        + ",topic=" + topic + ",group=" + group);
                     this.statsManager.statsOffset(topic, group, 1);
                     return new BooleanCommand(request.getOpaque(), HttpStatus.Moved, String.valueOf(maxOffset));
                 }
@@ -455,7 +454,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
         final MessageStore store = this.storeManager.getMessageStore(request.getTopic(), request.getPartition());
         if (store == null) {
             return new BooleanCommand(request.getOpaque(), HttpStatus.NotFound, "The topic `" + request.getTopic()
-                    + "` in partition `" + request.getPartition() + "` is not exists");
+                + "` in partition `" + request.getPartition() + "` is not exists");
         }
         final long offset = store.getNearestOffset(request.getOffset());
         return new BooleanCommand(request.getOpaque(), HttpStatus.Success, String.valueOf(offset));

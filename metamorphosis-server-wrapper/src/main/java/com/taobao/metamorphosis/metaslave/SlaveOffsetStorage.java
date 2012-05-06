@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -88,7 +88,7 @@ public class SlaveOffsetStorage implements OffsetStorage {
             log.info("load offset from local"
                     + String.format(offsetFormat, topic, group, partition.getPartition(), messageStore.getSizeInBytes()));
             return new TopicPartitionRegInfo(topic, partition, messageStore.getMinOffset()
-                    + messageStore.getSizeInBytes());
+                + messageStore.getSizeInBytes());
         }
         else {
             final String masterServerUrl = this.slaveZooKeeper.getMasterServerUrl();
@@ -124,7 +124,8 @@ public class SlaveOffsetStorage implements OffsetStorage {
         try {
             final BooleanCommand resp =
                     (BooleanCommand) this.remotingClient.invokeToGroup(masterServerUrl,
-                        new OffsetCommand(topic, this.broker.getMetaConfig().getSlaveGroup(), partition.getPartition(),
+ new OffsetCommand(topic,
+                        this.broker.getMetaConfig().getSlaveConfig().getSlaveGroup(), partition.getPartition(),
                             0, OpaqueGenerator.getNextOpaque()));
 
             final String resultStr = resp.getErrorMsg();
@@ -139,8 +140,8 @@ public class SlaveOffsetStorage implements OffsetStorage {
             }
             default:
                 throw new RuntimeException("failed to query offset form " + masterServerUrl + ",topic=" + topic
-                        + ",partition=" + partition.getPartition() + ",httpCode=" + resp.getCode() + ",errorMessage="
-                        + resultStr);
+                    + ",partition=" + partition.getPartition() + ",httpCode=" + resp.getCode() + ",errorMessage="
+                    + resultStr);
             }
 
         }
@@ -149,7 +150,7 @@ public class SlaveOffsetStorage implements OffsetStorage {
         }
         catch (final Exception e) {
             throw new NetworkException("failed to query offset form " + masterServerUrl + ",topic=" + topic
-                    + ",partition=" + partition.getPartition(), e);
+                + ",partition=" + partition.getPartition(), e);
         }
     }
 

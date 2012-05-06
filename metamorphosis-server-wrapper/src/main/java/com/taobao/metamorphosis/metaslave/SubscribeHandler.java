@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -123,7 +123,7 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
                     final StringBuilder logStr = new StringBuilder();
                     if (messageStore == null) {
                         logStr.append("Local file for topic=").append(topic).append(" is not exist,partition=")
-                            .append(partition.getPartition()).append("\n");
+                        .append(partition.getPartition()).append("\n");
                         final long offsetInMaster =
                                 this.slaveOffsetStorage.queryOffsetInMaster(this.masterServerUrl, partition, topic);
                         logStr.append("query offset from master,offset=").append(offsetInMaster).append("\n");
@@ -194,8 +194,10 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
 
     private void initMessageConsumer() throws Exception {
         if (this.consumer == null) {
-            final ConsumerConfig consumerConfig = new ConsumerConfig(this.broker.getMetaConfig().getSlaveGroup());
-            consumerConfig.setMaxDelayFetchTimeInMills(this.broker.getMetaConfig().getSlaveMaxDelayInMills());
+            final ConsumerConfig consumerConfig =
+                    new ConsumerConfig(this.broker.getMetaConfig().getSlaveConfig().getSlaveGroup());
+            consumerConfig.setMaxDelayFetchTimeInMills(this.broker.getMetaConfig().getSlaveConfig()
+                .getSlaveMaxDelayInMills());
             consumerConfig.setMaxFetchRetries(Integer.MAX_VALUE);// 消息处理失败卡在那一条上,不进入recover
             this.consumer = this.sessionFactory.createConsumer(consumerConfig, this.slaveOffsetStorage);
         }
