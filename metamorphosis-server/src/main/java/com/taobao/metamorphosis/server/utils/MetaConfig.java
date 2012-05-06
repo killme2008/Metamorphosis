@@ -34,6 +34,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ini4j.Ini;
+import org.ini4j.InvalidFileFormatException;
 import org.ini4j.Profile.Section;
 
 import com.googlecode.aviator.AviatorEvaluator;
@@ -119,6 +120,9 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
      */
     private int quartzThreadCount = 5;
 
+    // Added by dennis zhuang
+    private long configFileChecksum;
+
 
     public int getQuartzThreadCount() {
         return this.quartzThreadCount;
@@ -134,6 +138,10 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         return this.slaveConfig == null ? -1 : this.slaveConfig.getSlaveId();
     }
 
+
+    public String getConfigFilePath() {
+        return this.path;
+    }
 
     public void setSlaveConfig(SlaveConfig slaveConfig) {
         this.slaveConfig = slaveConfig;
@@ -247,14 +255,21 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
             if (!file.exists()) {
                 throw new MetamorphosisServerStartupException("File " + path + " is not exists");
             }
-            final Ini conf = new Ini(file);
-            this.lastModified = file.lastModified();
+            final Ini conf = this.createIni(file);
             this.populateAttributes(conf);
         }
         catch (final IOException e) {
             throw new MetamorphosisServerStartupException("Parse configuration failed,path=" + path, e);
         }
 
+    }
+
+
+    private Ini createIni(final File file) throws IOException, InvalidFileFormatException {
+        final Ini conf = new Ini(file);
+        this.lastModified = file.lastModified();
+        this.configFileChecksum = org.apache.commons.io.FileUtils.checksumCRC32(file);
+        return conf;
     }
 
 
@@ -521,18 +536,16 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         }
     }
 
-
     /**
      * Reload topics configuration
      */
     @Override
     public void reload() {
-        final File file = new File(MetaConfig.this.path);
+        final File file = new File(this.path);
         if (file.lastModified() != this.lastModified) {
-            this.lastModified = file.lastModified();
             try {
                 log.info("Reloading topics......");
-                final Ini conf = new Ini(file);
+                final Ini conf = this.createIni(file);
                 MetaConfig.this.populateTopicsConfig(conf);
                 log.info("Reload topics successfully");
             }

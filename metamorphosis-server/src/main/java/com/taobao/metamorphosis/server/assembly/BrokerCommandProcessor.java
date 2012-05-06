@@ -17,15 +17,24 @@
  */
 package com.taobao.metamorphosis.server.assembly;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.transaction.xa.XAException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.taobao.gecko.core.buffer.IoBuffer;
 import com.taobao.gecko.core.command.ResponseCommand;
+import com.taobao.gecko.service.Connection;
 import com.taobao.gecko.service.RemotingServer;
+import com.taobao.gecko.service.SingleRequestCallBackListener;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.network.BooleanCommand;
@@ -33,6 +42,7 @@ import com.taobao.metamorphosis.network.ByteUtils;
 import com.taobao.metamorphosis.network.DataCommand;
 import com.taobao.metamorphosis.network.GetCommand;
 import com.taobao.metamorphosis.network.HttpStatus;
+import com.taobao.metamorphosis.network.MetaEncodeCommand;
 import com.taobao.metamorphosis.network.OffsetCommand;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.network.QuitCommand;
@@ -486,9 +496,71 @@ public class BrokerCommandProcessor implements CommandProcessor {
     @Override
     public ResponseCommand processStatCommand(final StatsCommand request, final SessionContext ctx) {
         final String item = request.getItem();
-        final String statsInfo = this.statsManager.getStatsInfo(item);
-        return new BooleanCommand(request.getOpaque(), HttpStatus.Success, statsInfo);
+        if (item != null && !item.equals("config")) {
+            final String statsInfo = this.statsManager.getStatsInfo(item);
+            return new BooleanCommand(request.getOpaque(), HttpStatus.Success, statsInfo);
+        }
+        else {
+            return this.processStatsConfig(request, ctx);
+        }
+    }
 
+
+    private ResponseCommand processStatsConfig(final StatsCommand request, final SessionContext ctx) {
+        try {
+            final FileChannel fc = new FileInputStream(this.metaConfig.getConfigFilePath()).getChannel();
+            // result code length opaque\r\n
+            IoBuffer buf =
+                    IoBuffer.allocate(11 + 3 + ByteUtils.stringSize(fc.size())
+                        + ByteUtils.stringSize(request.getOpaque()));
+            ByteUtils.setArguments(buf, MetaEncodeCommand.RESULT_CMD, HttpStatus.Success, fc.size(),
+                request.getOpaque());
+            buf.flip();
+            ctx.getConnection().transferFrom(buf, null, fc, 0, fc.size(), request.getOpaque(),
+                new SingleRequestCallBackListener() {
+
+                @Override
+                public void onResponse(ResponseCommand responseCommand, Connection conn) {
+                    this.closeChannel();
+                }
+
+
+                @Override
+                public void onException(Exception e) {
+                    this.closeChannel();
+                }
+
+
+                private void closeChannel() {
+                    try {
+                        fc.close();
+                    }
+                    catch (IOException e) {
+                        log.error("IOException while stats config", e);
+                    }
+                }
+
+
+                @Override
+                public ThreadPoolExecutor getExecutor() {
+                    return null;
+                }
+            }, 5000, TimeUnit.MILLISECONDS);
+        }
+        catch (FileNotFoundException e) {
+            log.error("Config file not found:" + this.metaConfig.getConfigFilePath(), e);
+            return new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, "Config file not found:"
+                    + this.metaConfig.getConfigFilePath());
+        }
+        catch (IOException e) {
+            log.error("IOException while stats config", e);
+            return new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, "Read config file error:"
+                    + e.getMessage());
+        }
+        catch (NotifyRemotingException e) {
+            log.error("NotifyRemotingException while stats config", e);
+        }
+        return null;
     }
 
 
