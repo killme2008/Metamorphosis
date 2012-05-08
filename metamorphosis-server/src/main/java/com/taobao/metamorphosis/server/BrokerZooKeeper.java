@@ -56,6 +56,8 @@ public class BrokerZooKeeper {
 
     private String brokerIdPath;
 
+    private final String brokerConfigChecksumPath;
+
     private final Set<String> topics = new ConcurrentHashSet<String>();
 
     static final Log log = LogFactory.getLog(BrokerZooKeeper.class);
@@ -86,6 +88,7 @@ public class BrokerZooKeeper {
         }
         this.start(this.zkConfig);
         this.resetBrokerIdPath();
+        this.brokerConfigChecksumPath = this.metaZookeeper.masterConfigChecksum(this.config.getBrokerId());
     }
 
 
@@ -181,22 +184,23 @@ public class BrokerZooKeeper {
             log.info("Registering broker " + this.brokerIdPath);
             final String hostName =
                     this.config.getHostName() == null ? RemotingUtils.getLocalAddress() : this.config.getHostName();
-                    final Broker broker =
-                            new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
-                                this.config.getSlaveId());
+            final Broker broker =
+                    new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
+                        this.config.getSlaveId());
 
-                    ZkUtils.createEphemeralPath(this.zkClient, this.brokerIdPath, broker.getZKString());
+            ZkUtils.createEphemeralPath(this.zkClient, this.brokerIdPath, broker.getZKString());
+            ZkUtils.createEphemeralPath(this.zkClient, this.brokerConfigChecksumPath, String.valueOf(this.config.getConfigFileChecksum()));
 
-                    // 兼容老客户端，暂时加上
-                    if (!this.config.isSlave()) {
-                        ZkUtils.updateEphemeralPath(this.zkClient,
-                            this.metaZookeeper.brokerIdsPath + "/" + this.config.getBrokerId(), broker.getZKString());
-                        log.info("register for old client version " + this.metaZookeeper.brokerIdsPath + "/"
-                                + this.config.getBrokerId() + "  succeeded with " + broker);
+            // 兼容老客户端，暂时加上
+            if (!this.config.isSlave()) {
+                ZkUtils.updateEphemeralPath(this.zkClient,
+                    this.metaZookeeper.brokerIdsPath + "/" + this.config.getBrokerId(), broker.getZKString());
+                log.info("register for old client version " + this.metaZookeeper.brokerIdsPath + "/"
+                        + this.config.getBrokerId() + "  succeeded with " + broker);
 
-                    }
-                    log.info("Registering broker " + this.brokerIdPath + " succeeded with " + broker);
-                    this.registerBrokerInZkFail = false;
+            }
+            log.info("Registering broker " + this.brokerIdPath + " succeeded with " + broker);
+            this.registerBrokerInZkFail = false;
         }
         catch (final Exception e) {
             this.registerBrokerInZkFail = true;
@@ -212,6 +216,7 @@ public class BrokerZooKeeper {
             return;
         }
         ZkUtils.deletePath(this.zkClient, this.brokerIdPath);
+        ZkUtils.deletePath(this.zkClient, this.brokerConfigChecksumPath);
         // 兼容老客户端，暂时加上.
         if (!this.config.isSlave()) {
             try {
@@ -239,7 +244,7 @@ public class BrokerZooKeeper {
                 ZkUtils.deletePath(this.zkClient,
                     this.metaZookeeper.brokerTopicsPath + "/" + topic + "/" + this.config.getBrokerId());
                 log.info("delete topic of old client version " + this.metaZookeeper.brokerTopicsPath + "/" + topic
-                    + "/" + this.config.getBrokerId());
+                        + "/" + this.config.getBrokerId());
             }
         }
     }

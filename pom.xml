@@ -204,6 +204,17 @@
 		<groupId>com.github.sgroschupf</groupId>
 		<artifactId>zkclient</artifactId>
 		<version>0.1</version>
+		<exclusions>
+		  <exclusion>
+			  <groupId>org.apache.zookeeper</groupId>
+			  <artifactId>zookeeper</artifactId>
+		  </exclusion>
+		</exclusions>
+	  </dependency>
+	  <dependency>
+		<groupId>org.apache.zookeeper</groupId>
+		<artifactId>zookeeper</artifactId>
+		<version>3.4.3</version>
 	  </dependency>
 	  <dependency>
 		<groupId>com.taobao.configserver</groupId>
@@ -216,14 +227,14 @@
 		<version>1.2.2</version>
 	  </dependency>
 	  <dependency> 
-	  <groupId>org.codehaus.jackson</groupId> 
-	  <artifactId>jackson-core-lgpl</artifactId> 
-	  <version>1.4.0</version> 
+		<groupId>org.codehaus.jackson</groupId> 
+		<artifactId>jackson-core-lgpl</artifactId> 
+		<version>1.4.0</version> 
 	  </dependency>
 	  <dependency> 
-	  <groupId>org.codehaus.jackson</groupId> 
-	  <artifactId>jackson-mapper-lgpl</artifactId> 
-	  <version>1.4.0</version> 
+		<groupId>org.codehaus.jackson</groupId> 
+		<artifactId>jackson-mapper-lgpl</artifactId> 
+		<version>1.4.0</version> 
 	  </dependency>
 	  <dependency>
 		<groupId>mysql</groupId>

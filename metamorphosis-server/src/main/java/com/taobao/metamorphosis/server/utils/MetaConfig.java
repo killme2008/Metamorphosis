@@ -143,6 +143,7 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         return this.path;
     }
 
+
     public void setSlaveConfig(SlaveConfig slaveConfig) {
         this.slaveConfig = slaveConfig;
     }
@@ -270,6 +271,16 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         this.lastModified = file.lastModified();
         this.configFileChecksum = org.apache.commons.io.FileUtils.checksumCRC32(file);
         return conf;
+    }
+
+
+    public long getConfigFileChecksum() {
+        return this.configFileChecksum;
+    }
+
+
+    public void setConfigFileChecksum(long configFileChecksum) {
+        this.configFileChecksum = configFileChecksum;
     }
 
 
@@ -535,6 +546,7 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
             this.maxTxTimeoutInSeconds = this.getInt(sysConf, "maxTxTimeoutInSeconds");
         }
     }
+
 
     /**
      * Reload topics configuration

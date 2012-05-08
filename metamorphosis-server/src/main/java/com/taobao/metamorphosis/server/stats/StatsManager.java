@@ -281,6 +281,7 @@ public class StatsManager implements Service {
         this.append(sb, StatConstants.PUT_FAILED, this.putFailed.get());
         this.append(sb, "total_messages", this.getTotalMessages());
         this.append(sb, "topics", this.getTopicCount());
+        this.append(sb, "config_checksum", this.metaConfig.getConfigFileChecksum());
     }
 
 

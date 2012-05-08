@@ -291,7 +291,7 @@ public class MetaZookeeper {
      * @return
      */
     public Map<String, List<Partition>> getPartitionsForTopicsFromMaster(final Collection<String> topics,
-            final int brokerId) {
+        final int brokerId) {
         final Map<String, List<Partition>> ret = new HashMap<String, List<Partition>>();
         if (topics != null) {
             for (final String topic : topics) {
@@ -326,7 +326,7 @@ public class MetaZookeeper {
      * @return
      */
     public Map<String, List<String>> getPartitionStringsForTopicsFromMaster(final Collection<String> topics,
-            final int brokerId) {
+        final int brokerId) {
         final Map<String, List<String>> ret = new HashMap<String, List<String>>();
         final Map<String, List<Partition>> tmp = this.getPartitionsForTopicsFromMaster(topics, brokerId);
         if (tmp != null && !tmp.isEmpty()) {
@@ -401,6 +401,17 @@ public class MetaZookeeper {
      * */
     public String brokerIdsPathOf(final int brokerId, final int slaveId) {
         return this.brokerIdsPath + "/" + brokerId + (slaveId >= 0 ? "/slave" + slaveId : "/master");
+    }
+
+
+    /**
+     * Master config file checksum path
+     * 
+     * @param brokerId
+     * @return
+     */
+    public String masterConfigChecksum(final int brokerId) {
+        return this.brokerIdsPath + "/" + brokerId + "/master_config_checksum";
     }
 
 
