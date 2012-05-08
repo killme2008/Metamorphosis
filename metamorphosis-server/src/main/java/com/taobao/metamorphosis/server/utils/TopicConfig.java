@@ -110,6 +110,78 @@ public class TopicConfig {
     }
 
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (this.dataPath == null ? 0 : this.dataPath.hashCode());
+        result = prime * result + (this.deletePolicy == null ? 0 : this.deletePolicy.hashCode());
+        result = prime * result + (this.deleteWhen == null ? 0 : this.deleteWhen.hashCode());
+        result = prime * result + this.numPartitions;
+        result = prime * result + (this.topic == null ? 0 : this.topic.hashCode());
+        result = prime * result + this.unflushInterval;
+        result = prime * result + this.unflushThreshold;
+        return result;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+        TopicConfig other = (TopicConfig) obj;
+        if (this.dataPath == null) {
+            if (other.dataPath != null) {
+                return false;
+            }
+        }
+        else if (!this.dataPath.equals(other.dataPath)) {
+            return false;
+        }
+        if (this.deletePolicy == null) {
+            if (other.deletePolicy != null) {
+                return false;
+            }
+        }
+        else if (!this.deletePolicy.equals(other.deletePolicy)) {
+            return false;
+        }
+        if (this.deleteWhen == null) {
+            if (other.deleteWhen != null) {
+                return false;
+            }
+        }
+        else if (!this.deleteWhen.equals(other.deleteWhen)) {
+            return false;
+        }
+        if (this.numPartitions != other.numPartitions) {
+            return false;
+        }
+        if (this.topic == null) {
+            if (other.topic != null) {
+                return false;
+            }
+        }
+        else if (!this.topic.equals(other.topic)) {
+            return false;
+        }
+        if (this.unflushInterval != other.unflushInterval) {
+            return false;
+        }
+        if (this.unflushThreshold != other.unflushThreshold) {
+            return false;
+        }
+        return true;
+    }
+
+
     public void setUnflushInterval(final int unflushInterval) {
         this.unflushInterval = unflushInterval;
     }

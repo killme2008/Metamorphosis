@@ -199,6 +199,7 @@ public class MetaMorphosisBroker {
         }
         try {
             this.brokerZooKeeper.registerBrokerInZk();
+            this.brokerZooKeeper.registerMasterConfigFileChecksumInZk();
             this.addTopicsChangeListener();
             this.registerTopicsInZk();
         }
@@ -219,7 +220,7 @@ public class MetaMorphosisBroker {
         this.remotingServer.registerProcessor(OffsetCommand.class, new OffsetProcessor(this.brokerProcessor,
             this.executorsManager.getGetExecutor()));
         this.remotingServer
-            .registerProcessor(HeartBeatRequestCommand.class, new VersionProcessor(this.brokerProcessor));
+        .registerProcessor(HeartBeatRequestCommand.class, new VersionProcessor(this.brokerProcessor));
         this.remotingServer.registerProcessor(QuitCommand.class, new QuitProcessor(this.brokerProcessor));
         this.remotingServer.registerProcessor(StatsCommand.class, new StatsProcessor(this.brokerProcessor));
         this.remotingServer.registerProcessor(TransactionCommand.class, new TransactionProcessor(this.brokerProcessor,

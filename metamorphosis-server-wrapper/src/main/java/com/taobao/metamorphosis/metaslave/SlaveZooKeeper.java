@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -46,21 +46,24 @@ class SlaveZooKeeper {
     private final MetaMorphosisBroker broker;
     private final SubscribeHandler subscribeHandler;
     private final MasterBrokerIdListener masterBrokerIdListener;
+    private final String masterBrokerIdsPath;
+    private final String masterConfigFileChecksumPath;
 
 
     public SlaveZooKeeper(final MetaMorphosisBroker broker, final SubscribeHandler subscribeHandler) {
         this.broker = broker;
         this.subscribeHandler = subscribeHandler;
+        int brokerId = this.broker.getMetaConfig().getBrokerId();
+        this.masterBrokerIdsPath = this.getMetaZookeeper().brokerIdsPathOf(brokerId, -1);
+        this.masterConfigFileChecksumPath = this.getMetaZookeeper().masterConfigChecksum(brokerId);
         this.masterBrokerIdListener = new MasterBrokerIdListener();
     }
 
 
     public void start() {
-
         // 订阅zk信息变化
-        this.getZkClient().subscribeDataChanges(
-            this.getMetaZookeeper().brokerIdsPathOf(this.broker.getMetaConfig().getBrokerId(), -1),
-            this.masterBrokerIdListener);
+        this.getZkClient().subscribeDataChanges(this.masterBrokerIdsPath, this.masterBrokerIdListener);
+        this.getZkClient().subscribeDataChanges(this.masterConfigFileChecksumPath, this.masterBrokerIdListener);
     }
 
 
@@ -94,12 +97,10 @@ class SlaveZooKeeper {
     private final class MasterBrokerIdListener implements IZkDataListener {
 
         @Override
-        public void handleDataChange(final String dataPath, final Object data) throws Exception {
-            // 用于slave先启动，master后启动时
-            log.info("data changed in zk,path=" + dataPath);
+        public synchronized void handleDataChange(final String dataPath, final Object data) throws Exception {
             int zkSyncTimeMs;
             try {
-                zkSyncTimeMs = broker.getMetaConfig().getZkConfig().zkSyncTimeMs;
+                zkSyncTimeMs = SlaveZooKeeper.this.broker.getMetaConfig().getZkConfig().zkSyncTimeMs;
             }
             catch (final Exception e) {
                 zkSyncTimeMs = 5000;
@@ -107,17 +108,31 @@ class SlaveZooKeeper {
             }
             // 等待zk数据同步完毕再启动订阅
             Thread.sleep(zkSyncTimeMs);
-            SlaveZooKeeper.this.subscribeHandler.start();
+            if (dataPath.equals(SlaveZooKeeper.this.masterBrokerIdsPath)) {
+                // 用于slave先启动，master后启动时
+                log.info("data changed in zk,path=" + dataPath);
+                SlaveZooKeeper.this.subscribeHandler.start();
+            }
+            else if (dataPath.equals(SlaveZooKeeper.this.masterConfigFileChecksumPath)) {
+                log.info("Restart slave...");
+                SlaveZooKeeper.this.subscribeHandler.restart();
+                log.info("Restart slave successfully.");
+            }
+            else {
+                log.warn("Unknown data path:" + dataPath);
+            }
         }
 
 
         @Override
         public void handleDataDeleted(final String dataPath) throws Exception {
             log.info("data deleted in zk,path=" + dataPath);
-            // 按照RemotingClientWrapper的机制,close的次数要等于connect的次数才能真正关闭掉连接,
-            // 要由于在订阅master消息前连接了一次,所以要在这里关闭一次
-            // 其他的连接和关闭有负载均衡负责
-            SlaveZooKeeper.this.subscribeHandler.closeConnectIfNeed();
+            if (dataPath.equals(SlaveZooKeeper.this.masterBrokerIdsPath)) {
+                // 按照RemotingClientWrapper的机制,close的次数要等于connect的次数才能真正关闭掉连接,
+                // 要由于在订阅master消息前连接了一次,所以要在这里关闭一次
+                // 其他的连接和关闭有负载均衡负责
+                SlaveZooKeeper.this.subscribeHandler.closeConnectIfNeed();
+            }
         }
     }
 

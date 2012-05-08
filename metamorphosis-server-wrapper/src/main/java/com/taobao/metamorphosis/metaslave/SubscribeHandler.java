@@ -17,6 +17,11 @@
  */
 package com.taobao.metamorphosis.metaslave;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +31,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.taobao.gecko.core.command.ResponseStatus;
+import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.client.consumer.ConsumerConfig;
@@ -33,6 +40,8 @@ import com.taobao.metamorphosis.client.consumer.MessageConsumer;
 import com.taobao.metamorphosis.client.consumer.MessageListener;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.exception.MetaClientException;
+import com.taobao.metamorphosis.network.BooleanCommand;
+import com.taobao.metamorphosis.network.StatsCommand;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
 import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
@@ -47,6 +56,8 @@ import com.taobao.metamorphosis.server.utils.MetaMBeanServer;
  */
 
 public class SubscribeHandler implements SubscribeHandlerMBean {
+    private static final String SLAVE_CONFIG_ENCODING = System.getProperty("meta.slave.config.encoding", "GBK");
+
     private final static Log log = LogFactory.getLog(SubscribeHandler.class);
 
     private final MetaMorphosisBroker broker;
@@ -79,14 +90,65 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
     }
 
 
+    synchronized public void tryReloadConfig(long masterChecksum) throws IOException {
+        // Master Config file changed
+        if (this.broker.getMetaConfig().getConfigFileChecksum() != masterChecksum) {
+            String masterUrl = this.slaveZooKeeper.getMasterServerUrl();
+            for (int i = 0; i < 3; i++) {
+                try {
+                    BooleanCommand resp =
+                            (BooleanCommand) this.sessionFactory.getRemotingClient().invokeToGroup(masterUrl,
+                                new StatsCommand(OpaqueGenerator.getNextOpaque(), "config"));
+                    if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
+                        String str = resp.getErrorMsg();
+                        str = new String(str.getBytes("utf-8"));
+                        MetaConfig newConfig = new MetaConfig();
+                        newConfig.loadFromString(str);
+                        // If topics config changed
+                        if (!newConfig.getTopicConfigMap().equals(this.broker.getMetaConfig().getTopicConfigMap())) {
+                            File tmpFile = File.createTempFile("meta_config", "slave_sync");
+                            BufferedWriter writer =
+                                    new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tmpFile),
+                                        SLAVE_CONFIG_ENCODING));
+                            writer.write(str);
+                            writer.flush();
+                            writer.close();
+                            if (!tmpFile.renameTo(new File(this.broker.getMetaConfig().getConfigFilePath()))) {
+                                log.error("Write new config file failed");
+                            }
+                            else {
+                                log.info("Write new config file from master to slave local");
+                                log.info("Trying to reload the new config file from master...");
+                                this.broker.getMetaConfig().reload();
+                            }
+                        }
+                        break;
+                    }
+                    else {
+                        log.error("Get config file failed,retry " + (i + 1) + " times,error code:" + resp.getCode());
+                    }
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                catch (Exception e) {
+                    log.error("Stats new config file from master failed", e);
+                }
+            }
+
+        }
+    }
+
+
     // 发生在slave broker启动之后
     synchronized public void start() {
         if (this.isStarted.get()) {
             log.info("Subscriber has been started");
             return;
         }
-
         try {
+            log.info("Try to check if master config file changed...");
+            this.tryReloadConfig(-1L);
             final Map<String, List<Partition>> partitionsForTopics =
                     this.slaveZooKeeper.getPartitionsForTopicsFromMaster();
             if (partitionsForTopics == null || partitionsForTopics.isEmpty()) {

@@ -68,7 +68,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
     private static final Log log = LogFactory.getLog(SimpleMessageProducer.class);
     protected static final long DEFAULT_OP_TIMEOUT = 3000L;
     private static final int TIMEOUT_THRESHOLD = Integer.parseInt(System.getProperty("meta.send.timeout.threshold",
-        "200"));
+            "200"));
     private final MetaMessageSessionFactory messageSessionFactory;
     protected final RemotingClientWrapper remotingClient;
     protected final PartitionSelector partitionSelector;
@@ -94,6 +94,11 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
         this.localTxIdGenerator = new LongSequenceGenerator();
 
         // this.ordered = ordered;
+    }
+
+
+    public MetaMessageSessionFactory getParent() {
+        return this.messageSessionFactory;
     }
 
 
@@ -391,7 +396,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
                     if (partition == null) {
                         // 没有可用分区，抛出异常
                         throw new MetaClientException("There is no partitions in `" + serverUrl
-                                + "` to send message with topic `" + topic + "` in a transaction");
+                            + "` to send message with topic `" + topic + "` in a transaction");
                     }
                 }
             }
@@ -400,14 +405,14 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
             }
             if (partition == null) {
                 throw new MetaClientException("There is no aviable partition for topic " + topic
-                        + ",maybe you don't publish it at first?");
+                    + ",maybe you don't publish it at first?");
             }
             if (serverUrl == null) {
                 serverUrl = this.producerZooKeeper.selectBroker(topic, partition);
             }
             if (serverUrl == null) {
                 throw new MetaClientException("There is no aviable server right now for topic " + topic
-                        + " and partition " + partition + ",maybe you don't publish it at first?");
+                    + " and partition " + partition + ",maybe you don't publish it at first?");
             }
 
             if (this.isInTransaction() && this.lastSentInfo.get() == null) {
@@ -465,7 +470,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
 
     protected BooleanCommand invokeToGroup(final String serverUrl, final Partition partition,
             final PutCommand putCommand, final Message message, final long timeout, final TimeUnit unit)
-            throws InterruptedException, TimeoutException, NotifyRemotingException {
+                    throws InterruptedException, TimeoutException, NotifyRemotingException {
 
         return (BooleanCommand) this.remotingClient.invokeToGroup(serverUrl, putCommand, timeout, unit);
     }
@@ -529,12 +534,12 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
             final Partition partition = this.selectPartition(message);
             if (partition == null) {
                 throw new MetaClientException("There is no aviable partition for topic " + topic
-                        + ",maybe you don't publish it at first?");
+                    + ",maybe you don't publish it at first?");
             }
             final String serverUrl = this.producerZooKeeper.selectBroker(topic, partition);
             if (serverUrl == null) {
                 throw new MetaClientException("There is no aviable server right now for topic " + topic
-                        + " and partition " + partition + ",maybe you don't publish it at first?");
+                    + " and partition " + partition + ",maybe you don't publish it at first?");
             }
 
             final int flag = MessageFlagUtils.getFlag(message);

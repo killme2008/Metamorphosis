@@ -71,6 +71,7 @@ public class MetamorphosisSlaveBroker extends AbstractBrokerPlugin {
         if (StringUtils.isNotBlank(props.getProperty("autoSyncMasterConfig"))) {
             slaveConfig.setAutoSyncMasterConfig(Boolean.valueOf(props.getProperty("autoSyncMasterConfig")));
         }
+        broker.getMetaConfig().setSlaveConfig(slaveConfig);
 
         // 重新设置BrokerIdPath，以便注册到slave的路径
         broker.getBrokerZooKeeper().resetBrokerIdPath();

@@ -77,7 +77,7 @@ public class SubscribeHandlerTest {
         this.subscribeHandler.start();
         Assert.assertFalse(this.subscribeHandler.isStarted());
         ZkUtils.createEphemeralPath(this.getZkClient(), this.metaZookeeper.brokerIdsPathOf(this.brokerId, -1),
-            "meta://1.1.1.1:222");
+                "meta://1.1.1.1:222");
         ZkUtils.createEphemeralPath(this.getZkClient(),
             this.metaZookeeper.brokerTopicsPathOf("topictest", this.brokerId, -1), "2");
 
@@ -91,7 +91,7 @@ public class SubscribeHandlerTest {
         ZkUtils.deletePath(this.getZkClient(), this.metaZookeeper.brokerTopicsPathOf("topictest", this.brokerId, -1));
 
         ZkUtils.createEphemeralPath(this.getZkClient(), this.metaZookeeper.brokerIdsPathOf(this.brokerId, -1),
-            "meta://1.1.1.1:222");
+                "meta://1.1.1.1:222");
         ZkUtils.createEphemeralPath(this.getZkClient(),
             this.metaZookeeper.brokerTopicsPathOf("topictest", this.brokerId, -1), "2");
         Assert.assertTrue(this.subscribeHandler.getSlaveZooKeeper().getPartitionsForTopicsFromMaster().size() > 0);

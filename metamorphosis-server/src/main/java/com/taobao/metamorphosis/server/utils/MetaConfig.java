@@ -22,6 +22,7 @@ import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -262,7 +263,18 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         catch (final IOException e) {
             throw new MetamorphosisServerStartupException("Parse configuration failed,path=" + path, e);
         }
+    }
 
+
+    public void loadFromString(final String str) {
+        try {
+            StringReader reader = new StringReader(str);
+            final Ini conf = new Ini(reader);
+            this.populateAttributes(conf);
+        }
+        catch (final IOException e) {
+            throw new MetamorphosisServerStartupException("Parse configuration failed,path=" + this.path, e);
+        }
     }
 
 
@@ -270,6 +282,7 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         final Ini conf = new Ini(file);
         this.lastModified = file.lastModified();
         this.configFileChecksum = org.apache.commons.io.FileUtils.checksumCRC32(file);
+        this.propertyChangeSupport.firePropertyChange("configFileChecksum", null, null);
         return conf;
     }
 

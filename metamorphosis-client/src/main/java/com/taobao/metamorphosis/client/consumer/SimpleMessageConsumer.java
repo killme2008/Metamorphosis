@@ -113,7 +113,12 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
                 SimpleMessageConsumer.this.consumerZooKeeper.commitOffsets(SimpleMessageConsumer.this.fetchManager);
             }
         }, consumerConfig.getCommitOffsetPeriodInMills(), consumerConfig.getCommitOffsetPeriodInMills(),
-            TimeUnit.MILLISECONDS);
+        TimeUnit.MILLISECONDS);
+    }
+
+
+    public MetaMessageSessionFactory getParent() {
+        return this.messageSessionFactory;
     }
 
 
