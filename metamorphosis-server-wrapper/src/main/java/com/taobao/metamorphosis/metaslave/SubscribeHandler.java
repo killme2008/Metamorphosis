@@ -93,6 +93,9 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
 
 
     synchronized public void tryReloadConfig(long masterChecksum) throws IOException {
+        if (!this.broker.getMetaConfig().getSlaveConfig().isAutoSyncMasterConfig()) {
+            return;
+        }
         // Master Config file changed
         if (this.broker.getMetaConfig().getConfigFileChecksum() != masterChecksum) {
             String masterUrl = this.slaveZooKeeper.getMasterServerUrl();

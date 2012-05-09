@@ -253,7 +253,9 @@ public class BrokerZooKeeper implements PropertyChangeListener {
             return;
         }
         ZkUtils.deletePath(this.zkClient, this.brokerIdPath);
-        ZkUtils.deletePath(this.zkClient, this.masterConfigChecksumPath);
+        if (!this.config.isSlave()) {
+            ZkUtils.deletePath(this.zkClient, this.masterConfigChecksumPath);
+        }
         // 兼容老客户端，暂时加上.
         if (!this.config.isSlave()) {
             try {
