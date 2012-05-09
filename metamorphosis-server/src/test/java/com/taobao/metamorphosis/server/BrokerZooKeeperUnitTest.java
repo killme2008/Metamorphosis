@@ -68,6 +68,39 @@ public class BrokerZooKeeperUnitTest {
 
 
     @Test
+    public void testRegisterMasterConfigFileChecksumInZk() throws Exception {
+        String path = "/meta/brokers/ids/0/master_config_checksum";
+        assertFalse(ZkUtils.pathExists(this.client, path));
+        this.brokerZooKeeper.registerMasterConfigFileChecksumInZk();
+        assertTrue(ZkUtils.pathExists(this.client, path));
+        assertEquals(String.valueOf(this.brokerZooKeeper.getConfig().getConfigFileChecksum()),
+            ZkUtils.readData(this.client, path));
+        // register twice
+        try {
+            this.brokerZooKeeper.registerMasterConfigFileChecksumInZk();
+            fail();
+        }
+        catch (ZkNodeExistsException e) {
+
+        }
+    }
+
+
+    @Test
+    public void testConfigFileChecksumChanged() throws Exception {
+        String path = "/meta/brokers/ids/0/master_config_checksum";
+        this.brokerZooKeeper.registerMasterConfigFileChecksumInZk();
+        long old = this.brokerZooKeeper.getConfig().getConfigFileChecksum();
+        assertEquals(String.valueOf(old), ZkUtils.readData(this.client, path));
+        // set a new value
+        int newValue = 9999;
+        this.brokerZooKeeper.getConfig().setConfigFileChecksum(newValue);
+        Thread.sleep(1000);
+        assertEquals(String.valueOf(newValue), ZkUtils.readData(this.client, path));
+        assertFalse(newValue == old);
+    }
+
+    @Test
     public void testRegisterBrokerInZk_slave() throws Exception {
         String path = "/meta/brokers/ids/0/slave0";
         this.createSlaveBrokerZooKeeper();

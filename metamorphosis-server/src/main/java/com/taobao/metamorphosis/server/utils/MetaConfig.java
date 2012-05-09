@@ -294,6 +294,7 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     public void setConfigFileChecksum(long configFileChecksum) {
         this.configFileChecksum = configFileChecksum;
+        this.propertyChangeSupport.firePropertyChange("configFileChecksum", null, null);
     }
 
 

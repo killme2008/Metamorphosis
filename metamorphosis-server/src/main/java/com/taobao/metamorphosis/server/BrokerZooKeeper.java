@@ -90,6 +90,11 @@ public class BrokerZooKeeper implements PropertyChangeListener {
     }
 
 
+    MetaConfig getConfig() {
+        return config;
+    }
+
+
     public MetaZookeeper getMetaZookeeper() {
         return this.metaZookeeper;
     }
@@ -226,6 +231,9 @@ public class BrokerZooKeeper implements PropertyChangeListener {
 
 
     public void registerMasterConfigFileChecksumInZk() throws Exception {
+        if (!this.zkConfig.zkEnable) {
+            return;
+        }
         try {
             if (!this.config.isSlave()) {
                 ZkUtils.createEphemeralPath(this.zkClient, this.masterConfigChecksumPath,
@@ -238,7 +246,6 @@ public class BrokerZooKeeper implements PropertyChangeListener {
             throw e;
         }
     }
-
 
     private void unregisterBrokerInZk() throws Exception {
         if (this.registerBrokerInZkFail) {

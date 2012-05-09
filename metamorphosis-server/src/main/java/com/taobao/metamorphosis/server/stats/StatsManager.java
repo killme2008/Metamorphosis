@@ -251,7 +251,7 @@ public class StatsManager implements Service {
         List<String> configTopics = this.metaConfig.getTopics();
         for (String topic : configTopics) {
             if (!stores.containsKey(topic)) {
-                this.append(sb, topic, "unused");
+                this.append(sb, topic, "*Empty*");
             }
         }
     }

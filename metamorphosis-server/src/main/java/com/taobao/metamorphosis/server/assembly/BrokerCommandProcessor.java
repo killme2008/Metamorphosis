@@ -496,12 +496,12 @@ public class BrokerCommandProcessor implements CommandProcessor {
     @Override
     public ResponseCommand processStatCommand(final StatsCommand request, final SessionContext ctx) {
         final String item = request.getItem();
-        if (item != null && !item.equals("config")) {
-            final String statsInfo = this.statsManager.getStatsInfo(item);
-            return new BooleanCommand(request.getOpaque(), HttpStatus.Success, statsInfo);
+        if ("config".equals(item)) {
+            return this.processStatsConfig(request, ctx);
         }
         else {
-            return this.processStatsConfig(request, ctx);
+            final String statsInfo = this.statsManager.getStatsInfo(item);
+            return new BooleanCommand(request.getOpaque(), HttpStatus.Success, statsInfo);
         }
     }
 

@@ -35,7 +35,7 @@ import com.taobao.metamorphosis.utils.MetaZookeeper;
 /**
  * 负责跟zk交互,并监控master在zk上的注册
  * 
- * @author 无花
+ * @author 无花,dennis
  * @since 2011-6-24 下午05:46:36
  */
 

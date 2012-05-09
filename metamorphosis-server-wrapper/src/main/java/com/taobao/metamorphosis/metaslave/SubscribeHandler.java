@@ -19,9 +19,11 @@ package com.taobao.metamorphosis.metaslave;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,7 +53,7 @@ import com.taobao.metamorphosis.server.utils.MetaMBeanServer;
 /**
  * 负责从master接收消息并存储到slaver
  * 
- * @author 无花
+ * @author 无花,dennis
  * @since 2011-6-24 下午06:03:29
  */
 
@@ -100,28 +102,7 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
                             (BooleanCommand) this.sessionFactory.getRemotingClient().invokeToGroup(masterUrl,
                                 new StatsCommand(OpaqueGenerator.getNextOpaque(), "config"));
                     if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
-                        String str = resp.getErrorMsg();
-                        str = new String(str.getBytes("utf-8"));
-                        MetaConfig newConfig = new MetaConfig();
-                        newConfig.loadFromString(str);
-                        // If topics config changed
-                        if (!newConfig.getTopicConfigMap().equals(this.broker.getMetaConfig().getTopicConfigMap())) {
-                            File tmpFile = File.createTempFile("meta_config", "slave_sync");
-                            BufferedWriter writer =
-                                    new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tmpFile),
-                                        SLAVE_CONFIG_ENCODING));
-                            writer.write(str);
-                            writer.flush();
-                            writer.close();
-                            if (!tmpFile.renameTo(new File(this.broker.getMetaConfig().getConfigFilePath()))) {
-                                log.error("Write new config file failed");
-                            }
-                            else {
-                                log.info("Write new config file from master to slave local");
-                                log.info("Trying to reload the new config file from master...");
-                                this.broker.getMetaConfig().reload();
-                            }
-                        }
+                        this.tryReloadConfig(resp);
                         break;
                     }
                     else {
@@ -132,10 +113,36 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
                     Thread.currentThread().interrupt();
                 }
                 catch (Exception e) {
-                    log.error("Stats new config file from master failed", e);
+                    log.error("Stats new config file from master failed,retry " + (i + 1) + " times", e);
                 }
             }
 
+        }
+    }
+
+
+    private void tryReloadConfig(BooleanCommand resp) throws UnsupportedEncodingException, IOException,
+    FileNotFoundException {
+        String str = resp.getErrorMsg();
+        str = new String(str.getBytes("utf-8"));
+        MetaConfig newConfig = new MetaConfig();
+        newConfig.loadFromString(str);
+        // If topics config changed
+        if (!newConfig.getTopicConfigMap().equals(this.broker.getMetaConfig().getTopicConfigMap())) {
+            File tmpFile = File.createTempFile("meta_config", "slave_sync");
+            BufferedWriter writer =
+                    new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tmpFile), SLAVE_CONFIG_ENCODING));
+            writer.write(str);
+            writer.flush();
+            writer.close();
+            if (!tmpFile.renameTo(new File(this.broker.getMetaConfig().getConfigFilePath()))) {
+                log.error("Write new config file failed");
+            }
+            else {
+                log.info("Write new config file from master to slave local");
+                log.info("Trying to reload the new config file from master...");
+                this.broker.getMetaConfig().reload();
+            }
         }
     }
 
