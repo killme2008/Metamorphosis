@@ -16,7 +16,6 @@ import threading
 from zkclient import ZKClient, zookeeper, watchmethod
 from urlparse import urlparse
 
-__version__='0.1'
 _DEAD_RETRY = 30  # number of seconds before retrying a dead server.
 _SOCKET_TIMEOUT = 3  #  number of seconds before sockets timeout.
 
