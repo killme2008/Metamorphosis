@@ -111,8 +111,9 @@ class HttpStatus:
 
 class Conn:
 
-    def __init__(self,uri,dead_retry=_DEAD_RETRY,socket_timeout=_SOCKET_TIMEOUT):
+    def __init__(self,uri,dead_retry=_DEAD_RETRY,socket_timeout=_SOCKET_TIMEOUT,debug=True):
         self.uri=uri
+        self.debug=debug
         self.socket=None
         self.fd=None
         self.dead_retry=dead_retry
@@ -310,7 +311,7 @@ class MessageProducer:
                     self._debug("broker uri changed,old=%s,new=%s,broker_id=%s" % ( self._broker_dict.get(broker_id).broker_uri,new_uri,broker_id))
                     #connect to new broker
                     self._debug("connecting to %s" % (new_uri))
-                    self._conn_dict[broker_id]=Conn(new_uri,self.dead_retry,self.socket_timeout)
+                    self._conn_dict[broker_id]=Conn(new_uri,self.dead_retry,self.socket_timeout,self.debug)
             else:
                 conn=self._conn_dict.get(broker_id)
                 if conn <> None:
@@ -321,7 +322,7 @@ class MessageProducer:
             if self._broker_dict.get(broker_id) == None:
                 new_uri=new_broker_dict.get(broker_id).broker_uri
                 self._debug("connecting to %s" % (new_uri))
-                self._conn_dict[broker_id]=Conn(new_uri,self.dead_retry,self.socket_timeout)
+                self._conn_dict[broker_id]=Conn(new_uri,self.dead_retry,self.socket_timeout,self.debug)
 
     def _get_parts(self,child,broker_id):
         n_parts=int(self._safe_zk_get("%s/%s/%s" % (self._broker_topic_path,self.topic,child))[0])
