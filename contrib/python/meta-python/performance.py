@@ -1,4 +1,4 @@
-from metamorphosis import Message,MessageProducer
+from metaq.producer import Message,MessageProducer
 from time import time
 p=MessageProducer("avos-fetch-tasks")
 message=Message("avos-fetch-tasks","http://www.taobao.com")

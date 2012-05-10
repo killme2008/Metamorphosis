@@ -2,15 +2,15 @@
 
 淘宝开源MQ--[metaq](https://github.com/killme2008/Metamorphosis)的python客户端，目前只支持发送消息功能。
 
-#依赖
+#安装
 
-你需要首先安装zkpython，具体参照[这篇博客](http://www.zlovezl.cn/articles/40/)
+		python setup.py install
 
 #使用
 
 使用很简单:
 
-		from metamorphosis import Message,MessageProducer,SendResult
+		from metaq.producer import Message,MessageProducer,SendResult
 		p=MessageProducer("avos-fetch-tasks")
 		message=Message("avos-fetch-tasks","http://www.taobao.com")
 		print p.send(message)
