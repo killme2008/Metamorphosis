@@ -259,7 +259,7 @@ class MessageProducer:
             else:
                 self._safe_zk_close()
                 self.zk=ZKClient(self.zk_servers, timeout = self.zk_timeout)
-                return self._safe_zk_get_children(path,count+1)
+                return self._safe_zk_get_children(path,watcher,count+1)
 
     def _debug(self,msg):
         if self.debug:
