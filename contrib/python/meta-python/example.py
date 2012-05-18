@@ -1,7 +1,5 @@
 from metaq.producer import Message,MessageProducer
-p=MessageProducer("avos-fetch-tasks")
-message=Message("avos-fetch-tasks","http://www.taobao.com")
-print p.send(message)
-print p.send(message)
-print p.send(message)
-p.close()
+producer = MessageProducer("meta-test")
+message = Message("meta-test", "http://www.taobao.com")
+print producer.send(message)
+producer.close()
