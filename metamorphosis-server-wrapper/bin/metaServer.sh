@@ -103,7 +103,7 @@ function stop_server() {
 	  	  echo "kill -9 $pid"
 	      kill -9 $pid
 	  else
-	      kill $pid
+	      $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.StopBrokerTool -host 127.0.0.1 -port $JMX_PORT $@
 	  fi
 	  sleep 2;
 	done	
@@ -129,7 +129,6 @@ function open_partitions() {
 }
 
 function close_partitions() {
-	echo $@
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.ClosePartitionsTool -host 127.0.0.1 -port $JMX_PORT $@
 }
 

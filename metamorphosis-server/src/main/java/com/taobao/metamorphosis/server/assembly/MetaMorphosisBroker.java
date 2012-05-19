@@ -51,6 +51,7 @@ import com.taobao.metamorphosis.server.store.DeletePolicyFactory;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.transaction.store.JournalTransactionStore;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.server.utils.MetaMBeanServer;
 import com.taobao.metamorphosis.utils.IdWorker;
 
 
@@ -58,12 +59,11 @@ import com.taobao.metamorphosis.utils.IdWorker;
 
 /**
  * ×é×°µÄmeta server
- * 
  * @author boyan
  * @Date 2011-4-29
  * 
  */
-public class MetaMorphosisBroker {
+public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
     private final class ShutdownHook extends Thread {
         @Override
         public void run() {
@@ -161,6 +161,7 @@ public class MetaMorphosisBroker {
                     this.statsManager);
         this.shutdownHook = new ShutdownHook();
         Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+        MetaMBeanServer.registMBean(this, null);
     }
 
 
@@ -257,6 +258,7 @@ public class MetaMorphosisBroker {
     }
 
 
+    @Override
     public synchronized void stop() {
         if (this.shutdown) {
             return;
@@ -265,19 +267,27 @@ public class MetaMorphosisBroker {
         this.shutdown = true;
         this.brokerZooKeeper.close();
         try {
+            // Waiting for zookeeper to notify clients.
+            Thread.sleep(this.metaConfig.getZkConfig().zkSyncTimeMs);
+        }
+        catch (InterruptedException e) {
+            // ignore
+        }
+        this.executorsManager.dispose();
+        this.storeManager.dispose();
+        this.statsManager.dispose();
+        try {
             this.remotingServer.stop();
         }
         catch (final NotifyRemotingException e) {
-            throw new MetamorphosisServerStartupException("stop remoting server failed", e);
+            log.error("Shutdown remoting server failed", e);
         }
-        this.statsManager.dispose();
-        this.executorsManager.dispose();
-        this.storeManager.dispose();
 
         if (!this.runShutdownHook && this.shutdownHook != null) {
             Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
         }
         this.brokerProcessor.dispose();
+
         log.info("Stop metamorphosis server successfully");
 
     }
