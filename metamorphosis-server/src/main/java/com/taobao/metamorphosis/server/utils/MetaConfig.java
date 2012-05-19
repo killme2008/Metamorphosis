@@ -124,9 +124,33 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     // Added by dennis zhuang
     private long configFileChecksum;
 
+    // added by dennis,2012-05-19
+    private boolean acceptPublish = true;
+    private boolean acceptSubscribe = true;
+
 
     public int getQuartzThreadCount() {
         return this.quartzThreadCount;
+    }
+
+
+    public boolean isAcceptPublish() {
+        return this.acceptPublish;
+    }
+
+
+    public void setAcceptPublish(boolean acceptPublish) {
+        this.acceptPublish = acceptPublish;
+    }
+
+
+    public boolean isAcceptSubscribe() {
+        return this.acceptSubscribe;
+    }
+
+
+    public void setAcceptSubscribe(boolean acceptSubscribe) {
+        this.acceptSubscribe = acceptSubscribe;
     }
 
 
@@ -406,6 +430,13 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
                 if (StringUtils.isNotBlank(section.get("unflushThreshold"))) {
                     topicConfig.setUnflushThreshold(this.getInt(section, "unflushThreshold"));
                 }
+                // added by dennis,2012-05-19
+                if (!StringUtils.isBlank(section.get("acceptSubscribe"))) {
+                    topicConfig.setAcceptSubscribe(this.getBoolean(section, "acceptSubscribe"));
+                }
+                if (!StringUtils.isBlank(section.get("acceptPublish"))) {
+                    topicConfig.setAcceptPublish(this.getBoolean(section, "acceptPublish"));
+                }
 
                 // this.topicPartitions.put(topic, numPartitions);
                 this.topicConfigMap.put(topic, topicConfig);
@@ -559,6 +590,14 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         if (!StringUtils.isBlank(sysConf.get("maxTxTimeoutInSeconds"))) {
             this.maxTxTimeoutInSeconds = this.getInt(sysConf, "maxTxTimeoutInSeconds");
         }
+
+        // added by dennis,2012-05-19
+        if (!StringUtils.isBlank(sysConf.get("acceptSubscribe"))) {
+            this.acceptSubscribe = this.getBoolean(sysConf, "acceptSubscribe");
+        }
+        if (!StringUtils.isBlank(sysConf.get("acceptPublish"))) {
+            this.acceptPublish = this.getBoolean(sysConf, "acceptPublish");
+        }
     }
 
 
@@ -669,15 +708,23 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     @Override
     public String toString() {
-        return "MetaConfig [brokerId=" + this.brokerId + ", dataPath=" + this.dataPath + ", deletePolicy="
-                + this.deletePolicy + ", diamondZKDataId=" + this.diamondZKDataId + ", diamondZKGroup="
-                + this.diamondZKGroup + ", getProcessThreadCount=" + this.getProcessThreadCount + ", hostName="
-                + this.hostName + ", maxSegmentSize=" + this.maxSegmentSize + ", maxTransferSize="
-                + this.maxTransferSize + ", numPartitions=" + this.numPartitions + ", putProcessThreadCount="
-                + this.putProcessThreadCount + ", serverPort=" + this.serverPort + ", slaveConfig=" + this.slaveConfig
-                + ", statTopicSet=" + this.statTopicSet + ", topicDeletePolicy=" + ", topics=" + this.topics
-                + ", unflushInterval=" + this.unflushInterval + ", unflushThreshold=" + this.unflushThreshold
-                + ", zkConfig=" + this.zkConfig + "]";
+        return "MetaConfig [brokerId=" + this.brokerId + ", dataPath=" + this.dataPath + ", serverPort="
+                + this.serverPort + ", hostName=" + this.hostName + ", numPartitions=" + this.numPartitions
+                + ", unflushThreshold=" + this.unflushThreshold + ", unflushInterval=" + this.unflushInterval
+                + ", maxSegmentSize=" + this.maxSegmentSize + ", maxTransferSize=" + this.maxTransferSize + ", topics="
+                + this.topics + ", slaveConfig=" + this.slaveConfig + ", getProcessThreadCount="
+                + this.getProcessThreadCount + ", putProcessThreadCount=" + this.putProcessThreadCount + ", zkConfig="
+                + this.zkConfig + ", diamondZKDataId=" + this.diamondZKDataId + ", diamondZKGroup="
+                + this.diamondZKGroup + ", deletePolicy=" + this.deletePolicy + ", topicConfigMap="
+                + this.topicConfigMap + ", propertyChangeSupport=" + this.propertyChangeSupport + ", statTopicSet="
+                + this.statTopicSet + ", lastModified=" + this.lastModified + ", path=" + this.path
+                + ", maxCheckpoints=" + this.maxCheckpoints + ", checkpointInterval=" + this.checkpointInterval
+                + ", maxTxTimeoutTimerCapacity=" + this.maxTxTimeoutTimerCapacity + ", flushTxLogAtCommit="
+                + this.flushTxLogAtCommit + ", maxTxTimeoutInSeconds=" + this.maxTxTimeoutInSeconds + ", dataLogPath="
+                + this.dataLogPath + ", deleteWhen=" + this.deleteWhen + ", quartzThreadCount="
+                + this.quartzThreadCount + ", configFileChecksum=" + this.configFileChecksum + ", acceptPublish="
+                + this.acceptPublish + ", acceptSubscribe=" + this.acceptSubscribe + ", closedPartitionMap="
+                + this.closedPartitionMap + "]";
     }
 
 

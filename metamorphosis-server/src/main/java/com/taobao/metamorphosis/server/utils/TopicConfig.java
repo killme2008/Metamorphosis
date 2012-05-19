@@ -20,7 +20,7 @@ package com.taobao.metamorphosis.server.utils;
 /**
  * 针对某个topic的特殊配置（不使用全局配置）
  * 
- * @author 无花
+ * @author 无花,dennis
  * @since 2011-8-18 下午2:30:35
  */
 // TODO 将其他针对某个topic的特殊配置项移到这里
@@ -32,6 +32,8 @@ public class TopicConfig {
     private String deleteWhen;
     private String deletePolicy;
     private int numPartitions;
+    private boolean acceptPublish = true;
+    private boolean acceptSubscribe = true;
 
 
     public TopicConfig(final String topic, final MetaConfig metaConfig) {
@@ -42,6 +44,28 @@ public class TopicConfig {
         this.deleteWhen = metaConfig.getDeleteWhen();
         this.deletePolicy = metaConfig.getDeletePolicy();
         this.numPartitions = metaConfig.getNumPartitions();
+        this.acceptPublish = metaConfig.isAcceptPublish();
+        this.acceptSubscribe = metaConfig.isAcceptSubscribe();
+    }
+
+
+    public boolean isAcceptPublish() {
+        return this.acceptPublish;
+    }
+
+
+    public void setAcceptPublish(boolean acceptPublish) {
+        this.acceptPublish = acceptPublish;
+    }
+
+
+    public boolean isAcceptSubscribe() {
+        return this.acceptSubscribe;
+    }
+
+
+    public void setAcceptSubscribe(boolean acceptSubscribe) {
+        this.acceptSubscribe = acceptSubscribe;
     }
 
 

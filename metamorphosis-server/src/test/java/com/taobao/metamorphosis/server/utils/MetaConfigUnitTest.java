@@ -31,7 +31,7 @@ import com.taobao.metamorphosis.utils.ResourceUtils;
 
 /**
  * 
- * @author 无花
+ * @author 无花,dennis
  * @since 2011-6-22 下午03:21:49
  */
 
@@ -50,6 +50,23 @@ public class MetaConfigUnitTest {
         Assert.assertFalse(new MetaConfig().isSlave());
     }
 
+
+    @Test
+    public void testAccpetPublishSubscribe() throws Exception {
+        MetaConfig metaConfig = new MetaConfig();
+        this.LoadProperty(metaConfig, "master_noBrokerId.ini");
+
+        assertTrue(metaConfig.isAcceptPublish());
+        assertFalse(metaConfig.isAcceptSubscribe());
+
+        TopicConfig test1Config = metaConfig.getTopicConfig("test1");
+        assertTrue(test1Config.isAcceptPublish());
+        assertFalse(test1Config.isAcceptSubscribe());
+
+        TopicConfig test2Config = metaConfig.getTopicConfig("test2");
+        assertTrue(test2Config.isAcceptSubscribe());
+        assertFalse(test2Config.isAcceptPublish());
+    }
 
     @Test
     public void testIsSlave_LoadProperty() throws Exception {

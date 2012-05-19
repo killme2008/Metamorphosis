@@ -423,46 +423,26 @@ public class MetaZookeeper {
      * @param slaveId
      *            slave编号, 小于0表示master
      * */
+    @Deprecated
     public String brokerTopicsPathOf(final String topic, final int brokerId, final int slaveId) {
         return this.brokerTopicsPath + "/" + topic + "/" + brokerId + (slaveId >= 0 ? "-s" + slaveId : "-m");
     }
 
 
     /**
-     * 创建分区
      * 
-     * @param zkClient
-     * @param brokerId
-     * @param host
-     * @param port
-     * @param topic
-     * @param nParts
-     * @param slaveId
-     * @throws Exception
-     */
-    public void setupPartition(final int brokerId, final String host, final int port, final String topic,
-            final int nParts, final int slaveId) throws Exception {
-        final String brokerIdPath = this.brokerIdsPathOf(brokerId, slaveId);
-        final Broker broker = new Broker(brokerId, host, port);
-        ZkUtils.createEphemeralPathExpectConflict(this.zkClient, brokerIdPath, broker.getZKString());
-        final String brokerPartTopicPath = this.brokerTopicsPathOf(topic, brokerId, slaveId);// brokerTopicsPath
-        ZkUtils.createEphemeralPathExpectConflict(this.zkClient, brokerPartTopicPath, String.valueOf(nParts));
-    }
-
-
-    /**
-     * 删除分区
+     * Returns topic path in zk
      * 
-     * @param zkClient
-     * @param brokerId
+     * @since 1.4.3
      * @param topic
+     * @param brokerId
      * @param slaveId
-     */
-    public void deletePartition(final int brokerId, final String topic, final int slaveId) {
-        final String brokerIdPath = this.brokerIdsPathOf(brokerId, slaveId);
-        this.zkClient.delete(brokerIdPath);
-        final String brokerPartTopicPath = this.brokerTopicsPathOf(topic, brokerId, slaveId);
-        this.zkClient.delete(brokerPartTopicPath);
+     *            slave编号, 小于0表示master
+     * */
+    public String brokerTopicsPathOf(final String topic, boolean publish, final int brokerId, final int slaveId) {
+        String subPath = publish ? "pub" : "sub";
+        return this.brokerTopicsPath + "/" + brokerId + "/" + topic + "/" + subPath + "/" + brokerId
+                + (slaveId >= 0 ? "-s" + slaveId : "-m");
     }
 
 }

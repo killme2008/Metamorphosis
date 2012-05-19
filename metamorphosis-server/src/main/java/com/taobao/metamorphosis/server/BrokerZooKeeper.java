@@ -32,6 +32,7 @@ import org.apache.zookeeper.Watcher.Event.KeeperState;
 
 import com.taobao.gecko.core.util.ConcurrentHashSet;
 import com.taobao.metamorphosis.cluster.Broker;
+import com.taobao.metamorphosis.cluster.json.TopicBroker;
 import com.taobao.metamorphosis.network.RemotingUtils;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.server.utils.TopicConfig;
@@ -78,7 +79,7 @@ public class BrokerZooKeeper implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        if (evt.getPropertyName().equals("configFileChecksum") && !config.isSlave()) {
+        if (evt.getPropertyName().equals("configFileChecksum") && !this.config.isSlave()) {
             try {
                 ZkUtils.updateEphemeralPath(this.zkClient, this.masterConfigChecksumPath,
                     String.valueOf(this.config.getConfigFileChecksum()));
@@ -91,7 +92,7 @@ public class BrokerZooKeeper implements PropertyChangeListener {
 
 
     MetaConfig getConfig() {
-        return config;
+        return this.config;
     }
 
 
@@ -205,22 +206,22 @@ public class BrokerZooKeeper implements PropertyChangeListener {
             log.info("Registering broker " + this.brokerIdPath);
             final String hostName =
                     this.config.getHostName() == null ? RemotingUtils.getLocalAddress() : this.config.getHostName();
-            final Broker broker =
-                    new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
-                        this.config.getSlaveId());
+                    final Broker broker =
+                            new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
+                                this.config.getSlaveId());
 
-            ZkUtils.createEphemeralPath(this.zkClient, this.brokerIdPath, broker.getZKString());
+                    ZkUtils.createEphemeralPath(this.zkClient, this.brokerIdPath, broker.getZKString());
 
-            // 兼容老客户端，暂时加上
-            if (!this.config.isSlave()) {
-                ZkUtils.updateEphemeralPath(this.zkClient,
-                    this.metaZookeeper.brokerIdsPath + "/" + this.config.getBrokerId(), broker.getZKString());
-                log.info("register for old client version " + this.metaZookeeper.brokerIdsPath + "/"
-                        + this.config.getBrokerId() + "  succeeded with " + broker);
+                    // 兼容老客户端，暂时加上
+                    if (!this.config.isSlave()) {
+                        ZkUtils.updateEphemeralPath(this.zkClient,
+                            this.metaZookeeper.brokerIdsPath + "/" + this.config.getBrokerId(), broker.getZKString());
+                        log.info("register for old client version " + this.metaZookeeper.brokerIdsPath + "/"
+                                + this.config.getBrokerId() + "  succeeded with " + broker);
 
-            }
-            log.info("Registering broker " + this.brokerIdPath + " succeeded with " + broker);
-            this.registerBrokerInZkFail = false;
+                    }
+                    log.info("Registering broker " + this.brokerIdPath + " succeeded with " + broker);
+                    this.registerBrokerInZkFail = false;
         }
         catch (final Exception e) {
             this.registerBrokerInZkFail = true;
@@ -246,6 +247,7 @@ public class BrokerZooKeeper implements PropertyChangeListener {
             throw e;
         }
     }
+
 
     private void unregisterBrokerInZk() throws Exception {
         if (this.registerBrokerInZkFail) {
@@ -274,17 +276,26 @@ public class BrokerZooKeeper implements PropertyChangeListener {
 
     private void unregisterTopics() throws Exception {
         for (final String topic : BrokerZooKeeper.this.topics) {
-            final String brokerTopicPath =
-                    this.metaZookeeper.brokerTopicsPathOf(topic, this.config.getBrokerId(), this.config.getSlaveId());
-            ZkUtils.deletePath(this.zkClient, brokerTopicPath);
+            try {
+                int brokerId = this.config.getBrokerId();
+                final String brokerTopicPath =
+                        this.metaZookeeper.brokerTopicsPathOf(topic, brokerId, this.config.getSlaveId());
+                final String topicPubPath =
+                        this.metaZookeeper.brokerTopicsPathOf(topic, true, brokerId, this.config.getSlaveId());
+                final String topicSubPath =
+                        this.metaZookeeper.brokerTopicsPathOf(topic, false, brokerId, this.config.getSlaveId());
 
-            // 兼容老客户端，暂时加上
-            if (!this.config.isSlave()) {
-                ZkUtils.deletePath(this.zkClient,
-                    this.metaZookeeper.brokerTopicsPath + "/" + topic + "/" + this.config.getBrokerId());
-                log.info("delete topic of old client version " + this.metaZookeeper.brokerTopicsPath + "/" + topic
-                        + "/" + this.config.getBrokerId());
+                // Be compatible with the version before 1.4.3
+                ZkUtils.deletePath(this.zkClient, brokerTopicPath);
+
+                // added by dennis,since 1.4.3
+                ZkUtils.deletePath(this.zkClient, topicPubPath);
+                ZkUtils.deletePath(this.zkClient, topicSubPath);
             }
+            catch (Exception e) {
+                log.error("Unregister topic " + topic + " failed,but don't worry about it.", e);
+            }
+
         }
     }
 
@@ -329,21 +340,27 @@ public class BrokerZooKeeper implements PropertyChangeListener {
         if (!this.zkConfig.zkEnable) {
             return;
         }
-        final String brokerTopicPath =
-                this.metaZookeeper.brokerTopicsPathOf(topic, this.config.getBrokerId(), this.config.getSlaveId());
+        int brokerId = this.config.getBrokerId();
+        int slaveId = this.config.getSlaveId();
+        final String brokerTopicPath = this.metaZookeeper.brokerTopicsPathOf(topic, brokerId, slaveId);
+        final String topicPubPath = this.metaZookeeper.brokerTopicsPathOf(topic, true, brokerId, slaveId);
+        final String topicSubPath = this.metaZookeeper.brokerTopicsPathOf(topic, false, brokerId, slaveId);
         final TopicConfig topicConfig = this.config.getTopicConfig(topic);
         Integer numParts = topicConfig != null ? topicConfig.getNumPartitions() : this.config.getNumPartitions();
         numParts = numParts == null ? this.config.getNumPartitions() : numParts;
         log.info("Begin registering broker topic " + brokerTopicPath + " with " + numParts + " partitions");
 
+        final TopicBroker topicBroker = new TopicBroker(numParts, brokerId + (slaveId >= 0 ? "-s" + slaveId : "-m"));
+        log.info("Register broker for topic:" + topicBroker);
+        // Be compatible with the version before 1.4.3
         ZkUtils.createEphemeralPath(this.zkClient, brokerTopicPath, String.valueOf(numParts));
-
-        // 兼容老客户端，暂时加上
-        if (!this.config.isSlave()) {
-            ZkUtils.createEphemeralPath(this.zkClient, this.metaZookeeper.brokerTopicsPath + "/" + topic + "/"
-                    + this.config.getBrokerId(), String.valueOf(numParts));
-            log.info("register topic for old client version " + this.metaZookeeper.brokerTopicsPath + "/" + topic + "/"
-                    + this.config.getBrokerId());
+        // added by dennis,since 1.4.3
+        String topicBrokerJson = topicBroker.toJson();
+        if (topicConfig.isAcceptPublish()) {
+            ZkUtils.createEphemeralPath(this.zkClient, topicPubPath, topicBrokerJson);
+        }
+        if (topicConfig.isAcceptSubscribe()) {
+            ZkUtils.createEphemeralPath(this.zkClient, topicSubPath, topicBrokerJson);
         }
         log.info("End registering broker topic " + brokerTopicPath);
     }
