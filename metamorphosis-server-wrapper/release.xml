@@ -10,6 +10,8 @@
 			<includes>
 				<include>metamorphosis-server-wrapper/conf/*</include>
 				<include>metamorphosis-server-wrapper/logs/*</include>
+				<include>COPYING.txt</include>
+				<include>README.md</include>
 			</includes>
 			<excludes>
 				<exclude>**/src/**</exclude>

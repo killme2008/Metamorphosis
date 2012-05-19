@@ -85,7 +85,7 @@ function start_server() {
     echo $! > $PID_FILE
     chmod 755 $PID_FILE
 	sleep 1;
-	tail -f $LOG_FILE
+	tail -F $LOG_FILE
 }
 
 function stop_server() {
@@ -104,8 +104,9 @@ function stop_server() {
 	      kill -9 $pid
 	  else
 	      $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.StopBrokerTool -host 127.0.0.1 -port $JMX_PORT $@
+	      kill $pid
 	  fi
-	  sleep 2;
+	  sleep 3;
 	done	
 	echo "Stop meta broker successfully." 
 	rm $PID_FILE

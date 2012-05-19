@@ -53,7 +53,7 @@ public class StopBrokerTool extends ShellTool {
 
 
     public static void main(String[] args) throws Exception {
-        new ClosePartitionsTool(System.out).doMain(args);
+        new StopBrokerTool(System.out).doMain(args);
     }
 
     final static protected String METABROKER_NAME =
