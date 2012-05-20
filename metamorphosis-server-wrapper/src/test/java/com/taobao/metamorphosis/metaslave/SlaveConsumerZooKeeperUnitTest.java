@@ -47,6 +47,7 @@ import com.taobao.metamorphosis.client.consumer.TopicPartitionRegInfo;
 import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
 import com.taobao.metamorphosis.cluster.Broker;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.cluster.json.TopicBroker;
 import com.taobao.metamorphosis.metaslave.SlaveConsumerZooKeeper.SlaveZKLoadRebalanceListener;
 import com.taobao.metamorphosis.utils.MetaZookeeper;
 import com.taobao.metamorphosis.utils.ZkUtils;
@@ -86,8 +87,8 @@ public class SlaveConsumerZooKeeperUnitTest {
         // this.diamondManager = new DefaultDiamondManager(null,
         // "metamorphosis.testZkConfig", (ManagerListener) null);
         this.zkConfig = new ZKConfig();// DiamondUtils.getZkConfig(this.diamondManager,
-                                       // 10000);
-        this.zkConfig.zkConnect="localhost:2181";
+        // 10000);
+        this.zkConfig.zkConnect = "localhost:2181";
         this.client =
                 new ZkClient(this.zkConfig.zkConnect, this.zkConfig.zkSessionTimeoutMs,
                     this.zkConfig.zkConnectionTimeoutMs, new ZkUtils.StringSerializer());
@@ -112,9 +113,12 @@ public class SlaveConsumerZooKeeperUnitTest {
         // topic2在master里有1个分区,在另一个不相关的master里有1个分区
         ZkUtils.createEphemeralPath(this.client, this.metaZookeeper.brokerIdsPath + "/0/master", "meta://localhost:0");
         ZkUtils.createEphemeralPath(this.client, this.metaZookeeper.brokerIdsPath + "/1/master", "meta://localhost:1");
-        this.client.createEphemeral(this.metaZookeeper.brokerTopicsPath + "/topic1/0-m", "3");
-        this.client.createEphemeral(this.metaZookeeper.brokerTopicsPath + "/topic2/0-m", "1");
-        this.client.createEphemeral(this.metaZookeeper.brokerTopicsPath + "/topic2/1-m", "1");
+        this.client.createEphemeral(this.metaZookeeper.brokerTopicsSubPath + "/topic1/0-m",
+            new TopicBroker(3, "0-m").toJson());
+        this.client.createEphemeral(this.metaZookeeper.brokerTopicsSubPath + "/topic2/0-m",
+            new TopicBroker(1, "0-m").toJson());
+        this.client.createEphemeral(this.metaZookeeper.brokerTopicsSubPath + "/topic2/1-m",
+            new TopicBroker(1, "1-m").toJson());
 
         this.mockConnect("meta://localhost:0");
         // this.mockConnect("meta://localhost:1");不连接到另外一个master
@@ -187,8 +191,8 @@ public class SlaveConsumerZooKeeperUnitTest {
         // master down
         ZkUtils.deletePath(this.client, this.metaZookeeper.brokerIdsPath + "/0/master");
         // 这里topic的两次删除(挂掉或人工停掉),可能会引起两次负载均衡
-        ZkUtils.deletePath(this.client, this.metaZookeeper.brokerTopicsPath + "/topic1/0-m");
-        ZkUtils.deletePath(this.client, this.metaZookeeper.brokerTopicsPath + "/topic2/0-m");
+        ZkUtils.deletePath(this.client, this.metaZookeeper.brokerTopicsSubPath + "/topic1/0-m");
+        ZkUtils.deletePath(this.client, this.metaZookeeper.brokerTopicsSubPath + "/topic2/0-m");
         Thread.sleep(5000);
         this.mocksControl.verify();
 
@@ -238,8 +242,10 @@ public class SlaveConsumerZooKeeperUnitTest {
         this.mocksControl.replay();
 
         ZkUtils.createEphemeralPath(this.client, this.metaZookeeper.brokerIdsPath + "/0/master", "meta://localhost:0");
-        this.client.createEphemeral(this.metaZookeeper.brokerTopicsPath + "/topic1/0-m", "3");
-        this.client.createEphemeral(this.metaZookeeper.brokerTopicsPath + "/topic2/0-m", "1");
+        this.client.createEphemeral(this.metaZookeeper.brokerTopicsSubPath + "/topic1/0-m",
+            new TopicBroker(3, "0-m").toJson());
+        this.client.createEphemeral(this.metaZookeeper.brokerTopicsSubPath + "/topic2/0-m",
+            new TopicBroker(1, "0-m").toJson());
         Thread.sleep(5000);
         this.mocksControl.verify();
 
@@ -261,7 +267,7 @@ public class SlaveConsumerZooKeeperUnitTest {
         this.mocksControl.replay();
         // other master down,no problem
         ZkUtils.deletePath(this.client, this.metaZookeeper.brokerIdsPath + "/1/master");
-        ZkUtils.deletePath(this.client, this.metaZookeeper.brokerTopicsPath + "/topic2/1-m");
+        ZkUtils.deletePath(this.client, this.metaZookeeper.brokerTopicsSubPath + "/topic2/1-m");
         Thread.sleep(5000);
         this.mocksControl.verify();
         final SlaveZKLoadRebalanceListener listener = this.checkTopic();
@@ -310,7 +316,7 @@ public class SlaveConsumerZooKeeperUnitTest {
 
     private void mockLoadNullInitOffset(final String topic, final String group, final Partition partition) {
         EasyMock.expect(this.offsetStorage.load(EasyMock.eq(topic), EasyMock.contains(group), EasyMock.eq(partition)))
-            .andReturn(null);
+        .andReturn(null);
         this.offsetStorage.initOffset(EasyMock.eq(topic), EasyMock.contains(group), EasyMock.eq(partition),
             EasyMock.eq(0L));
         EasyMock.expectLastCall();

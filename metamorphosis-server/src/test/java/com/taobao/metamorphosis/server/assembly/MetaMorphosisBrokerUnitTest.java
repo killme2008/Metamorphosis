@@ -79,11 +79,6 @@ public class MetaMorphosisBrokerUnitTest {
         assertEquals("5",
             ZkUtils.readData(client, "/meta/brokers/topics/topic2/" + this.metaConfig.getBrokerId() + "-m"));
 
-        // 兼容老客户端,临时
-        assertEquals("meta://localhost:8199",
-            ZkUtils.readData(client, "/meta/brokers/ids/" + this.metaConfig.getBrokerId()));
-        assertEquals("5", ZkUtils.readData(client, "/meta/brokers/topics/topic2/" + this.metaConfig.getBrokerId()));
-
         final String serverUrl =
                 ZkUtils.readData(client, "/meta/brokers/ids/" + this.metaConfig.getBrokerId() + "/master");
         assertEquals("meta://" + this.metaConfig.getHostName() + ":" + this.metaConfig.getServerPort(), serverUrl);

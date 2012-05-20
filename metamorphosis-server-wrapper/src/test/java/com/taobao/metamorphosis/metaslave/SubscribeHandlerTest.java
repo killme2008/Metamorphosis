@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.taobao.metamorphosis.cluster.json.TopicBroker;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.utils.MetaZookeeper;
@@ -88,12 +89,14 @@ public class SubscribeHandlerTest {
     @Test
     public void testStart_MasterNoStarted() throws Exception {
         ZkUtils.deletePath(this.getZkClient(), this.metaZookeeper.brokerIdsPathOf(this.brokerId, -1));
-        ZkUtils.deletePath(this.getZkClient(), this.metaZookeeper.brokerTopicsPathOf("topictest", this.brokerId, -1));
+        ZkUtils.deletePath(this.getZkClient(),
+            this.metaZookeeper.brokerTopicsPathOf("topictest", false, this.brokerId, -1));
 
         ZkUtils.createEphemeralPath(this.getZkClient(), this.metaZookeeper.brokerIdsPathOf(this.brokerId, -1),
                 "meta://1.1.1.1:222");
         ZkUtils.createEphemeralPath(this.getZkClient(),
-            this.metaZookeeper.brokerTopicsPathOf("topictest", this.brokerId, -1), "2");
+            this.metaZookeeper.brokerTopicsPathOf("topictest", false, this.brokerId, -1),
+            new TopicBroker(2, null).toJson());
         Assert.assertTrue(this.subscribeHandler.getSlaveZooKeeper().getPartitionsForTopicsFromMaster().size() > 0);
         this.subscribeHandler.start();
         Assert.assertFalse(this.subscribeHandler.isStarted());

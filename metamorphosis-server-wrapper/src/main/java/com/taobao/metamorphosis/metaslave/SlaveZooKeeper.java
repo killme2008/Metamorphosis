@@ -75,7 +75,7 @@ class SlaveZooKeeper {
 
 
     public Map<String, List<Partition>> getPartitionsForTopicsFromMaster() {
-        return this.getMetaZookeeper().getPartitionsForTopicsFromMaster(this.getMasterTopics(),
+        return this.getMetaZookeeper().getPartitionsForSubTopicsFromMaster(this.getMasterTopics(),
             this.broker.getMetaConfig().getBrokerId());
     }
 

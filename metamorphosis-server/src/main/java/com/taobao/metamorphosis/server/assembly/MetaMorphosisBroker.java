@@ -268,7 +268,7 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         this.brokerZooKeeper.close();
         try {
             // Waiting for zookeeper to notify clients.
-            Thread.sleep(this.metaConfig.getZkConfig().zkSyncTimeMs);
+            Thread.sleep(this.brokerZooKeeper.getZkConfig().zkSyncTimeMs);
         }
         catch (InterruptedException e) {
             // ignore

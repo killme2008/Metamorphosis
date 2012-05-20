@@ -30,6 +30,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.taobao.gecko.core.command.ResponseCommand;
+import com.taobao.gecko.core.util.ConcurrentHashSet;
 import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
@@ -88,6 +89,8 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
             new ConcurrentHashMap<String, SubscriberInfo>();
 
     private FetchManager fetchManager;
+
+    private final ConcurrentHashSet<String> publishedTopics = new ConcurrentHashSet<String>();
 
 
     public SimpleMessageConsumer(final MetaMessageSessionFactory messageSessionFactory,
@@ -151,6 +154,9 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         try {
             this.fetchManager.stopFetchRunner();
             this.consumerZooKeeper.unRegisterConsumer(this.fetchManager);
+            for (String topic : this.publishedTopics) {
+                this.producerZooKeeper.unPublishTopic(topic, this);
+            }
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -364,7 +370,10 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
     @Override
     public MessageIterator get(final String topic, final Partition partition, final long offset, final int maxSize,
             final long timeout, final TimeUnit timeUnit) throws MetaClientException, InterruptedException {
-        this.producerZooKeeper.publishTopic(topic);
+        if (!this.publishedTopics.contains(topic)) {
+            this.producerZooKeeper.publishTopic(topic, this);
+            this.publishedTopics.add(topic);
+        }
         final Broker broker =
                 new Broker(partition.getBrokerId(), this.producerZooKeeper.selectBroker(topic, partition));
         final TopicPartitionRegInfo topicPartitionRegInfo = new TopicPartitionRegInfo(topic, partition, offset);

@@ -30,6 +30,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.taobao.gecko.core.command.ResponseCommand;
+import com.taobao.gecko.core.util.ConcurrentHashSet;
 import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.gecko.service.Connection;
 import com.taobao.gecko.service.SingleRequestCallBackListener;
@@ -80,6 +81,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
     private volatile boolean shutdown;
     private static final int MAX_RETRY = 1;
     private final LongSequenceGenerator localTxIdGenerator;
+    private final ConcurrentHashSet<String> publishedTopics = new ConcurrentHashSet<String>();
 
 
     public SimpleMessageProducer(final MetaMessageSessionFactory messageSessionFactory,
@@ -119,14 +121,22 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
     public void publish(final String topic) {
         this.checkState();
         this.checkTopic(topic);
-        this.producerZooKeeper.publishTopic(topic);
+        // It is not always synchronized with shutdown,but it is acceptable.
+        if (!this.publishedTopics.contains(topic)) {
+            this.producerZooKeeper.publishTopic(topic, this);
+            this.publishedTopics.add(topic);
+        }
         // this.localMessageStorageManager.setMessageRecoverer(this.recoverer);
     }
 
 
     @Override
     public void setDefaultTopic(final String topic) {
-        this.producerZooKeeper.setDefaultTopic(topic);
+        // It is not always synchronized with shutdown,but it is acceptable.
+        if (!this.publishedTopics.contains(topic)) {
+            this.producerZooKeeper.setDefaultTopic(topic, this);
+            this.publishedTopics.add(topic);
+        }
     }
 
 
@@ -594,7 +604,11 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
         if (this.shutdown) {
             return;
         }
+        for (String topic : this.publishedTopics) {
+            this.producerZooKeeper.unPublishTopic(topic, this);
+        }
         this.shutdown = true;
+        this.publishedTopics.clear();
         this.messageSessionFactory.removeChild(this);
     }
 

@@ -130,7 +130,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     log.info("unsubscribeChildChanges:" + dirs.consumerRegistryDir);
                     // 移除监视订阅topic的分区变化
                     for (final String topic : listener.topicSubcriberRegistry.keySet()) {
-                        final String partitionPath = this.metaZookeeper.brokerTopicsPath + "/" + topic;
+                        final String partitionPath = this.metaZookeeper.brokerTopicsSubPath + "/" + topic;
                         this.zkClient.unsubscribeChildChanges(partitionPath, listener);
                         log.info("unsubscribeChildChanges:" + partitionPath);
                     }
@@ -227,7 +227,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
             // 监视订阅topic的分区是否有变化
             for (final String topic : loadBalanceListener.topicSubcriberRegistry.keySet()) {
-                final String partitionPath = this.metaZookeeper.brokerTopicsPath + "/" + topic;
+                final String partitionPath = this.metaZookeeper.brokerTopicsSubPath + "/" + topic;
                 ZkUtils.makeSurePersistentPathExists(this.zkClient, partitionPath);
                 this.zkClient.subscribeChildChanges(partitionPath, loadBalanceListener);
             }
@@ -504,7 +504,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             this.fetchManager.resetFetchState();
             final Set<Broker> changedBrokers = new HashSet<Broker>();
             for (final Map.Entry<String/* topic */, ConcurrentHashMap<Partition, TopicPartitionRegInfo>> entry : this.topicRegistry
-                .entrySet()) {
+                    .entrySet()) {
                 final String topic = entry.getKey();
                 for (final Map.Entry<Partition, TopicPartitionRegInfo> partEntry : entry.getValue().entrySet()) {
                     final Partition partition = partEntry.getKey();
@@ -590,7 +590,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 }
                 else {
                     log.info("Consumer " + this.consumerIdString + " with " + consumersPerTopicMap
-                            + " doesn't need to be rebalanced.");
+                        + " doesn't need to be rebalanced.");
                 }
                 return true;
             }
@@ -673,7 +673,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
 
         protected Map<String, List<String>> getPartitionStringsForTopics(final Map<String, String> myConsumerPerTopicMap) {
-            return ConsumerZooKeeper.this.metaZookeeper.getPartitionStringsForTopics(myConsumerPerTopicMap.keySet());
+            return ConsumerZooKeeper.this.metaZookeeper.getPartitionStringsForSubTopics(myConsumerPerTopicMap.keySet());
         }
 
 
@@ -729,7 +729,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          */
         private void releaseAllPartitionOwnership() {
             for (final Map.Entry<String, ConcurrentHashMap<Partition, TopicPartitionRegInfo>> entry : this.topicRegistry
-                .entrySet()) {
+                    .entrySet()) {
                 final String topic = entry.getKey();
                 final ZKGroupTopicDirs topicDirs =
                         ConsumerZooKeeper.this.metaZookeeper.new ZKGroupTopicDirs(topic, this.consumerConfig.getGroup());
@@ -798,8 +798,8 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          * @return
          */
         private Map<String, String> getRelevantTopicMap(final Map<String, String> myConsumerPerTopicMap,
-                final Map<String, List<String>> newPartMap, final Map<String, List<String>> oldPartMap,
-                final Map<String, List<String>> newConsumerMap, final Map<String, List<String>> oldConsumerMap) {
+            final Map<String, List<String>> newPartMap, final Map<String, List<String>> oldPartMap,
+            final Map<String, List<String>> newConsumerMap, final Map<String, List<String>> oldConsumerMap) {
             final Map<String, String> relevantTopicThreadIdsMap = new HashMap<String, String>();
             for (final Map.Entry<String, String> entry : myConsumerPerTopicMap.entrySet()) {
                 final String topic = entry.getKey();

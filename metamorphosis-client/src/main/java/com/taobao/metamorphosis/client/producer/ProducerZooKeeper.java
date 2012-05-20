@@ -95,10 +95,18 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
         final String topic;
 
+        final Set<Object> references = Collections.synchronizedSet(new HashSet<Object>());
+
 
         public BrokerConnectionListener(final String topic) {
             super();
             this.topic = topic;
+        }
+
+
+        void dispose() {
+            final String partitionPath = ProducerZooKeeper.this.metaZookeeper.brokerTopicsPubPath + "/" + this.topic;
+            ProducerZooKeeper.this.zkClient.unsubscribeChildChanges(partitionPath, this);
         }
 
 
@@ -179,8 +187,9 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
     }
 
 
-    public void publishTopic(final String topic) {
+    public void publishTopic(final String topic, final Object ref) {
         if (this.topicConnectionListeners.get(topic) != null) {
+            this.addRef(topic, ref);
             return;
         }
         final FutureTask<BrokerConnectionListener> task =
@@ -191,6 +200,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                         if (ProducerZooKeeper.this.zkClient != null) {
                             ProducerZooKeeper.this.publishTopicInternal(topic, listener);
                         }
+                        listener.references.add(ref);
                         return listener;
                     }
 
@@ -200,12 +210,40 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
         if (existsTask == null) {
             task.run();
         }
+        else {
+            this.addRef(topic, ref);
+        }
+    }
+
+
+    private void addRef(final String topic, final Object ref) {
+        BrokerConnectionListener listener = this.getBrokerConnectionListener(topic);
+        if (!listener.references.contains(ref)) {
+            listener.references.add(ref);
+        }
+    }
+
+
+    public void unPublishTopic(String topic, Object ref) {
+        BrokerConnectionListener listener = this.getBrokerConnectionListener(topic);
+        if (listener != null) {
+            synchronized (listener.references) {
+                if (this.getBrokerConnectionListener(topic) == null) {
+                    return;
+                }
+                listener.references.remove(ref);
+                if (listener.references.isEmpty()) {
+                    this.topicConnectionListeners.remove(topic);
+                    listener.dispose();
+                }
+            }
+        }
     }
 
 
     private void publishTopicInternal(final String topic, final BrokerConnectionListener listener) throws Exception,
-            NotifyRemotingException, InterruptedException {
-        final String partitionPath = this.metaZookeeper.brokerTopicsPath + "/" + topic;
+    NotifyRemotingException, InterruptedException {
+        final String partitionPath = this.metaZookeeper.brokerTopicsPubPath + "/" + topic;
         ZkUtils.makeSurePersistentPathExists(ProducerZooKeeper.this.zkClient, partitionPath);
         ProducerZooKeeper.this.zkClient.subscribeChildChanges(partitionPath, listener);
         // 第一次要同步等待就绪
@@ -266,12 +304,12 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
      * 
      * @param topic
      */
-    public synchronized void setDefaultTopic(final String topic) {
+    public synchronized void setDefaultTopic(final String topic, Object ref) {
         if (this.defaultTopic != null && !this.defaultTopic.equals(topic)) {
             throw new IllegalStateException("Default topic has been setup already:" + this.defaultTopic);
         }
         this.defaultTopic = topic;
-        this.publishTopic(topic);
+        this.publishTopic(topic, ref);
     }
 
 

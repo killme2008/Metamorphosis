@@ -145,14 +145,14 @@ public class SimpleMessageConsumerUnitTest {
         final String url = "meta://localhost:0";
         final MessageIterator messageIterator = new MessageIterator(topic, data);
 
-        this.producerZooKeeper.publishTopic(topic);
+        this.producerZooKeeper.publishTopic(topic, this.consumer);
         EasyMock.expectLastCall();
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url,
                 new GetCommand(topic, this.consumerConfig.getGroup(), partition.getPartition(), offset, maxSize,
                     Integer.MIN_VALUE), 10000, TimeUnit.MILLISECONDS)).andReturn(
-            new DataCommand(data, Integer.MIN_VALUE));
+                        new DataCommand(data, Integer.MIN_VALUE));
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         assertEquals(messageIterator, this.consumer.get(topic, partition, offset, maxSize));
@@ -175,7 +175,7 @@ public class SimpleMessageConsumerUnitTest {
             this.remotingClient.invokeToGroup(url,
                 new OffsetCommand(topic, this.consumerConfig.getGroup(), partition.getPartition(), offset,
                     Integer.MIN_VALUE), this.consumerConfig.getFetchTimeoutInMills(), TimeUnit.MILLISECONDS))
-            .andReturn(new BooleanCommand(Integer.MIN_VALUE, HttpStatus.Success, String.valueOf(offset)));
+                    .andReturn(new BooleanCommand(Integer.MIN_VALUE, HttpStatus.Success, String.valueOf(offset)));
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         assertEquals(offset, this.consumer.offset(new FetchRequest(broker, delay, topicPartitionRegInfo, maxSize)));
@@ -193,14 +193,14 @@ public class SimpleMessageConsumerUnitTest {
         final String url = "meta://localhost:0";
         final MessageIterator messageIterator = new MessageIterator(topic, data);
 
-        this.producerZooKeeper.publishTopic(topic);
+        this.producerZooKeeper.publishTopic(topic, this.consumer);
         EasyMock.expectLastCall();
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url,
                 new GetCommand(topic, this.consumerConfig.getGroup(), partition.getPartition(), offset, maxSize,
                     Integer.MIN_VALUE), 10000, TimeUnit.MILLISECONDS)).andReturn(
-            new BooleanCommand(Integer.MIN_VALUE, 500, "test error"));
+                        new BooleanCommand(Integer.MIN_VALUE, 500, "test error"));
         this.mocksControl.replay();
         try {
             OpaqueGenerator.resetOpaque();
@@ -222,14 +222,14 @@ public class SimpleMessageConsumerUnitTest {
         final long offset = 12;
         final String url = "meta://localhost:0";
 
-        this.producerZooKeeper.publishTopic(topic);
+        this.producerZooKeeper.publishTopic(topic, this.consumer);
         EasyMock.expectLastCall();
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url,
                 new GetCommand(topic, this.consumerConfig.getGroup(), partition.getPartition(), offset, maxSize,
                     Integer.MIN_VALUE), 10000, TimeUnit.MILLISECONDS)).andReturn(
-            new BooleanCommand(Integer.MIN_VALUE, 404, "not found"));
+                        new BooleanCommand(Integer.MIN_VALUE, 404, "not found"));
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         assertNull(this.consumer.get(topic, partition, offset, maxSize));

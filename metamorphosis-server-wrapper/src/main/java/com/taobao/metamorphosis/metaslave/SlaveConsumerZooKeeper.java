@@ -128,7 +128,7 @@ public class SlaveConsumerZooKeeper extends ConsumerZooKeeper {
         protected Map<String, List<String>> getPartitionStringsForTopics(final Map<String, String> myConsumerPerTopicMap) {
             // 只返回master对应的partition
             final Map<String, List<String>> ret =
-                    SlaveConsumerZooKeeper.this.metaZookeeper.getPartitionStringsForTopicsFromMaster(
+                    SlaveConsumerZooKeeper.this.metaZookeeper.getPartitionStringsForSubTopicsFromMaster(
                         myConsumerPerTopicMap.keySet(), SlaveConsumerZooKeeper.this.brokerId);
             if (log.isDebugEnabled()) {
                 log.debug("getPartitionStringsForTopics,topics:" + myConsumerPerTopicMap.keySet() + ",brokerId:"

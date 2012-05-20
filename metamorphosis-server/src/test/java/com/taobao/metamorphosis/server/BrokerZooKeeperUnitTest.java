@@ -126,8 +126,8 @@ public class BrokerZooKeeperUnitTest {
     public void testRegisterTopicInZk() throws Exception {
         final String topic = "test";
         final String path = "/meta/brokers/topics/test/0-m";
-        final String pubPath = "/meta/brokers/topics/0/test/pub/0-m";
-        final String subPath = "/meta/brokers/topics/0/test/sub/0-m";
+        final String pubPath = "/meta/brokers/topics-pub/test/0-m";
+        final String subPath = "/meta/brokers/topics-sub/test/0-m";
         assertFalse(ZkUtils.pathExists(this.client, path));
         assertFalse(ZkUtils.pathExists(this.client, pubPath));
         assertFalse(ZkUtils.pathExists(this.client, subPath));
@@ -147,8 +147,8 @@ public class BrokerZooKeeperUnitTest {
     public void testRegisterTopicInZk_slave() throws Exception {
         final String topic = "test";
         final String path = "/meta/brokers/topics/test/0-s0";
-        final String pubPath = "/meta/brokers/topics/0/test/pub/0-s0";
-        final String subPath = "/meta/brokers/topics/0/test/sub/0-s0";
+        final String pubPath = "/meta/brokers/topics-pub/test/0-s0";
+        final String subPath = "/meta/brokers/topics-sub/test/0-s0";
         assertFalse(ZkUtils.pathExists(this.client, path));
         assertFalse(ZkUtils.pathExists(this.client, pubPath));
         assertFalse(ZkUtils.pathExists(this.client, subPath));
@@ -223,8 +223,8 @@ public class BrokerZooKeeperUnitTest {
 
         final String brokerPath = "/meta/brokers/ids/0/master";
         final String topicPath = "/meta/brokers/topics/test/0-m";
-        final String topicPubPath = "/meta/brokers/topics/0/test/pub/0-m";
-        final String topicSubPath = "/meta/brokers/topics/0/test/sub/0-m";
+        final String topicPubPath = "/meta/brokers/topics-pub/test/0-m";
+        final String topicSubPath = "/meta/brokers/topics-sub/test/0-m";
 
         assertTrue(ZkUtils.pathExists(this.client, brokerPath));
         assertTrue(ZkUtils.pathExists(this.client, topicPath));
