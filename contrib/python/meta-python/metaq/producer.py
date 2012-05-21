@@ -79,7 +79,7 @@ class Message:
         if self.attribute is None:
             return self.data
         else:
-            attr_len = struct.pack("i",len(self.attribute))
+            attr_len = struct.pack(">i",len(self.attribute))
             self.flag= self.flag & 0xFFFFFFFE | 1
             return "%s%s%s" % (attr_len, self.attribute, self.data)
 
