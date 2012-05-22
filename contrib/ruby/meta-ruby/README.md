@@ -1,6 +1,6 @@
 #介绍
 
-淘宝开源MQ--[metaq](https://github.com/killme2008/Metamorphosis)的python客户端，目前只支持发送消息功能。
+淘宝开源MQ--[metaq](https://github.com/killme2008/Metamorphosis)的ruby客户端，目前只支持发送消息功能。
 
 
 #安装
