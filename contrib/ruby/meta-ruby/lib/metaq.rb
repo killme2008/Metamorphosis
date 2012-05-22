@@ -431,7 +431,7 @@ module Metaq
     def close_conn(conn)
       if conn
         @conn_hash.delete broker_id
-        debug("Closing {conn.uri}")
+        debug("Closing #{conn.uri}")
         conn.close()
       end
     end

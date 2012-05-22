@@ -15,7 +15,7 @@
 		  require 'rubygems'
 		  require 'metaq'
 
-     	  producer =Metaq::MessageProducer.new("meta-test",{ :zk_root => "/avos-fetch-meta" })
+     	  producer =Metaq::MessageProducer.new("meta-test")
 		  msg =Metaq::Message.new("meta-test","hello world")
 	      p producer.send(msg)
           producer.close
