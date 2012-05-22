@@ -5,22 +5,20 @@
 
 #安装
 
-TODO
+* 源码安装，下载本目录的代码，执行如下命令:
+
+		sudo rake install
+
 
 #使用
 
 		  require 'rubygems'
-		  require 'eventmachine'
 		  require 'metaq'
 
-		  EM.run do
-		      msg = Metaq::Message.new("meta-test","hello","fuck")
-		      producer = Metaq::Client.connect("localhost")
-          	  producer.send_request(msg) do | result|
-      	          p result
-			  end
-          end
-
+     	  producer =Metaq::MessageProducer.new("meta-test",{ :zk_root => "/avos-fetch-meta" })
+		  msg =Metaq::Message.new("meta-test","hello world")
+	      p producer.send(msg)
+          producer.close
 
 #协议
 [The MIT License](http://www.opensource.org/licenses/mit-license.html)

@@ -336,7 +336,6 @@ class MessageProducer:
                         self._debug("Closing %s" % (conn.uri))
                         conn.close()
                     new_uri = new_broker_dict.get(broker_id).broker_uri
-                    self._debug("broker uri changed,old=%s,new=%s,broker_id=%s" % (self._broker_dict.get(broker_id).broker_uri,new_uri, broker_id))
                     #connect to new broker
                     self._debug("connecting to %s" % (new_uri))
                     self._conn_dict[broker_id] = Conn(new_uri, self.dead_retry, self.socket_timeout, self.debug)
