@@ -1,9 +1,8 @@
 #!/bin/bash
-
+set -o nounset
 #project directory
 
 if [ -z "$BASE_DIR" ] ; then
-  ## resolve links - $0 may be a link to maven's home
   PRG="$0"
 
   # need this for relative symlinks
@@ -26,14 +25,14 @@ fi
 source $BASE_DIR/bin/env.sh
 
 AS_USER=`whoami`
-LOG_DIR=$BASE_DIR/logs
-LOG_FILE=$LOG_DIR/metaServer.log
-PID_DIR=$BASE_DIR/logs
-PID_FILE=$PID_DIR/.run.pid
+LOG_DIR="$BASE_DIR/logs"
+LOG_FILE="$LOG_DIR/metaServer.log"
+PID_DIR="$BASE_DIR/logs"
+PID_FILE="$PID_DIR/.run.pid"
 
 function running(){
 	if [ -f "$PID_FILE" ]; then
-		pid=$(cat $PID_FILE)
+		pid=$(cat "$PID_FILE")
 		process=`ps aux | grep $pid | grep -v grep`;
 		if [ "$process" == "" ]; then
 	    	return 1;
