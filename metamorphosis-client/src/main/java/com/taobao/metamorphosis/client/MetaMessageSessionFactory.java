@@ -266,7 +266,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
 
         }
         else {
-            this.zkConfig = this.loadZkConfigFromDiamond();
+            this.zkConfig = this.loadZkConfigFromLocalFile();
 
         }
         if (this.zkConfig != null) {
@@ -322,43 +322,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @return
      */
     // 单元测试要是通不过,请修改resources/zk.properties里的zk地址
-    private ZKConfig loadZkConfigFromDiamond() {
-        // 尝试从diamond获取
-        // this.diamondManager =
-        // new DefaultDiamondManager(this.metaClientConfig.getDiamondZKGroup(),
-        // this.metaClientConfig.getDiamondZKDataId(), new ManagerListener() {
-        // @Override
-        // public void receiveConfigInfo(final String configInfo) {
-        // log.info("Receiving new diamond zk config:" + configInfo);
-        // log.info("Closing zk client");
-        // MetaMessageSessionFactory.this.zkClient.close();
-        // final Properties properties = new Properties();
-        // try {
-        // properties.load(new StringReader(configInfo));
-        // final ZKConfig zkConfig = DiamondUtils.getZkConfig(properties);
-        // MetaMessageSessionFactory.this.zkClient.close();
-        // Thread.sleep(zkConfig.zkSyncTimeMs);
-        // log.info("Initialize zk client...");
-        // final ZkClient newClient =
-        // new ZkClient(zkConfig.zkConnect, zkConfig.zkSessionTimeoutMs,
-        // zkConfig.zkConnectionTimeoutMs, new ZkUtils.StringSerializer());
-        // log.info("Begin to notify zkClient has been changed...");
-        // MetaMessageSessionFactory.this.metaZookeeper.setZkClient(newClient);
-        // MetaMessageSessionFactory.this.notifyZkClientChanged(newClient);
-        // MetaMessageSessionFactory.this.zkClient = newClient;
-        // log.info("End notifying zkClient has been changed...");
-        // }
-        // catch (final Exception e) {
-        // log.error("从diamond加载zk配置失败", e);
-        // }
-        // }
-        //
-        //
-        // @Override
-        // public Executor getExecutor() {
-        // return null;
-        // }
-        // });
+    private ZKConfig loadZkConfigFromLocalFile() {
         try {
             final Properties properties = Utils.getResourceAsProperties("zk.properties", "GBK");
             final ZKConfig zkConfig = new ZKConfig();

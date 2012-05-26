@@ -17,6 +17,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 
+import com.taobao.gecko.core.util.ResourcesUtils;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
@@ -29,7 +30,6 @@ import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.server.utils.TopicConfig;
-import com.taobao.notify.remoting.core.util.ResourcesUtils;
 
 
 /**

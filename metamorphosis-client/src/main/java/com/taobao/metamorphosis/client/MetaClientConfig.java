@@ -20,6 +20,8 @@ package com.taobao.metamorphosis.client;
 import java.io.Serializable;
 import java.util.Properties;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.taobao.metamorphosis.utils.DiamondUtils;
 import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
 
@@ -78,21 +80,25 @@ public class MetaClientConfig implements Serializable {
     }
 
 
+    @Deprecated
     public String getDiamondZKDataId() {
         return this.diamondZKDataId;
     }
 
 
+    @Deprecated
     public void setDiamondZKDataId(final String diamondZKDataId) {
         this.diamondZKDataId = diamondZKDataId;
     }
 
 
+    @Deprecated
     public String getDiamondZKGroup() {
         return this.diamondZKGroup;
     }
 
 
+    @Deprecated
     public void setDiamondZKGroup(final String diamondZKGroup) {
         this.diamondZKGroup = diamondZKGroup;
     }
@@ -104,6 +110,12 @@ public class MetaClientConfig implements Serializable {
 
 
     public void setZkConfig(final ZKConfig zkConfig) {
+        if (zkConfig == null) {
+            throw new IllegalArgumentException("Null zkconfig");
+        }
+        if (StringUtils.isEmpty(zkConfig.zkConnect)) {
+            throw new IllegalArgumentException("Empty zookeeper servers");
+        }
         this.zkConfig = zkConfig;
     }
 
@@ -146,7 +158,7 @@ public class MetaClientConfig implements Serializable {
 
 
     public Properties getPartitionsInfo() {
-        return partitionsInfo;
+        return this.partitionsInfo;
     }
 
 }

@@ -740,6 +740,13 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         if (this.getTopics().isEmpty()) {
             throw new MetamorphosisServerStartupException("Empty topics list");
         }
+        ZKConfig zkconfig = this.zkConfig;
+        if (zkconfig == null) {
+            throw new IllegalStateException("Null zookeeper config");
+        }
+        if (StringUtils.isBlank(this.zkConfig.zkConnect)) {
+            throw new IllegalArgumentException("Empty zookeeper servers");
+        }
     }
 
 

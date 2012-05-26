@@ -1,6 +1,7 @@
 package com.taobao.meta.test;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.taobao.metamorphosis.client.MetaClientConfig;
@@ -13,7 +14,7 @@ import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
  * @author ÎÞ»¨
  * @since 2011-8-17 ÏÂÎç5:41:41
  */
-
+@Ignore
 public class BigMessageTest extends BaseMetaTest {
     private final String topic = "meta-test";
 
