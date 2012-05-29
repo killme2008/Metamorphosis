@@ -507,9 +507,10 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
             attrData = ByteUtils.getBytes(attribute);
         }
         else {
+            // attribute到这里一定为null了
             return payload;
         }
-        // attribute到这里一定为null了
+
         final int attrLen = attrData == null ? 0 : attrData.length;
         final ByteBuffer buffer = ByteBuffer.allocate(4 + attrLen + payload.length);
         if (attribute != null) {
