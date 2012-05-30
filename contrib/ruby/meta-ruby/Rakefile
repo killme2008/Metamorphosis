@@ -1,6 +1,6 @@
 begin
+  require 'rubygems'
   require 'jeweler'
-  require './lib/metaq.rb'
   Jeweler::Tasks.new do |gemspec|
     gemspec.name = "metaq"
     gemspec.summary = "Metaq client for Ruby"
@@ -10,7 +10,7 @@ begin
     gemspec.authors = ["Dennis Zhuang"]
     gemspec.files = Dir.glob('lib/**/*.rb')
     gemspec.add_dependency 'zookeeper','>= 1.2.2'
-    gemspec.version = Metaq::Version::STRING
+    gemspec.version = "0.1.0"
   end
 rescue LoadError
   puts "Jeweler not available. Install it with: sudo gem install jeweler"

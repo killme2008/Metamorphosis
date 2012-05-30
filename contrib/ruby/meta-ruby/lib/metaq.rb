@@ -1,4 +1,4 @@
-##  @description : metaq client for ruby 
+##  @description : metaq client for ruby
 ##  @author:  dennis zhuang <killme2008@gmail.com>
 ##  @license: MIT licensed.
 
@@ -9,15 +9,6 @@ require 'zookeeper'
 require 'thread'
 
 module Metaq
-
-  module Version
-    MAJOR = 0
-    MINOR = 1
-    PATCH =  0
-    BUILD = 'beta'
-
-    STRING = [MAJOR, MINOR, PATCH, BUILD].compact.join('.')
-  end
 
   #Metaq message
   class Message
