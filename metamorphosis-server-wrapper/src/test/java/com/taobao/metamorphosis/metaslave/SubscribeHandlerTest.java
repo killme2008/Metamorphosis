@@ -28,6 +28,7 @@ import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.utils.MetaZookeeper;
 import com.taobao.metamorphosis.utils.ZkUtils;
+import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
 
 
 /**
@@ -51,6 +52,8 @@ public class SubscribeHandlerTest {
         this.metaConfig.setBrokerId(this.brokerId);
         this.metaConfig.setHostName("localhost");
         this.metaConfig.setServerPort(8199);
+        ZKConfig zkConfig = new ZKConfig();
+        this.metaConfig.setZkConfig(zkConfig);
         this.broker = new MetaMorphosisBroker(this.metaConfig);
         this.subscribeHandler = new SubscribeHandler(this.broker);
         this.metaZookeeper = this.broker.getBrokerZooKeeper().getMetaZookeeper();
@@ -78,7 +81,7 @@ public class SubscribeHandlerTest {
         this.subscribeHandler.start();
         Assert.assertFalse(this.subscribeHandler.isStarted());
         ZkUtils.createEphemeralPath(this.getZkClient(), this.metaZookeeper.brokerIdsPathOf(this.brokerId, -1),
-                "meta://1.1.1.1:222");
+            "meta://1.1.1.1:222");
         ZkUtils.createEphemeralPath(this.getZkClient(),
             this.metaZookeeper.brokerTopicsPathOf("topictest", this.brokerId, -1), "2");
 
@@ -93,7 +96,7 @@ public class SubscribeHandlerTest {
             this.metaZookeeper.brokerTopicsPathOf("topictest", false, this.brokerId, -1));
 
         ZkUtils.createEphemeralPath(this.getZkClient(), this.metaZookeeper.brokerIdsPathOf(this.brokerId, -1),
-                "meta://1.1.1.1:222");
+            "meta://1.1.1.1:222");
         ZkUtils.createEphemeralPath(this.getZkClient(),
             this.metaZookeeper.brokerTopicsPathOf("topictest", false, this.brokerId, -1),
             new TopicBroker(2, null).toJson());

@@ -303,6 +303,7 @@ public class ZkUtils {
 
         public ZKConfig() {
             super();
+            this.zkConnect = "localhost:2181";
         }
 
 
