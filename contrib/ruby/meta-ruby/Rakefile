@@ -12,6 +12,6 @@ begin
     gemspec.add_dependency 'zookeeper','>= 1.2.2'
     gemspec.version = "0.1.0"
   end
-rescue LoadError
+rescue LoadError => e
   puts "Jeweler not available. Install it with: sudo gem install jeweler"
 end

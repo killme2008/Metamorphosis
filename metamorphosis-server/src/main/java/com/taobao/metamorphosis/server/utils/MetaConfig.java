@@ -80,7 +80,7 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     // 文件删除策略:"策略名称,设定值列表"，默认为保存7天
     private String deletePolicy = "delete,168";
 
-    private final Map<String/* topic */, TopicConfig> topicConfigMap = new CopyOnWriteMap<String, TopicConfig>();
+    private Map<String/* topic */, TopicConfig> topicConfigMap = new CopyOnWriteMap<String, TopicConfig>();
 
     private final PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 
@@ -393,6 +393,7 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         final Set<String> set = conf.keySet();
         final Set<String> newStatTopics = new TreeSet<String>();
         final List<String> newTopics = new ArrayList<String>();
+        final Map<String/* topic */, TopicConfig> newTopicConfigMap = new CopyOnWriteMap<String, TopicConfig>();
         for (final String name : set) {
             // Is it a topic section?
             if (name != null && name.startsWith("topic=")) {
@@ -439,7 +440,7 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
                 }
 
                 // this.topicPartitions.put(topic, numPartitions);
-                this.topicConfigMap.put(topic, topicConfig);
+                newTopicConfigMap.put(topic, topicConfig);
                 newTopics.add(topic);
             }
         }
@@ -449,8 +450,9 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
             this.statTopicSet = newStatTopics;
             this.propertyChangeSupport.firePropertyChange("statTopicSet", null, null);
         }
-        if (!newTopics.equals(this.topics)) {
+        if (!newTopicConfigMap.equals(this.topicConfigMap)) {
             this.topics = newTopics;
+            this.topicConfigMap = newTopicConfigMap;
             this.propertyChangeSupport.firePropertyChange("topics", null, null);
         }
 

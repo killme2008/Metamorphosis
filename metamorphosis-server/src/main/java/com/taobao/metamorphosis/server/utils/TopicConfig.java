@@ -49,6 +49,28 @@ public class TopicConfig {
     }
 
 
+    public TopicConfig(String topic, int unflushThreshold, int unflushInterval, String dataPath, String deleteWhen,
+            String deletePolicy, int numPartitions, boolean acceptPublish, boolean acceptSubscribe) {
+        super();
+        this.topic = topic;
+        this.unflushThreshold = unflushThreshold;
+        this.unflushInterval = unflushInterval;
+        this.dataPath = dataPath;
+        this.deleteWhen = deleteWhen;
+        this.deletePolicy = deletePolicy;
+        this.numPartitions = numPartitions;
+        this.acceptPublish = acceptPublish;
+        this.acceptSubscribe = acceptSubscribe;
+    }
+
+
+    @Override
+    public TopicConfig clone() {
+        return new TopicConfig(this.topic, this.unflushThreshold, this.unflushInterval, this.dataPath, this.deleteWhen,
+            this.deletePolicy, this.numPartitions, this.acceptPublish, this.acceptSubscribe);
+    }
+
+
     public boolean isAcceptPublish() {
         return this.acceptPublish;
     }
@@ -138,6 +160,8 @@ public class TopicConfig {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + (this.acceptPublish ? 1231 : 1237);
+        result = prime * result + (this.acceptSubscribe ? 1231 : 1237);
         result = prime * result + (this.dataPath == null ? 0 : this.dataPath.hashCode());
         result = prime * result + (this.deletePolicy == null ? 0 : this.deletePolicy.hashCode());
         result = prime * result + (this.deleteWhen == null ? 0 : this.deleteWhen.hashCode());
@@ -161,6 +185,12 @@ public class TopicConfig {
             return false;
         }
         TopicConfig other = (TopicConfig) obj;
+        if (this.acceptPublish != other.acceptPublish) {
+            return false;
+        }
+        if (this.acceptSubscribe != other.acceptSubscribe) {
+            return false;
+        }
         if (this.dataPath == null) {
             if (other.dataPath != null) {
                 return false;
@@ -215,7 +245,8 @@ public class TopicConfig {
     public String toString() {
         return "TopicConfig [topic=" + this.topic + ", unflushThreshold=" + this.unflushThreshold
                 + ", unflushInterval=" + this.unflushInterval + ", dataPath=" + this.dataPath + ", deleteWhen="
-                + this.deleteWhen + "]";
+                + this.deleteWhen + ", deletePolicy=" + this.deletePolicy + ", numPartitions=" + this.numPartitions
+                + ", acceptPublish=" + this.acceptPublish + ", acceptSubscribe=" + this.acceptSubscribe + "]";
     }
 
 }

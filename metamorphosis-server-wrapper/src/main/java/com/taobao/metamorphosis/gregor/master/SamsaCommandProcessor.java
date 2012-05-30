@@ -311,7 +311,7 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                 return;
             }
             // 如果是动态添加的topic，需要注册到zk
-            this.brokerZooKeeper.registerTopicInZk(request.getTopic());
+            this.brokerZooKeeper.registerTopicInZk(request.getTopic(), false);
 
             // 如果slave没有链接，马上返回失败，防止master重复消息过多
             if (!this.remotingClient.isConnected(this.slaveUrl)) {

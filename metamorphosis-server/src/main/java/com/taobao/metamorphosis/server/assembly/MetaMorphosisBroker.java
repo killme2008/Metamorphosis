@@ -59,6 +59,7 @@ import com.taobao.metamorphosis.utils.IdWorker;
 
 /**
  * 组装的meta server
+ * 
  * @author boyan
  * @Date 2011-4-29
  * 
@@ -249,11 +250,11 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
     private void registerTopicsInZk() throws Exception {
         // 先注册配置的topic到zookeeper
         for (final String topic : this.metaConfig.getTopics()) {
-            this.brokerZooKeeper.registerTopicInZk(topic);
+            this.brokerZooKeeper.registerTopicInZk(topic, true);
         }
         // 注册加载的topic到zookeeper
         for (final String topic : this.storeManager.getMessageStores().keySet()) {
-            this.brokerZooKeeper.registerTopicInZk(topic);
+            this.brokerZooKeeper.registerTopicInZk(topic, true);
         }
     }
 

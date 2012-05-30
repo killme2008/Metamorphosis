@@ -90,7 +90,7 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
             }
 
         });
-        this.brokerZooKeeper.registerTopicInZk(this.topic);
+        this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);
@@ -136,7 +136,7 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
             }
 
         });
-        this.brokerZooKeeper.registerTopicInZk(this.topic);
+        this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);

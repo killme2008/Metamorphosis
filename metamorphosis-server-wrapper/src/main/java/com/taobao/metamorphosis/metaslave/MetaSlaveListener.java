@@ -94,7 +94,7 @@ public class MetaSlaveListener implements MessageListener {
         try {
             store = this.storeManager.getOrCreateMessageStore(message.getTopic(), partition);
             final long messageId = message.getId();
-            this.brokerZooKeeper.registerTopicInZk(message.getTopic());
+            this.brokerZooKeeper.registerTopicInZk(message.getTopic(), false);
 
             final AppendOp cb = new AppendOp();
             store.append(messageId,

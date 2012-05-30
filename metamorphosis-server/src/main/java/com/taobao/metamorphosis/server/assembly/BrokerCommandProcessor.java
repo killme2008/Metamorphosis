@@ -324,7 +324,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
             final int partition = this.getPartition(request);
             final MessageStore store = this.storeManager.getOrCreateMessageStore(request.getTopic(), partition);
             // 如果是动态添加的topic，需要注册到zk
-            this.brokerZooKeeper.registerTopicInZk(request.getTopic());
+            this.brokerZooKeeper.registerTopicInZk(request.getTopic(), false);
             // 设置唯一id
             final long messageId = this.idWorker.nextId();
             store.append(messageId, request,

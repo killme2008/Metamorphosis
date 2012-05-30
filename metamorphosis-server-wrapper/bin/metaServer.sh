@@ -1,5 +1,4 @@
 #!/bin/bash
-set -o nounset
 #project directory
 
 if [ -z "$BASE_DIR" ] ; then
@@ -33,7 +32,7 @@ PID_FILE="$PID_DIR/.run.pid"
 function running(){
 	if [ -f "$PID_FILE" ]; then
 		pid=$(cat "$PID_FILE")
-		process=`ps aux | grep $pid | grep -v grep`;
+		process=`ps aux | grep " $pid " | grep -v grep`;
 		if [ "$process" == "" ]; then
 	    	return 1;
 		else

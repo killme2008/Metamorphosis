@@ -22,6 +22,7 @@ import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
@@ -62,6 +63,9 @@ public class BrokerZooKeeper implements PropertyChangeListener {
     private final String masterConfigChecksumPath;
 
     private final Set<String> topics = new ConcurrentHashSet<String>();
+
+    private final ConcurrentHashMap<String, TopicConfig> cloneTopicConfigs =
+            new ConcurrentHashMap<String, TopicConfig>();
 
     static final Log log = LogFactory.getLog(BrokerZooKeeper.class);
 
@@ -276,26 +280,30 @@ public class BrokerZooKeeper implements PropertyChangeListener {
 
     private void unregisterTopics() throws Exception {
         for (final String topic : BrokerZooKeeper.this.topics) {
-            try {
-                int brokerId = this.config.getBrokerId();
-                final String brokerTopicPath =
-                        this.metaZookeeper.brokerTopicsPathOf(topic, brokerId, this.config.getSlaveId());
-                final String topicPubPath =
-                        this.metaZookeeper.brokerTopicsPathOf(topic, true, brokerId, this.config.getSlaveId());
-                final String topicSubPath =
-                        this.metaZookeeper.brokerTopicsPathOf(topic, false, brokerId, this.config.getSlaveId());
+            this.unregisterTopic(topic);
+        }
+    }
 
-                // Be compatible with the version before 1.4.3
-                ZkUtils.deletePath(this.zkClient, brokerTopicPath);
 
-                // added by dennis,since 1.4.3
-                ZkUtils.deletePath(this.zkClient, topicPubPath);
-                ZkUtils.deletePath(this.zkClient, topicSubPath);
-            }
-            catch (Exception e) {
-                log.error("Unregister topic " + topic + " failed,but don't worry about it.", e);
-            }
+    private void unregisterTopic(final String topic) {
+        try {
+            int brokerId = this.config.getBrokerId();
+            final String brokerTopicPath =
+                    this.metaZookeeper.brokerTopicsPathOf(topic, brokerId, this.config.getSlaveId());
+            final String topicPubPath =
+                    this.metaZookeeper.brokerTopicsPathOf(topic, true, brokerId, this.config.getSlaveId());
+            final String topicSubPath =
+                    this.metaZookeeper.brokerTopicsPathOf(topic, false, brokerId, this.config.getSlaveId());
 
+            // Be compatible with the version before 1.4.3
+            ZkUtils.deletePath(this.zkClient, brokerTopicPath);
+
+            // added by dennis,since 1.4.3
+            ZkUtils.deletePath(this.zkClient, topicPubPath);
+            ZkUtils.deletePath(this.zkClient, topicSubPath);
+        }
+        catch (Exception e) {
+            log.error("Unregister topic " + topic + " failed,but don't worry about it.", e);
         }
     }
 
@@ -304,13 +312,48 @@ public class BrokerZooKeeper implements PropertyChangeListener {
      * 注册topic和分区信息到zk
      * 
      * @param topic
+     * @param force
+     *            TODO
      * @throws Exception
      */
-    public void registerTopicInZk(final String topic) throws Exception {
-        if (!this.topics.add(topic)) {
-            return;
+    public void registerTopicInZk(final String topic, boolean force) throws Exception {
+        if (force) {
+            // This block is not synchronized,because we don't force to register
+            // topics frequently except reloading config file.
+            TopicConfig oldConfig = this.cloneTopicConfigs.get(topic);
+            TopicConfig newConfig = this.config.getTopicConfig(topic);
+            if (this.compareTopicConfigs(newConfig, oldConfig)) {
+                return;
+            }
+            else {
+                this.unregisterTopic(topic);
+                this.topics.add(topic);
+                this.registerTopicInZkInternal(topic);
+            }
         }
-        this.registerTopicInZkInternal(topic);
+        else {
+            if (!this.topics.add(topic)) {
+                return;
+            }
+            else {
+                this.registerTopicInZkInternal(topic);
+            }
+        }
+    }
+
+
+    private boolean compareTopicConfigs(TopicConfig c1, TopicConfig c2) {
+        if (c1 == null && c2 != null) {
+            return false;
+        }
+        if (c2 == null && c1 != null) {
+            return false;
+        }
+        // If old and new configs are all null,we have to register it.
+        if (c1 == null && c2 == null) {
+            return false;
+        }
+        return c1.equals(c2);
     }
 
 
@@ -338,6 +381,7 @@ public class BrokerZooKeeper implements PropertyChangeListener {
 
     private void registerTopicInZkInternal(final String topic) throws Exception {
         if (!this.zkConfig.zkEnable) {
+            log.warn("zkEnable is false,so we don't talk to zookeeper.");
             return;
         }
         int brokerId = this.config.getBrokerId();
@@ -354,14 +398,24 @@ public class BrokerZooKeeper implements PropertyChangeListener {
         log.info("Register broker for topic:" + topicBroker);
         // Be compatible with the version before 1.4.3
         ZkUtils.createEphemeralPath(this.zkClient, brokerTopicPath, String.valueOf(numParts));
+
         // added by dennis,since 1.4.3
         String topicBrokerJson = topicBroker.toJson();
         if (topicConfig.isAcceptPublish()) {
             ZkUtils.createEphemeralPath(this.zkClient, topicPubPath, topicBrokerJson);
         }
+        else {
+            ZkUtils.deletePath(this.zkClient, topicPubPath);
+        }
+
         if (topicConfig.isAcceptSubscribe()) {
             ZkUtils.createEphemeralPath(this.zkClient, topicSubPath, topicBrokerJson);
         }
+        else {
+            ZkUtils.deletePath(this.zkClient, topicSubPath);
+        }
+        this.cloneTopicConfigs.put(topic, topicConfig.clone());
+
         log.info("End registering broker topic " + brokerTopicPath);
     }
 

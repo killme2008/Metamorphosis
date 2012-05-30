@@ -131,7 +131,7 @@ public class BrokerZooKeeperUnitTest {
         assertFalse(ZkUtils.pathExists(this.client, path));
         assertFalse(ZkUtils.pathExists(this.client, pubPath));
         assertFalse(ZkUtils.pathExists(this.client, subPath));
-        this.brokerZooKeeper.registerTopicInZk(topic);
+        this.brokerZooKeeper.registerTopicInZk(topic, false);
         assertTrue(ZkUtils.pathExists(this.client, path));
         assertTrue(ZkUtils.pathExists(this.client, pubPath));
         assertTrue(ZkUtils.pathExists(this.client, subPath));
@@ -153,7 +153,7 @@ public class BrokerZooKeeperUnitTest {
         assertFalse(ZkUtils.pathExists(this.client, pubPath));
         assertFalse(ZkUtils.pathExists(this.client, subPath));
         this.createSlaveBrokerZooKeeper();
-        this.slaveBrokerZooKeeper.registerTopicInZk(topic);
+        this.slaveBrokerZooKeeper.registerTopicInZk(topic, false);
         assertTrue(ZkUtils.pathExists(this.client, path));
         assertTrue(ZkUtils.pathExists(this.client, pubPath));
         assertTrue(ZkUtils.pathExists(this.client, subPath));

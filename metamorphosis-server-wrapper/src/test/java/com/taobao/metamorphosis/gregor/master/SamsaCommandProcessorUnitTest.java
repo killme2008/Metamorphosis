@@ -154,7 +154,7 @@ public class SamsaCommandProcessorUnitTest {
             }
 
         });
-        this.brokerZooKeeper.registerTopicInZk(this.topic);
+        this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
@@ -190,7 +190,7 @@ public class SamsaCommandProcessorUnitTest {
                 }
             }
         };
-        this.brokerZooKeeper.registerTopicInZk(this.topic);
+        this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
@@ -255,7 +255,7 @@ public class SamsaCommandProcessorUnitTest {
             }
 
         });
-        this.brokerZooKeeper.registerTopicInZk(this.topic);
+        this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
@@ -319,7 +319,7 @@ public class SamsaCommandProcessorUnitTest {
             }
 
         });
-        this.brokerZooKeeper.registerTopicInZk(this.topic);
+        this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
