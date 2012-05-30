@@ -284,7 +284,7 @@ public class SimpleMessageProducerUnitTest {
         final String topic = "topic1";
         final byte[] data = "hello".getBytes();
         final Message message = new Message(topic, data);
-        final byte[] encoded = this.producer.encodeData(message);
+        final byte[] encoded = MessageUtils.encodePayload(message);
         assertEquals("hello", new String(encoded));
     }
 
@@ -295,7 +295,7 @@ public class SimpleMessageProducerUnitTest {
         final byte[] data = "hello".getBytes();
         final String attribute = "attribute";
         final Message message = new Message(topic, data, attribute);
-        final byte[] encoded = this.producer.encodeData(message);
+        final byte[] encoded = MessageUtils.encodePayload(message);
         assertEquals(4 + attribute.length() + data.length, encoded.length);
         assertEquals(attribute.length(), MessageUtils.getInt(0, encoded));
         assertEquals(attribute, new String(encoded, 4, attribute.length()));
@@ -309,7 +309,7 @@ public class SimpleMessageProducerUnitTest {
         final byte[] data = "hello".getBytes();
         final String attribute = "";
         final Message message = new Message(topic, data, attribute);
-        final byte[] encoded = SimpleMessageProducer.encodeData(message);
+        final byte[] encoded = MessageUtils.encodePayload(message);
         assertEquals(4 + attribute.length() + data.length, encoded.length);
         assertEquals(attribute.length(), MessageUtils.getInt(0, encoded));
         assertEquals(attribute, new String(encoded, 4, attribute.length()));

@@ -17,7 +17,6 @@
  */
 package com.taobao.metamorphosis.client.producer;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -47,12 +46,12 @@ import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.exception.MetaOpeartionTimeoutException;
 import com.taobao.metamorphosis.exception.TransactionInProgressException;
 import com.taobao.metamorphosis.network.BooleanCommand;
-import com.taobao.metamorphosis.network.ByteUtils;
 import com.taobao.metamorphosis.network.HttpStatus;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.transaction.TransactionId;
 import com.taobao.metamorphosis.utils.LongSequenceGenerator;
 import com.taobao.metamorphosis.utils.MessageFlagUtils;
+import com.taobao.metamorphosis.utils.MessageUtils;
 import com.taobao.metamorphosis.utils.MetaStatLog;
 import com.taobao.metamorphosis.utils.StatConstants;
 
@@ -174,7 +173,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
         final long start = System.currentTimeMillis();
         int retry = 0;
         final long timeoutInMills = TimeUnit.MILLISECONDS.convert(timeout, unit);
-        final byte[] data = SimpleMessageProducer.encodeData(message);
+        final byte[] data = MessageUtils.encodePayload(message);
         try {
             for (int i = 0; i < MAX_RETRY; i++) {
                 result = this.send0(message, data, timeout, unit);
@@ -493,37 +492,6 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
     }
 
 
-    /**
-     * 将消息属性和消息payload打包，结构如下：</br></br> 0或者1个定长attribute + payload
-     * 
-     * @param message
-     * @return
-     */
-    public static byte[] encodeData(final Message message) {
-        final byte[] payload = message.getData();
-        final String attribute = message.getAttribute();
-        byte[] attrData = null;
-        if (attribute != null) {
-            attrData = ByteUtils.getBytes(attribute);
-        }
-        else {
-            return payload;
-        }
-        // attribute到这里一定为null了
-        final int attrLen = attrData == null ? 0 : attrData.length;
-        final ByteBuffer buffer = ByteBuffer.allocate(4 + attrLen + payload.length);
-        if (attribute != null) {
-            buffer.putInt(attrLen);
-            if (attrData != null) {
-                buffer.put(attrData);
-            }
-        }
-
-        buffer.put(payload);
-        return buffer.array();
-    }
-
-
     protected void checkMessage(final Message message) throws MetaClientException {
         if (message == null) {
             throw new InvalidMessageException("Null message");
@@ -553,7 +521,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
             }
 
             final int flag = MessageFlagUtils.getFlag(message);
-            final byte[] encodedData = SimpleMessageProducer.encodeData(message);
+            final byte[] encodedData = MessageUtils.encodePayload(message);
             final PutCommand putCommand =
                     new PutCommand(topic, partition.getPartition(), encodedData, this.getTransactionId(), flag,
                         OpaqueGenerator.getNextOpaque());

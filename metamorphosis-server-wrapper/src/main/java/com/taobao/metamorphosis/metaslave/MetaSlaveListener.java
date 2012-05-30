@@ -28,13 +28,13 @@ import com.taobao.metamorphosis.AppendMessageErrorException;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.MessageAccessor;
 import com.taobao.metamorphosis.client.consumer.MessageListener;
-import com.taobao.metamorphosis.client.producer.SimpleMessageProducer;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.store.AppendCallback;
 import com.taobao.metamorphosis.server.store.Location;
 import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
+import com.taobao.metamorphosis.utils.MessageUtils;
 
 
 /**
@@ -98,7 +98,7 @@ public class MetaSlaveListener implements MessageListener {
 
             final AppendOp cb = new AppendOp();
             store.append(messageId,
-                new PutCommand(message.getTopic(), partition, SimpleMessageProducer.encodeData(message), null,
+                new PutCommand(message.getTopic(), partition, MessageUtils.encodePayload(message), null,
                     MessageAccessor.getFlag(message), 0), cb);
             cb.latch.await(APPEND_TIMEOUT, TimeUnit.MILLISECONDS);
             if (cb.offset < 0) {

@@ -175,4 +175,34 @@ public class MessageUtils {
     public static final int MAX_READ_BUFFER_SIZE = Integer.parseInt(System.getProperty(
         "notify.remoting.max_read_buffer_size", "2097152"));
 
+
+    /**
+     * 将消息属性和消息payload打包，结构如下：</br></br> 0或者1个定长attribute + payload
+     * 
+     * @param message
+     * @return
+     */
+    public static byte[] encodePayload(final Message message) {
+        final byte[] payload = message.getData();
+        final String attribute = message.getAttribute();
+        byte[] attrData = null;
+        if (attribute != null) {
+            attrData = ByteUtils.getBytes(attribute);
+        }
+        else {
+            return payload;
+        }
+        final int attrLen = attrData == null ? 0 : attrData.length;
+        final ByteBuffer buffer = ByteBuffer.allocate(4 + attrLen + payload.length);
+        if (attribute != null) {
+            buffer.putInt(attrLen);
+            if (attrData != null) {
+                buffer.put(attrData);
+            }
+        }
+
+        buffer.put(payload);
+        return buffer.array();
+    }
+
 }
