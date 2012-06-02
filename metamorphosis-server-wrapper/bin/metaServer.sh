@@ -119,15 +119,27 @@ function status(){
 }
 
 function reload_config() {
+	if ! running; then
+		echo "Broker is not running."
+		exit 1
+	fi
 	echo "Reloading broker config..."
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.ReloadConfig -host 127.0.0.1 -port $JMX_PORT $@
 }
 
 function open_partitions() {
+	if ! running; then
+		echo "Broker is not running."
+		exit 1
+	fi
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.OpenPartitionsTool -host 127.0.0.1 -port $JMX_PORT $@
 }
 
 function close_partitions() {
+	if ! running; then
+		echo "Broker is not running."
+		exit 1
+	fi
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.ClosePartitionsTool -host 127.0.0.1 -port $JMX_PORT $@
 }
 
@@ -140,10 +152,18 @@ function move_partitions() {
 }
 
 function do_query() {
+	if ! running; then
+		echo "Broker is not running."
+		exit 1
+	fi
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.query.Bootstrap -s server.ini $@
 }
 
 function do_stats() {
+	if ! running; then
+		echo "Broker is not running."
+		exit 1
+	fi
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.BrokerStatsTool -config server.ini $@
 }
  
