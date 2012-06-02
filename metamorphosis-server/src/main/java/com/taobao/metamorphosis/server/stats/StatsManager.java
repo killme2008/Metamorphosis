@@ -39,6 +39,7 @@ import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.utils.BuildProperties;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.server.utils.TopicConfig;
 import com.taobao.metamorphosis.utils.MetaStatLog;
 import com.taobao.metamorphosis.utils.StatConstants;
 
@@ -246,7 +247,9 @@ public class StatsManager implements Service {
                     }
                 }
             }
-            this.append(sb, topic, "partitions", partitionCount, "message_count", sum);
+            TopicConfig topicConfig = this.metaConfig.getTopicConfig(topic);
+            this.append(sb, topic, "partitions", partitionCount, "message_count", sum, "accept_publish",
+                topicConfig.isAcceptPublish(), "accept_subscribe", topicConfig.isAcceptSubscribe());
         }
         List<String> configTopics = this.metaConfig.getTopics();
         for (String topic : configTopics) {
@@ -268,6 +271,7 @@ public class StatsManager implements Service {
         this.append(sb, "port", this.getServerPort());
         this.append(sb, "uptime", this.getUpTime());
         this.append(sb, "version", this.getVersion());
+        this.append(sb, "slave", this.metaConfig.isSlave());
         this.append(sb, "curr_connections", this.getCurrentConnectionCount());
         this.append(sb, "threads", this.getCurrentThreads());
         this.append(sb, "cmd_put", this.cmdPut.get());
