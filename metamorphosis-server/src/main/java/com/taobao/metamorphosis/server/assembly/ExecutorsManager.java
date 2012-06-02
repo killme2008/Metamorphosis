@@ -19,6 +19,7 @@ package com.taobao.metamorphosis.server.assembly;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.taobao.metamorphosis.server.Service;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
@@ -60,6 +61,13 @@ public class ExecutorsManager implements Service {
 
         if (this.unOrderedPutExecutor != null) {
             this.unOrderedPutExecutor.shutdown();
+        }
+        try {
+            this.getExecutor.awaitTermination(5000, TimeUnit.MILLISECONDS);
+            this.unOrderedPutExecutor.awaitTermination(5000, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            // ignore
         }
     }
 

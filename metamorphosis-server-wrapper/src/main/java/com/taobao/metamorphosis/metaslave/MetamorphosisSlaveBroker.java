@@ -65,6 +65,10 @@ public class MetamorphosisSlaveBroker extends AbstractBrokerPlugin {
         if (StringUtils.isNotBlank(props.getProperty("slaveGroup"))) {
             slaveConfig.setSlaveGroup(props.getProperty("slaveGroup"));
         }
+        else {
+            // set default slave group
+            slaveConfig.setSlaveGroup(slaveConfig.getSlaveGroup() + "_" + slaveConfig.getSlaveId());
+        }
         if (StringUtils.isNotBlank(props.getProperty("slaveMaxDelayInMills"))) {
             slaveConfig.setSlaveMaxDelayInMills(Integer.parseInt(props.getProperty("slaveMaxDelayInMills")));
         }
