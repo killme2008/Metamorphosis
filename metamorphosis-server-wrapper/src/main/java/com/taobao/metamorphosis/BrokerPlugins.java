@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis;
 
@@ -147,7 +147,7 @@ public class BrokerPlugins extends AbstractBrokerPlugin {
             protected void doExecute(final BrokerPlugin plugin) {
                 plugin.stop();
                 BrokerPlugins.log.info("stoped broker plugin:[" + plugin.name() + ":" + plugin.getClass().getName()
-                        + "]");
+                    + "]");
             }
         }.execute();
     }
@@ -157,10 +157,9 @@ public class BrokerPlugins extends AbstractBrokerPlugin {
         public void execute() {
             for (final BrokerPlugin plugin : BrokerPlugins.this.plugins.values()) {
                 if (BrokerPlugins.this.pluginsInfo.containsKey(plugin.name())) {
+                    BrokerPlugins.log.warn("Starting plugin:" + plugin.name());
                     this.doExecute(plugin);
-                }
-                else {
-                    BrokerPlugins.log.info("unstarted plugin:" + plugin.name());
+                    BrokerPlugins.log.warn("Start plugin:" + plugin.name() + " successfully.");
                 }
             }
         }
