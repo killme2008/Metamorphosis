@@ -12,7 +12,7 @@ module Metaq
 
   #Metaq message
   class Message
-    attr_accessor :id,:topic,:data,:attribute,:partition
+    attr_accessor :id, :topic, :data, :attribute, :partition, :flag
     def initialize(topic, data, attribute=nil)
       @topic = topic
       @data = data
@@ -62,7 +62,7 @@ module Metaq
       @error = error
     end
 
-    def inspect()
+    def to_s
       return "SendResult[success=#{@success},partition=#{@partition},offset=#{@offset},error=#{@error}]"
     end
   end
@@ -109,10 +109,6 @@ module Metaq
     end
 
     def to_s
-      return inspect()
-    end
-
-    def inspect()
       return "#{@broker_id}-#{@partition}"
     end
 
@@ -134,19 +130,16 @@ module Metaq
     end
 
     def to_s
-      return inspect()
-    end
-
-    def insepct()
       return "Broker[uri=#{@broker_uri}]"
     end
+
   end
 
 
   DEAD_RETRY = 5  # number of seconds before retrying a dead server.
   SOCKET_TIMEOUT = 10  #  number of seconds before sockets timeout.
   class Connection
-    attr_accessor :uri
+    attr_accessor :uri, :socket
 
     def initialize(uri,dead_retry=DEAD_RETRY,socket_timeout=SOCKET_TIMEOUT,debug=true)
       @uri = uri
@@ -162,6 +155,7 @@ module Metaq
     def close()
       if @socket
         @socket.close
+        @socket = nil
       end
     end
 
@@ -183,8 +177,11 @@ module Metaq
       return sock.read(len)
     end
 
-    ##private methods
-    private
+    def mark_dead(reason)
+      debug("#{@uri}: #{reason}.  marking dead.")
+      @deaduntil = Time.now() + @dead_retry
+      close()
+    end
 
     def debug(msg)
       if @debug
@@ -212,12 +209,6 @@ module Metaq
       return true if @deaduntil != 0  and @deaduntil > Time. now()
       @deaduntil = 0
       return false
-    end
-
-    def mark_dead(reason)
-      debug("#{@uri}: #{reason}.  marking dead.")
-      @deaduntil = now() + @dead_retry
-      close()
     end
 
   end
@@ -307,7 +298,7 @@ module Metaq
       end
     end
 
-    def inspect()
+    def to_s
       "MessageProducer[topic =#{topic},  brokers=#{@broker_hash}"
     end
 

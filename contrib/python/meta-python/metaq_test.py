@@ -89,12 +89,10 @@ class ConnTest(unittest.TestCase):
         conn.send_msg("put meta-test 0 5 0 99\r\nhello")
         line=conn.readline()
         assert line
-        assert line == "result 200 24 99\r\n"
         _, status, vlen, opaque = line.split(" ")
         assert status == "200"
-        assert vlen == "24"
         assert opaque == "99\r\n"
-        resp_body = conn.recv(24)
+        resp_body = conn.recv(int(vlen))
         print resp_body
         conn.close()
 
