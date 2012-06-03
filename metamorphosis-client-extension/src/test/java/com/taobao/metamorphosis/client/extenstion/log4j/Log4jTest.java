@@ -19,8 +19,10 @@ package com.taobao.metamorphosis.client.extenstion.log4j;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.Ignore;
 
 
+@Ignore
 public class Log4jTest {
 
     static final Log log = LogFactory.getLog("testLog");
