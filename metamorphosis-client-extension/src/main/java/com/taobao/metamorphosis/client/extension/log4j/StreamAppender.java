@@ -182,17 +182,26 @@ public class StreamAppender extends AppenderSkeleton {
 
     public void setZkConnect(final String zkConnect) {
         this.zkConfig.zkConnect = zkConnect;
-        this.initMeta();
     }
 
 
-    public Codec_Type getEncodeType() {
-        return this.encodeType;
+    public int getEncodeType() {
+        return this.encodeType.ordinal();
     }
 
 
-    public void setEncodeType(final Codec_Type encodeType) {
-        this.encodeType = encodeType;
+    public void setEncodeType(final int encodeType) {
+        switch (encodeType) {
+        case 0:
+            this.encodeType = Codec_Type.JAVA;
+            break;
+        case 1:
+            this.encodeType = Codec_Type.HESSIAN1;
+            break;
+        default:
+            throw new RuntimeException("Unknown encode type " + this.encodeType
+                + ",valid encode type is 0(java) or 1(hessian1).");
+        }
     }
 
 
@@ -313,6 +322,7 @@ public class StreamAppender extends AppenderSkeleton {
      * 对象长度 (4个字节)
      */
     private synchronized void logObject(final byte[] content) throws IOException {
+        this.initMeta();
         if (this.producer != null) {
             this.producer.publish(this.topic);
             this.producer.asyncSendMessage(new Message(this.topic, content));
