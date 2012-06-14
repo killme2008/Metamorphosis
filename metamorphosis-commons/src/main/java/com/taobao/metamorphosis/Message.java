@@ -24,7 +24,7 @@ import com.taobao.metamorphosis.cluster.Partition;
 
 
 /**
- * 一条Metamorphosis的消息，消息必须有topic和data，也可以有一个附加字符串属性
+ * A message with topic and data,a string attribute is optional.
  * 
  * @author boyan
  * @Date 2011-4-19
@@ -40,10 +40,19 @@ public class Message implements Serializable {
     private String attribute;
     private int flag;
     private Partition partition;
+    // added by dennis<killme2008@gmail.com>,2012-06-14
+    private transient boolean readOnly;
 
 
     void setId(final long id) {
         this.id = id;
+    }
+
+
+    private void checkState() {
+        if (this.readOnly) {
+            throw new IllegalStateException("The message is readonly");
+        }
     }
 
 
@@ -58,7 +67,30 @@ public class Message implements Serializable {
 
 
     /**
-     * 消息是否有属性
+     * Returns whether the message is readonly.
+     * 
+     * @since 1.4.4
+     * @return
+     */
+    public boolean isReadOnly() {
+        return this.readOnly;
+    }
+
+
+    /**
+     * Set the message to be readonly,but metamorphosis client and server could
+     * modify message's id,flag,partition.
+     * 
+     * @since 1.4.4
+     * @param readOnly
+     */
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
+
+
+    /**
+     * Returns whether the message has an attribute.
      * 
      * @return
      */
@@ -68,7 +100,8 @@ public class Message implements Serializable {
 
 
     /**
-     * 此方法已经废弃，总是返回false。不排除未来某个版本中移除此方法，请不要再使用。
+     * Returns whether the message is in order,it is deprecated and will be
+     * removed in future version.
      * 
      * @return
      */
@@ -94,7 +127,8 @@ public class Message implements Serializable {
 
 
     /**
-     * 返回消息Id，只有在发送成功后返回的id才有效，否则返回0
+     * Returns the message's id.If it was sent success,the message id would be
+     * returned by broker,otherwise is zero.
      * 
      * @return
      */
@@ -104,7 +138,7 @@ public class Message implements Serializable {
 
 
     /**
-     * 返回消息属性
+     * Returns the message's attribute,may be null.
      * 
      * @return
      */
@@ -114,37 +148,42 @@ public class Message implements Serializable {
 
 
     /**
-     * 设置消息属性，消息属性非必须，必须为字符串
+     * Set message's attribute
      * 
      * @param attribute
      */
     public void setAttribute(final String attribute) {
+        this.checkState();
         this.attribute = attribute;
     }
 
 
     /**
-     * 设置消息topic
+     * Set message's topic,if you want to send it,you must publish it at first
+     * with MessageProducer.
      * 
+     * @see com.taobao.metamorphosis.client.producer.MessageProducer#publish(String)
      * @param topic
      */
     public void setTopic(final String topic) {
+        this.checkState();
         this.topic = topic;
     }
 
 
     /**
-     * 设置消息payload
+     * Set the message's payload
      * 
      * @param data
      */
     public void setData(final byte[] data) {
+        this.checkState();
         this.data = data;
     }
 
 
     /**
-     * 返回消息topic
+     * Returns message's topic
      * 
      * @return
      */
@@ -154,7 +193,7 @@ public class Message implements Serializable {
 
 
     /**
-     * 返回消息payload
+     * Returns message's payload
      * 
      * @return
      */
@@ -214,12 +253,14 @@ public class Message implements Serializable {
 
 
     void setPartition(final Partition partition) {
+        this.checkState();
         this.partition = partition;
     }
 
 
     /**
-     * 发送成功后，返回消息所在的分区，发送失败则为null
+     * Returns message's partition in broker,if it was sent fail,it would be
+     * null.
      * 
      * @return
      */

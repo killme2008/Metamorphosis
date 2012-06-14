@@ -322,22 +322,29 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
      */
     Partition selectPartition(final String topic, final Message msg, final PartitionSelector selector,
             final String serverUrl) throws MetaClientException {
-        final BrokerConnectionListener brokerConnectionListener = this.getBrokerConnectionListener(topic);
-        if (brokerConnectionListener != null) {
-            final BrokersInfo brokersInfo = brokerConnectionListener.brokersInfo;
-            final List<Partition> partitions = brokersInfo.oldTopicPartitionMap.get(topic);
-            final Map<Integer/* broker id */, String/* server url */> brokerStringMap = brokersInfo.oldBrokerStringMap;
-            // 过滤特定broker的分区列表
-            final List<Partition> partitionsForSelect = new ArrayList<Partition>();
-            for (final Partition partition : partitions) {
-                if (serverUrl.equals(brokerStringMap.get(partition.getBrokerId()))) {
-                    partitionsForSelect.add(partition);
+        try {
+            msg.setReadOnly(true);
+            final BrokerConnectionListener brokerConnectionListener = this.getBrokerConnectionListener(topic);
+            if (brokerConnectionListener != null) {
+                final BrokersInfo brokersInfo = brokerConnectionListener.brokersInfo;
+                final List<Partition> partitions = brokersInfo.oldTopicPartitionMap.get(topic);
+                final Map<Integer/* broker id */, String/* server url */> brokerStringMap =
+                        brokersInfo.oldBrokerStringMap;
+                // 过滤特定broker的分区列表
+                final List<Partition> partitionsForSelect = new ArrayList<Partition>();
+                for (final Partition partition : partitions) {
+                    if (serverUrl.equals(brokerStringMap.get(partition.getBrokerId()))) {
+                        partitionsForSelect.add(partition);
+                    }
                 }
+                return selector.getPartition(topic, partitionsForSelect, msg);
             }
-            return selector.getPartition(topic, partitionsForSelect, msg);
+            else {
+                return this.selectDefaultPartition(topic, msg, selector, serverUrl);
+            }
         }
-        else {
-            return this.selectDefaultPartition(topic, msg, selector, serverUrl);
+        finally {
+            msg.setReadOnly(false);
         }
     }
 
@@ -398,16 +405,22 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
      */
     public Partition selectPartition(final String topic, final Message message,
             final PartitionSelector partitionSelector) throws MetaClientException {
-        if (this.metaClientConfig.getServerUrl() != null) {
-            return Partition.RandomPartiton;
+        try {
+            message.setReadOnly(true);
+            if (this.metaClientConfig.getServerUrl() != null) {
+                return Partition.RandomPartiton;
+            }
+            final BrokerConnectionListener brokerConnectionListener = this.getBrokerConnectionListener(topic);
+            if (brokerConnectionListener != null) {
+                final BrokersInfo brokersInfo = brokerConnectionListener.brokersInfo;
+                return partitionSelector.getPartition(topic, brokersInfo.oldTopicPartitionMap.get(topic), message);
+            }
+            else {
+                return this.selectDefaultPartition(topic, message, partitionSelector, null);
+            }
         }
-        final BrokerConnectionListener brokerConnectionListener = this.getBrokerConnectionListener(topic);
-        if (brokerConnectionListener != null) {
-            final BrokersInfo brokersInfo = brokerConnectionListener.brokersInfo;
-            return partitionSelector.getPartition(topic, brokersInfo.oldTopicPartitionMap.get(topic), message);
-        }
-        else {
-            return this.selectDefaultPartition(topic, message, partitionSelector, null);
+        finally {
+            message.setReadOnly(false);
         }
     }
 
