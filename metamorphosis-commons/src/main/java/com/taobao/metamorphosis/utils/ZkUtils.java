@@ -266,28 +266,33 @@ public class ZkUtils {
 
     }
 
-    public static class ZKConfig implements Serializable {
+    public static class ZKConfig extends Config implements Serializable {
         static final long serialVersionUID = -1L;
 
         public String zkRoot = "/meta";
         /**
          * If enable zookeeper
          */
+        @Key(name = "zk.zkEnable")
         public boolean zkEnable = true;
 
         /** ZK host string */
+        @Key(name = "zk.zkConnect")
         public String zkConnect;
 
         /** zookeeper session timeout */
+        @Key(name = "zk.zkSessionTimeoutMs")
         public int zkSessionTimeoutMs = 30000;
 
         /**
          * the max time that the client waits to establish a connection to
          * zookeeper
          */
+        @Key(name = "zk.zkConnectionTimeoutMs")
         public int zkConnectionTimeoutMs = 30000;
 
         /** how far a ZK follower can be behind a ZK leader */
+        @Key(name = "zk.zkSyncTimeMs")
         public int zkSyncTimeMs = 5000;
 
 

@@ -17,6 +17,9 @@
  */
 package com.taobao.metamorphosis.server.utils;
 
+import com.taobao.metamorphosis.utils.Config;
+
+
 /**
  * 针对某个topic的特殊配置（不使用全局配置）
  * 
@@ -24,7 +27,7 @@ package com.taobao.metamorphosis.server.utils;
  * @since 2011-8-18 下午2:30:35
  */
 // TODO 将其他针对某个topic的特殊配置项移到这里
-public class TopicConfig {
+public class TopicConfig extends Config {
     private String topic;
     private int unflushThreshold;
     private int unflushInterval;
@@ -34,6 +37,7 @@ public class TopicConfig {
     private int numPartitions;
     private boolean acceptPublish = true;
     private boolean acceptSubscribe = true;
+    private boolean stat;
 
 
     public TopicConfig(final String topic, final MetaConfig metaConfig) {
@@ -46,11 +50,12 @@ public class TopicConfig {
         this.numPartitions = metaConfig.getNumPartitions();
         this.acceptPublish = metaConfig.isAcceptPublish();
         this.acceptSubscribe = metaConfig.isAcceptSubscribe();
+        this.stat = metaConfig.isStat();
     }
 
 
     public TopicConfig(String topic, int unflushThreshold, int unflushInterval, String dataPath, String deleteWhen,
-            String deletePolicy, int numPartitions, boolean acceptPublish, boolean acceptSubscribe) {
+            String deletePolicy, int numPartitions, boolean acceptPublish, boolean acceptSubscribe, boolean stat) {
         super();
         this.topic = topic;
         this.unflushThreshold = unflushThreshold;
@@ -61,13 +66,14 @@ public class TopicConfig {
         this.numPartitions = numPartitions;
         this.acceptPublish = acceptPublish;
         this.acceptSubscribe = acceptSubscribe;
+        this.stat = stat;
     }
 
 
     @Override
     public TopicConfig clone() {
         return new TopicConfig(this.topic, this.unflushThreshold, this.unflushInterval, this.dataPath, this.deleteWhen,
-            this.deletePolicy, this.numPartitions, this.acceptPublish, this.acceptSubscribe);
+            this.deletePolicy, this.numPartitions, this.acceptPublish, this.acceptSubscribe, this.stat);
     }
 
 
@@ -103,6 +109,16 @@ public class TopicConfig {
 
     public String getDeletePolicy() {
         return this.deletePolicy;
+    }
+
+
+    public boolean isStat() {
+        return this.stat;
+    }
+
+
+    public void setStat(boolean stat) {
+        this.stat = stat;
     }
 
 
@@ -166,6 +182,7 @@ public class TopicConfig {
         result = prime * result + (this.deletePolicy == null ? 0 : this.deletePolicy.hashCode());
         result = prime * result + (this.deleteWhen == null ? 0 : this.deleteWhen.hashCode());
         result = prime * result + this.numPartitions;
+        result = prime * result + (this.stat ? 1231 : 1237);
         result = prime * result + (this.topic == null ? 0 : this.topic.hashCode());
         result = prime * result + this.unflushInterval;
         result = prime * result + this.unflushThreshold;
@@ -218,6 +235,9 @@ public class TopicConfig {
         if (this.numPartitions != other.numPartitions) {
             return false;
         }
+        if (this.stat != other.stat) {
+            return false;
+        }
         if (this.topic == null) {
             if (other.topic != null) {
                 return false;
@@ -246,7 +266,8 @@ public class TopicConfig {
         return "TopicConfig [topic=" + this.topic + ", unflushThreshold=" + this.unflushThreshold
                 + ", unflushInterval=" + this.unflushInterval + ", dataPath=" + this.dataPath + ", deleteWhen="
                 + this.deleteWhen + ", deletePolicy=" + this.deletePolicy + ", numPartitions=" + this.numPartitions
-                + ", acceptPublish=" + this.acceptPublish + ", acceptSubscribe=" + this.acceptSubscribe + "]";
+                + ", acceptPublish=" + this.acceptPublish + ", acceptSubscribe=" + this.acceptSubscribe + ", stat="
+                + this.stat + "]";
     }
 
 }

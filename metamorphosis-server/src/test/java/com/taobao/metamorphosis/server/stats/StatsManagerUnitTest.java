@@ -36,8 +36,8 @@ public class StatsManagerUnitTest {
     @Before
     public void setUp() {
         MetaConfig metaConfig = new MetaConfig();
-        metaConfig.getStatTopicSet().add("test");
-        metaConfig.getStatTopicSet().add("test2");
+        metaConfig.getTopicConfig("test").setStat(true);
+        metaConfig.getTopicConfig("test2").setStat(true);
         this.statsManager = new StatsManager(metaConfig, null, null);
         this.statsManager.init();
     }

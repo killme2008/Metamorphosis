@@ -2,6 +2,8 @@ package com.taobao.metamorphosis.server.utils;
 
 import java.io.Serializable;
 
+import com.taobao.metamorphosis.utils.Config;
+
 
 /**
  * Async slave config
@@ -9,7 +11,7 @@ import java.io.Serializable;
  * @author apple
  * 
  */
-public class SlaveConfig implements Serializable {
+public class SlaveConfig extends Config implements Serializable {
     private static final long serialVersionUID = 1L;
 
     // slave编号,大于等于0表示作为slave启动

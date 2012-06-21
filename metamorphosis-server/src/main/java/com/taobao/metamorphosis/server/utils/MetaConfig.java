@@ -29,7 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -40,6 +40,7 @@ import org.ini4j.Profile.Section;
 
 import com.googlecode.aviator.AviatorEvaluator;
 import com.taobao.metamorphosis.server.exception.MetamorphosisServerStartupException;
+import com.taobao.metamorphosis.utils.Config;
 import com.taobao.metamorphosis.utils.DiamondUtils;
 import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
 
@@ -51,7 +52,7 @@ import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
  * @Date 2011-4-21
  * @author wuhua
  */
-public class MetaConfig implements Serializable, MetaConfigMBean {
+public class MetaConfig extends Config implements Serializable, MetaConfigMBean {
     static final long serialVersionUID = -1L;
     private int brokerId = 0;
     private String dataPath = System.getProperty("user.home") + File.separator + "meta";
@@ -80,14 +81,10 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     // 文件删除策略:"策略名称,设定值列表"，默认为保存7天
     private String deletePolicy = "delete,168";
 
-    private Map<String/* topic */, TopicConfig> topicConfigMap = new CopyOnWriteMap<String, TopicConfig>();
+    private ConcurrentHashMap<String/* topic */, TopicConfig> topicConfigMap =
+            new ConcurrentHashMap<String, TopicConfig>();
 
     private final PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
-
-    /**
-     * 需要统计的topic列表，在此列表才会做实时统计，支持通配符*
-     */
-    private Set<String> statTopicSet = new TreeSet<String>();
 
     private long lastModified = -1;
 
@@ -128,6 +125,8 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     private boolean acceptPublish = true;
     private boolean acceptSubscribe = true;
 
+    private boolean stat;
+
 
     public int getQuartzThreadCount() {
         return this.quartzThreadCount;
@@ -136,6 +135,16 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     public boolean isAcceptPublish() {
         return this.acceptPublish;
+    }
+
+
+    public boolean isStat() {
+        return this.stat;
+    }
+
+
+    public void setStat(boolean stat) {
+        this.stat = stat;
     }
 
 
@@ -391,9 +400,9 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     private void populateTopicsConfig(final Ini conf) {
         final Set<String> set = conf.keySet();
-        final Set<String> newStatTopics = new TreeSet<String>();
         final List<String> newTopics = new ArrayList<String>();
-        final Map<String/* topic */, TopicConfig> newTopicConfigMap = new CopyOnWriteMap<String, TopicConfig>();
+        final ConcurrentHashMap<String/* topic */, TopicConfig> newTopicConfigMap =
+                new ConcurrentHashMap<String, TopicConfig>();
         for (final String name : set) {
             // Is it a topic section?
             if (name != null && name.startsWith("topic=")) {
@@ -401,16 +410,15 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
                 final String topic = name.substring("topic=".length());
 
                 final TopicConfig topicConfig = new TopicConfig(topic, this);
+                Set<String> validKeySet = topicConfig.getFieldSet();
+                Set<String> configKeySet = section.keySet();
+                this.checkConfigKeys(configKeySet, validKeySet);
 
                 if (StringUtils.isNotBlank(section.get("numPartitions"))) {
                     topicConfig.setNumPartitions(this.getInt(section, "numPartitions"));
                 }
-                boolean stat = false;
                 if (StringUtils.isNotBlank(section.get("stat"))) {
-                    stat = Boolean.valueOf(section.get("stat"));
-                    if (stat) {
-                        newStatTopics.add(topic);
-                    }
+                    topicConfig.setStat(Boolean.valueOf(section.get("stat")));
                 }
                 if (StringUtils.isNotBlank(section.get("deletePolicy"))) {
                     topicConfig.setDeletePolicy(section.get("deletePolicy"));
@@ -445,15 +453,11 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
             }
         }
         Collections.sort(newTopics);
-        // fire property change event
-        if (!newStatTopics.equals(this.statTopicSet)) {
-            this.statTopicSet = newStatTopics;
-            this.propertyChangeSupport.firePropertyChange("statTopicSet", null, null);
-        }
         if (!newTopicConfigMap.equals(this.topicConfigMap)) {
             this.topics = newTopics;
             this.topicConfigMap = newTopicConfigMap;
             this.propertyChangeSupport.firePropertyChange("topics", null, null);
+            this.propertyChangeSupport.firePropertyChange("topicConfigMap", null, null);
         }
 
         this.propertyChangeSupport.firePropertyChange("unflushInterval", null, null);
@@ -462,6 +466,10 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
     private void populateZookeeperConfig(final Ini conf) {
         final Section zkConf = conf.get("zookeeper");
+        Set<String> configKeySet = zkConf.keySet();
+        Set<String> validKeySet = new ZKConfig().getFieldSet();
+        validKeySet.addAll(this.getFieldSet());
+        this.checkConfigKeys(configKeySet, validKeySet);
         if (StringUtils.isNotBlank(zkConf.get("diamondZKDataId"))) {
             this.diamondZKDataId = zkConf.get("diamondZKDataId");
         }
@@ -546,6 +554,10 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     private void populateSystemConf(final Ini conf) {
         final Section sysConf = conf.get("system");
 
+        Set<String> configKeySet = sysConf.keySet();
+        Set<String> validKeySet = this.getFieldSet();
+        this.checkConfigKeys(configKeySet, validKeySet);
+
         this.brokerId = this.getInt(sysConf, "brokerId");
         this.serverPort = this.getInt(sysConf, "serverPort", 8123);
         if (!StringUtils.isBlank(sysConf.get("dataPath"))) {
@@ -600,6 +612,10 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
         if (!StringUtils.isBlank(sysConf.get("acceptPublish"))) {
             this.acceptPublish = this.getBoolean(sysConf, "acceptPublish");
         }
+        // added by dennis,2012-06-21
+        if (!StringUtils.isBlank(sysConf.get("stat"))) {
+            this.stat = this.getBoolean(sysConf, "stat");
+        }
     }
 
 
@@ -623,11 +639,6 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
     }
 
     static final Log log = LogFactory.getLog(MetaConfig.class);
-
-
-    public Set<String> getStatTopicSet() {
-        return this.statTopicSet;
-    }
 
 
     private void newZkConfigIfNull() {
@@ -718,9 +729,9 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
                 + this.getProcessThreadCount + ", putProcessThreadCount=" + this.putProcessThreadCount + ", zkConfig="
                 + this.zkConfig + ", diamondZKDataId=" + this.diamondZKDataId + ", diamondZKGroup="
                 + this.diamondZKGroup + ", deletePolicy=" + this.deletePolicy + ", topicConfigMap="
-                + this.topicConfigMap + ", propertyChangeSupport=" + this.propertyChangeSupport + ", statTopicSet="
-                + this.statTopicSet + ", lastModified=" + this.lastModified + ", path=" + this.path
-                + ", maxCheckpoints=" + this.maxCheckpoints + ", checkpointInterval=" + this.checkpointInterval
+                + this.topicConfigMap + ", propertyChangeSupport=" + this.propertyChangeSupport + ", stat=" + this.stat
+                + ", lastModified=" + this.lastModified + ", path=" + this.path + ", maxCheckpoints="
+                + this.maxCheckpoints + ", checkpointInterval=" + this.checkpointInterval
                 + ", maxTxTimeoutTimerCapacity=" + this.maxTxTimeoutTimerCapacity + ", flushTxLogAtCommit="
                 + this.flushTxLogAtCommit + ", maxTxTimeoutInSeconds=" + this.maxTxTimeoutInSeconds + ", dataLogPath="
                 + this.dataLogPath + ", deleteWhen=" + this.deleteWhen + ", quartzThreadCount="
@@ -838,8 +849,15 @@ public class MetaConfig implements Serializable, MetaConfigMBean {
 
 
     public TopicConfig getTopicConfig(final String topic) {
-        final TopicConfig topicConfig = this.topicConfigMap.get(topic);
-        return topicConfig != null ? topicConfig : new TopicConfig(topic, this);
+        TopicConfig topicConfig = this.topicConfigMap.get(topic);
+        if (topicConfig == null) {
+            topicConfig = new TopicConfig(topic, this);
+            TopicConfig old = this.topicConfigMap.putIfAbsent(topic, topicConfig);
+            if (old != null) {
+                topicConfig = old;
+            }
+        }
+        return topicConfig;
     }
 
 

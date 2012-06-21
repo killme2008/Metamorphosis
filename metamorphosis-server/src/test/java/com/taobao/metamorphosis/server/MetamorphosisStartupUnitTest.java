@@ -18,11 +18,11 @@
 package com.taobao.metamorphosis.server;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Test;
 
@@ -80,10 +80,6 @@ public class MetamorphosisStartupUnitTest {
         assertEquals(11, topicConfigs.get("test1").getNumPartitions());
         assertEquals(13, topicConfigs.get("test2").getNumPartitions());
 
-        final Set<String> statTopics = config.getStatTopicSet();
-        assertEquals(1, statTopics.size());
-        assertTrue(statTopics.contains("test2"));
-
         assertEquals("delete,77", config.getTopicConfig("test1").getDeletePolicy());
 
         assertEquals("127.0.0.1:2181", config.getZkConfig().zkConnect);
@@ -99,5 +95,7 @@ public class MetamorphosisStartupUnitTest {
         final TopicConfig topicConfig2 = config.getTopicConfig("test2");
         assertEquals("/home/admin", topicConfig1.getDataPath());
         assertEquals("/test2", topicConfig2.getDataPath());
+        assertFalse(topicConfig1.isStat());
+        assertTrue(topicConfig2.isStat());
     }
 }

@@ -102,10 +102,9 @@ public class StatsManager implements Service {
         });
 
         // topic没有变化,只有统计属性发生了变化时,动态改变统计属性
-        this.metaConfig.addPropertyChangeListener("statTopicSet", new PropertyChangeListener() {
+        this.metaConfig.addPropertyChangeListener("topics", new PropertyChangeListener() {
             @Override
             public void propertyChange(final PropertyChangeEvent evt) {
-                log.info("StatTopicSet changed. new stats topic set:" + StatsManager.this.metaConfig.getStatTopicSet());
                 StatsManager.this.makeTopicsPatSet();
             }
         });
@@ -116,8 +115,10 @@ public class StatsManager implements Service {
 
     private void makeTopicsPatSet() {
         final Set<Pattern> set = new HashSet<Pattern>();
-        for (final String topic : this.metaConfig.getStatTopicSet()) {
-            set.add(Pattern.compile(topic.replaceAll("\\*", ".*")));
+        for (final TopicConfig topicConfig : this.metaConfig.getTopicConfigMap().values()) {
+            if (topicConfig.isStat()) {
+                set.add(Pattern.compile(topicConfig.getTopic().replaceAll("\\*", ".*")));
+            }
         }
         this.legalTopicPatSet = set;
     }
