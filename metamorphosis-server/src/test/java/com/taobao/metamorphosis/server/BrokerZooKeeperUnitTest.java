@@ -174,7 +174,7 @@ public class BrokerZooKeeperUnitTest {
         this.testRegisterTopicInZk();
         this.testRegisterBrokerInZk_slave();
         this.testRegisterTopicInZk_slave();
-        this.brokerZooKeeper.close();
+        this.brokerZooKeeper.close(true);
         this.brokerZooKeeper = null;
 
         // master注册信息不存在
@@ -200,7 +200,7 @@ public class BrokerZooKeeperUnitTest {
         this.testRegisterTopicInZk();
         this.testRegisterBrokerInZk_slave();
         this.testRegisterTopicInZk_slave();
-        this.slaveBrokerZooKeeper.close();
+        this.slaveBrokerZooKeeper.close(true);
         this.slaveBrokerZooKeeper = null;
 
         // slave注册信息不存在
@@ -263,7 +263,7 @@ public class BrokerZooKeeperUnitTest {
         if (brokerZooKeeper == null) {
             return;
         }
-        brokerZooKeeper.close();
+        brokerZooKeeper.close(true);
     }
 
 

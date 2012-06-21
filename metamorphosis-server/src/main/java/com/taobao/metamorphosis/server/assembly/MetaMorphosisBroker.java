@@ -86,6 +86,7 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
     private boolean shutdown = true;
     private volatile boolean runShutdownHook = false;
     private final ShutdownHook shutdownHook;
+    private boolean registerZkSuccess;
 
 
     public CommandProcessor getBrokerProcessor() {
@@ -204,8 +205,10 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
             this.brokerZooKeeper.registerMasterConfigFileChecksumInZk();
             this.addTopicsChangeListener();
             this.registerTopicsInZk();
+            this.registerZkSuccess = true;
         }
         catch (final Exception e) {
+            this.registerZkSuccess = false;
             throw new MetamorphosisServerStartupException("Register broker to zk failed", e);
         }
         log.info("Starting metamorphosis server...");
@@ -266,7 +269,7 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         }
         log.info("Stopping metamorphosis server...");
         this.shutdown = true;
-        this.brokerZooKeeper.close();
+        this.brokerZooKeeper.close(this.registerZkSuccess);
         try {
             // Waiting for zookeeper to notify clients.
             Thread.sleep(this.brokerZooKeeper.getZkConfig().zkSyncTimeMs);
@@ -287,6 +290,7 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         if (!this.runShutdownHook && this.shutdownHook != null) {
             Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
         }
+
         this.brokerProcessor.dispose();
 
         log.info("Stop metamorphosis server successfully");

@@ -420,12 +420,9 @@ public class BrokerZooKeeper implements PropertyChangeListener {
     }
 
 
-    public void close() {
-        // if (this.diamondManager != null) {
-        // this.diamondManager.close();
-        // }
+    public void close(boolean unregister) {
         try {
-            if (this.zkConfig.zkEnable) {
+            if (unregister && this.zkConfig.zkEnable) {
                 this.unregisterBrokerInZk();
                 this.unregisterTopics();
             }
@@ -433,9 +430,11 @@ public class BrokerZooKeeper implements PropertyChangeListener {
         catch (final Exception e) {
             log.warn("error on unregisterBrokerInZk", e);
         }
-        if (this.zkClient != null) {
-            log.info("Closing zk client...");
-            this.zkClient.close();
+        finally {
+            if (this.zkClient != null) {
+                log.info("Closing zk client...");
+                this.zkClient.close();
+            }
         }
     }
 
