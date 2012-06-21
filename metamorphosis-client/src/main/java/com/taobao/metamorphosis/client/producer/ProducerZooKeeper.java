@@ -132,7 +132,20 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
                 log.warn("Begin receiving broker changes for topic " + this.topic + ",broker ids:"
                         + newTopicPartitionMap);
-
+                // Connect to new brokers
+                for (final Map.Entry<Integer, String> newEntry : newBrokerStringMap.entrySet()) {
+                    final Integer newBrokerId = newEntry.getKey();
+                    final String newBrokerString = newEntry.getValue();
+                    // 新的有，旧的没有，创建
+                    if (!this.brokersInfo.oldBrokerStringMap.containsKey(newBrokerId)) {
+                        ProducerZooKeeper.this.remotingClient.connect(newBrokerString);
+                        ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
+                        log.warn("Connect to " + newBrokerString);
+                    }
+                }
+                // Set the new brokers info.
+                this.brokersInfo = new BrokersInfo(newBrokerStringMap, newTopicPartitionMap);
+                // Close removed brokers.
                 for (final Map.Entry<Integer, String> oldEntry : this.brokersInfo.oldBrokerStringMap.entrySet()) {
                     final Integer oldBrokerId = oldEntry.getKey();
                     final String oldBrokerString = oldEntry.getValue();
@@ -141,10 +154,10 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                     if (newBrokerStringMap.containsKey(oldBrokerId)) {
                         // 判断内容是否变化
                         if (!newBrokerString.equals(oldBrokerString)) {
-                            ProducerZooKeeper.this.remotingClient.close(oldBrokerString, false);
+                            log.warn("Close " + oldBrokerString + ",connect to " + newBrokerString);
                             ProducerZooKeeper.this.remotingClient.connect(newBrokerString);
                             ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                            log.warn("Close " + oldBrokerString + ",connect to " + newBrokerString);
+                            ProducerZooKeeper.this.remotingClient.close(oldBrokerString, false);
                         }
                         else {
                             // ignore
@@ -157,17 +170,6 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                     }
                 }
 
-                for (final Map.Entry<Integer, String> newEntry : newBrokerStringMap.entrySet()) {
-                    final Integer newBrokerId = newEntry.getKey();
-                    final String newBrokerString = newEntry.getValue();
-                    // 新的有，旧的没有，创建
-                    if (!this.brokersInfo.oldBrokerStringMap.containsKey(newBrokerId)) {
-                        ProducerZooKeeper.this.remotingClient.connect(newBrokerString);
-                        ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                        log.warn("Connect to " + newBrokerString);
-                    }
-                }
-                this.brokersInfo = new BrokersInfo(newBrokerStringMap, newTopicPartitionMap);
                 log.warn("End receiving broker changes for topic " + this.topic);
             }
             finally {
