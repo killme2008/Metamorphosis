@@ -149,12 +149,25 @@ public class StatsManager implements Service {
         else if ("realtime".equals(item)) {
             this.appendRealTime(sb);
         }
+        else if ("help".equals(item)) {
+            this.appendHelp(sb);
+        }
         else {
             // 都认为是topic
             this.appendTopic(item, sb);
         }
         sb.append("END\r\n");
         return sb.toString();
+    }
+
+
+    private void appendHelp(final StringBuilder sb) {
+        this.append(sb, "*EMPTY*", "Returns broker info.");
+        this.append(sb, "help", "Returns help menu.");
+        this.append(sb, "topics", "Returns topics statistics detail info.");
+        this.append(sb, "offsets", "Returns partitions detail info.");
+        this.append(sb, "realtime", "Returns realtime statistics detail info.");
+        this.append(sb, "config", "Returns broker's config file content.");
     }
 
 

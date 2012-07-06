@@ -204,7 +204,8 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             this.initZooKeeper();
         }
 
-        this.producerZooKeeper = new ProducerZooKeeper(this.metaZookeeper, this.remotingClient, this.zkClient, metaClientConfig);
+        this.producerZooKeeper =
+                new ProducerZooKeeper(this.metaZookeeper, this.remotingClient, this.zkClient, metaClientConfig);
         this.sessionIdGenerator = new IdGenerator();
         // modify by wuhua
         this.consumerZooKeeper = this.initConsumerZooKeeper(this.remotingClient, this.zkClient, this.zkConfig);
@@ -271,8 +272,8 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         }
         if (this.zkConfig != null) {
             this.zkClient =
-                    new ZkClient(this.zkConfig.zkConnect, this.zkConfig.zkSessionTimeoutMs, this.zkConfig.zkConnectionTimeoutMs,
-                        new ZkUtils.StringSerializer());
+                    new ZkClient(this.zkConfig.zkConnect, this.zkConfig.zkSessionTimeoutMs,
+                        this.zkConfig.zkConnectionTimeoutMs, new ZkUtils.StringSerializer());
             this.metaZookeeper = new MetaZookeeper(this.zkClient, this.zkConfig.zkRoot);
         }
         else {
@@ -402,8 +403,8 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         if (partitionSelector == null) {
             throw new IllegalArgumentException("Null partitionSelector");
         }
-        return this.addChild(new SimpleMessageProducer(this, this.remotingClient, partitionSelector, this.producerZooKeeper,
-            this.sessionIdGenerator.generateId()));
+        return this.addChild(new SimpleMessageProducer(this, this.remotingClient, partitionSelector,
+            this.producerZooKeeper, this.sessionIdGenerator.generateId()));
     }
 
 
@@ -437,8 +438,8 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             recoverManager0.start(this.metaClientConfig);
         }
         this.checkConsumerConfig(consumerConfig);
-        return this.addChild(new SimpleMessageConsumer(this, this.remotingClient, consumerConfig, this.consumerZooKeeper,
-            this.producerZooKeeper, this.subscribeInfoManager, recoverManager0, offsetStorage,
+        return this.addChild(new SimpleMessageConsumer(this, this.remotingClient, consumerConfig,
+            this.consumerZooKeeper, this.producerZooKeeper, this.subscribeInfoManager, recoverManager0, offsetStorage,
             this.createLoadBalanceStrategy(consumerConfig)));
     }
 
@@ -496,9 +497,8 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
                     InetSocketAddress sockAddr = new InetSocketAddress(uri.getHost(), uri.getPort());
                     if (target == null || target.equals(sockAddr)) {
                         BooleanCommand resp =
-                                (BooleanCommand) this.remotingClient.invokeToGroup(group,
-                                    new StatsCommand(OpaqueGenerator.getNextOpaque(), item), STATS_OPTIMEOUT,
-                                    TimeUnit.MILLISECONDS);
+                                (BooleanCommand) this.remotingClient.invokeToGroup(group, new StatsCommand(
+                                    OpaqueGenerator.getNextOpaque(), item), STATS_OPTIMEOUT, TimeUnit.MILLISECONDS);
                         if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
                             String body = resp.getErrorMsg();
                             if (body != null) {
@@ -524,9 +524,14 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         String[] lines = body.split("\r\n");
         Map<String/* key */, String/* stats value */> values = new HashMap<String, String>();
         for (String line : lines) {
-            String[] tmp = line.split(" ");
-            if (tmp.length >= 2) {
-                values.put(tmp[0], tmp[1]);
+            int index = line.indexOf(" ");
+            if (index > 0) {
+                String key = line.substring(0, index);
+                String value = line.substring(index + 1);
+                values.put(key, value);
+            }
+            else {
+                values.put(line, "NO VALUE");
             }
         }
         rt.put(sockAddr, new StatsResult(values));
@@ -550,6 +555,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         return this.getStats(target, null);
     }
 
+
     @Override
     public List<Partition> getPartitionsForTopic(String topic) {
         if (this.metaZookeeper != null) {
@@ -567,6 +573,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             throw new IllegalStateException("Could not talk with zookeeper to get partitions list");
         }
     }
+
 
     /*
      * (non-Javadoc)
