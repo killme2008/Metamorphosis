@@ -38,6 +38,11 @@ public class Location {
     }
 
 
+    public boolean isValid() {
+        return this != InvalidLocaltion;
+    }
+
+
     public long getOffset() {
         return this.offset;
     }

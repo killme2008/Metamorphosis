@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
@@ -70,7 +71,7 @@ public class MessageStoreUnitTest {
         this.metaConfig = new MetaConfig();
         this.metaConfig.setDataPath(tmpPath);
         final PutCommand cmd1 = new PutCommand(this.topic, this.partition, "hello".getBytes(), null, 0, 0);
-        this.metaConfig.setUnflushThreshold(1);
+        this.metaConfig.setUnflushThreshold(0);
         // 限制存10个消息就roll文件
         this.metaConfig.setMaxSegmentSize(MessageUtils.makeMessageBuffer(1, cmd1).capacity() * MSG_COUNT);
         this.idWorker = new IdWorker(0);
@@ -212,27 +213,39 @@ public class MessageStoreUnitTest {
     @Test
     public void testConcurrentAppendMessages() throws Exception {
         System.out.println("Begin concurrent test....");
-        ConcurrentTestCase testCase = new ConcurrentTestCase(80, 10000, new ConcurrentTestTask() {
+        this.metaConfig.setMaxSegmentSize(1024 * 1024 * 16);
+        ConcurrentTestCase testCase = new ConcurrentTestCase(80, 1000, new ConcurrentTestTask() {
 
             @Override
             public void run(int index, int times) throws Exception {
                 final PutCommand cmd =
                         new PutCommand(MessageStoreUnitTest.this.topic, MessageStoreUnitTest.this.partition,
-                            "hello".getBytes(), null, 0, 0);
+                            new byte[1024], null, 0, 0);
                 final long id = MessageStoreUnitTest.this.idWorker.nextId();
+                final CountDownLatch latch = new CountDownLatch(1);
                 MessageStoreUnitTest.this.messageStore.append(id, cmd, new AppendCallback() {
                     @Override
                     public void appendComplete(final Location location) {
                         if (location.getOffset() < 0) {
                             throw new RuntimeException();
                         }
+                        else {
+                            latch.countDown();
+                        }
                     }
+
                 });
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException e) {
+                    // ignore
+                }
             }
         });
         testCase.start();
-        System.out.println("Appended 800000 messages,cost:" + testCase.getDurationInMillis() / 1000 + " seconds");
-        assertEquals(800000, this.messageStore.getMessageCount());
+        System.out.println("Appended 80000 messages,cost:" + testCase.getDurationInMillis() / 1000 + " seconds");
+        assertEquals(80000, this.messageStore.getMessageCount());
 
     }
 

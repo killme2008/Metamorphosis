@@ -466,11 +466,10 @@ public class MessageStore implements Closeable {
                     this.toFlush.clear();
                     this.mayBeRoll();
                 }
-
             }
             else {
-                this.mayBeFlush(1);
                 this.mayBeRoll();
+                this.mayBeFlush(1);
                 if (cb != null) {
                     cb.appendComplete(new Location(offset, remainning));
                 }
@@ -489,7 +488,7 @@ public class MessageStore implements Closeable {
 
 
     private boolean useGroupCommit() {
-        return this.unflushThreshold <= 1;
+        return this.unflushThreshold <= 0;
     }
 
 
