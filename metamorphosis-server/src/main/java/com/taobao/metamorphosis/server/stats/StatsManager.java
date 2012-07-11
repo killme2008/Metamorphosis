@@ -152,6 +152,10 @@ public class StatsManager implements Service {
         else if ("help".equals(item)) {
             this.appendHelp(sb);
         }
+        else if ("reset".equals(item)) {
+            this.realTimeStat.resetStat();
+            this.append(sb, "reset", "ok");
+        }
         else {
             // 都认为是topic
             this.appendTopic(item, sb);
