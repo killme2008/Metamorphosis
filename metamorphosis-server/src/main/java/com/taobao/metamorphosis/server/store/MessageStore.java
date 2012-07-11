@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.logging.Log;
@@ -56,7 +55,7 @@ import com.taobao.metamorphosis.utils.MessageUtils;
  * @Date 2011-6-26
  * 
  */
-public class MessageStore extends Thread implements Closeable {
+public class MessageStore implements Closeable {
     private static final String FILE_SUFFIX = ".meta";
     static final Log log = LogFactory.getLog(MessageStore.class);
 
@@ -79,7 +78,7 @@ public class MessageStore extends Thread implements Closeable {
             super();
             this.start = start;
             this.file = file;
-            log.warn("创建segment " + this.file.getAbsolutePath());
+            log.info("Created segment " + this.file.getAbsolutePath());
             try {
                 final FileChannel channel = new RandomAccessFile(this.file, "rw").getChannel();
                 this.fileMessageSet = new FileMessageSet(channel, 0, channel.size(), mutable);
@@ -207,6 +206,7 @@ public class MessageStore extends Thread implements Closeable {
     private final MetaConfig metaConfig;
     private final DeletePolicy deletePolicy;
     private final LinkedTransferQueue<WriteRequest> bufferQueue = new LinkedTransferQueue<WriteRequest>();
+    private final LinkedList<WriteRequest> toFlush = new LinkedList<WriteRequest>();
     private final int MAX_BATCH_SIZE = 512 * 1024;
     int unflushThreshold = 1000;
 
@@ -248,9 +248,6 @@ public class MessageStore extends Thread implements Closeable {
         this.deletePolicy = deletePolicy;
         this.checkDir(this.partitionDir);
         this.loadSegments(offsetIfCreate);
-        if (this.unflushThreshold <= 0) {
-            this.start();
-        }
     }
 
 
@@ -287,12 +284,13 @@ public class MessageStore extends Thread implements Closeable {
         for (final Segment segment : this.segments.view()) {
             segment.fileMessageSet.close();
         }
-        this.interrupt();
+        this.writeLock.lock();
         try {
-            this.join(5000);
+            this.notifyCallbacks();
+            this.toFlush.clear();
         }
-        catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
+        finally {
+            this.writeLock.unlock();
         }
     }
 
@@ -408,7 +406,7 @@ public class MessageStore extends Thread implements Closeable {
         }
     }
 
-    private final Lock writeLock = new ReentrantLock();
+    private final ReentrantLock writeLock = new ReentrantLock();
 
 
     /**
@@ -423,107 +421,74 @@ public class MessageStore extends Thread implements Closeable {
     }
 
     private static class WriteRequest {
-        public final ByteBuffer buf;
         public final AppendCallback cb;
-        public Location result;
+        public Location location;
 
 
-        public WriteRequest(final ByteBuffer buf, final AppendCallback cb) {
+        public WriteRequest(final AppendCallback cb, Location location) {
             super();
-            this.buf = buf;
             this.cb = cb;
+            this.location = location;
         }
-    }
-
-
-    @Override
-    public void run() {
-        // 等待force的队列
-        final LinkedList<WriteRequest> toFlush = new LinkedList<WriteRequest>();
-        WriteRequest req = null;
-        long lastFlushPos = 0;
-        Segment last = null;
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
-                if (last == null) {
-                    last = this.segments.last();
-                    lastFlushPos = last.fileMessageSet.highWaterMark();
-                }
-                if (req == null) {
-                    if (toFlush.isEmpty()) {
-                        req = this.bufferQueue.take();
-                    }
-                    else {
-                        req = this.bufferQueue.poll();
-                        if (req == null || last.fileMessageSet.getSizeInBytes() > lastFlushPos + this.MAX_BATCH_SIZE) {
-                            // 强制force
-                            last.fileMessageSet.flush();
-                            lastFlushPos = last.fileMessageSet.highWaterMark();
-                            // 通知回调
-                            for (final WriteRequest request : toFlush) {
-                                if (request.cb != null) {
-                                    request.cb.appendComplete(request.result);
-                                }
-                            }
-                            toFlush.clear();
-                            // 是否需要roll
-                            this.mayBeRoll();
-                            // 如果切换文件，重新获取last
-                            if (this.segments.last() != last) {
-                                last = null;
-                            }
-                            continue;
-                        }
-                    }
-                }
-
-                if (req == null) {
-                    continue;
-                }
-                final int remainning = req.buf.remaining();
-                final long offset = last.start + last.fileMessageSet.append(req.buf);
-                req.result = new Location(offset, remainning);
-
-                toFlush.add(req);
-                req = null;
-            }
-            catch (final IOException e) {
-                log.error("Append message failed", e);
-                // TODO io异常没办法处理了，简单跳出?
-                break;
-            }
-            catch (final InterruptedException e) {
-                // ignore
-            }
-        }
-
     }
 
 
     private void appendBuffer(final ByteBuffer buffer, final AppendCallback cb) {
-        if (this.unflushThreshold <= 0) {
-            this.bufferQueue.offer(new WriteRequest(buffer, cb));
-        }
-        else {
-            final int remainning = buffer.remaining();
-            this.writeLock.lock();
-            try {
-                final Segment cur = this.segments.last();
-                final long offset = cur.start + cur.fileMessageSet.append(buffer);
+        final int remainning = buffer.remaining();
+        this.writeLock.lock();
+        try {
+            final Segment cur = this.segments.last();
+            final long offset = cur.start + cur.fileMessageSet.append(buffer);
+
+            if (this.useGroupCommit()) {
+                // Use group-commit to flush
+                long lastFlushPos = cur.fileMessageSet.highWaterMark();
+                Location location = new Location(offset, remainning);
+                WriteRequest writeRequest = new WriteRequest(cb, location);
+                writeRequest.location = location;
+                this.toFlush.offer(writeRequest);
+
+                // Two conditions to flush writes:
+                // 1.No threads are waiting for write lock
+                // 2.Unflush bytes is greater than max batch size
+                if (!this.writeLock.hasQueuedThreads()
+                        || cur.fileMessageSet.getSizeInBytes() > lastFlushPos + this.MAX_BATCH_SIZE) {
+                    this.flush0();
+                    this.notifyCallbacks();
+                    this.toFlush.clear();
+                    this.mayBeRoll();
+                }
+
+            }
+            else {
                 this.mayBeFlush(1);
                 this.mayBeRoll();
                 if (cb != null) {
                     cb.appendComplete(new Location(offset, remainning));
                 }
             }
-            catch (final IOException e) {
-                log.error("Append file failed", e);
-                if (cb != null) {
-                    cb.appendComplete(Location.InvalidLocaltion);
-                }
+        }
+        catch (final IOException e) {
+            log.error("Append file failed", e);
+            if (cb != null) {
+                cb.appendComplete(Location.InvalidLocaltion);
             }
-            finally {
-                this.writeLock.unlock();
+        }
+        finally {
+            this.writeLock.unlock();
+        }
+    }
+
+
+    private boolean useGroupCommit() {
+        return this.unflushThreshold <= 1;
+    }
+
+
+    private void notifyCallbacks() {
+        for (final WriteRequest request : this.toFlush) {
+            if (request.cb != null) {
+                request.cb.appendComplete(request.location);
             }
         }
     }
@@ -653,9 +618,6 @@ public class MessageStore extends Thread implements Closeable {
 
 
     private void flush0() throws IOException {
-        if (this.unflushThreshold <= 0) {
-            return;
-        }
         this.segments.last().fileMessageSet.flush();
         this.unflushed.set(0);
         this.lastFlushTime.set(SystemTimer.currentTimeMillis());
@@ -759,16 +721,16 @@ public class MessageStore extends Thread implements Closeable {
         int high = segments.length - 1;
         while (low <= high) {
             final int mid = high + low >>> 1;
-            final Segment found = segments[mid];
-            if (found.contains(offset)) {
-                return found;
-            }
-            else if (offset < found.start) {
-                high = mid - 1;
-            }
-            else {
-                low = mid + 1;
-            }
+        final Segment found = segments[mid];
+        if (found.contains(offset)) {
+            return found;
+        }
+        else if (offset < found.start) {
+            high = mid - 1;
+        }
+        else {
+            low = mid + 1;
+        }
         }
         return null;
     }

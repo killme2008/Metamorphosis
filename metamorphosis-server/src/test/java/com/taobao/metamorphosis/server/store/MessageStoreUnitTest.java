@@ -50,6 +50,8 @@ import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.utils.IdWorker;
 import com.taobao.metamorphosis.utils.MessageUtils;
 import com.taobao.metamorphosis.utils.MessageUtils.DecodedMessage;
+import com.taobao.metamorphosis.utils.test.ConcurrentTestCase;
+import com.taobao.metamorphosis.utils.test.ConcurrentTestTask;
 
 
 public class MessageStoreUnitTest {
@@ -203,6 +205,34 @@ public class MessageStoreUnitTest {
         this.messageStore.flush();
 
         this.assertMessages(id1, id2);
+
+    }
+
+
+    @Test
+    public void testConcurrentAppendMessages() throws Exception {
+        System.out.println("Begin concurrent test....");
+        ConcurrentTestCase testCase = new ConcurrentTestCase(80, 10000, new ConcurrentTestTask() {
+
+            @Override
+            public void run(int index, int times) throws Exception {
+                final PutCommand cmd =
+                        new PutCommand(MessageStoreUnitTest.this.topic, MessageStoreUnitTest.this.partition,
+                            "hello".getBytes(), null, 0, 0);
+                final long id = MessageStoreUnitTest.this.idWorker.nextId();
+                MessageStoreUnitTest.this.messageStore.append(id, cmd, new AppendCallback() {
+                    @Override
+                    public void appendComplete(final Location location) {
+                        if (location.getOffset() < 0) {
+                            throw new RuntimeException();
+                        }
+                    }
+                });
+            }
+        });
+        testCase.start();
+        System.out.println("Appended 800000 messages,cost:" + testCase.getDurationInMillis() / 1000 + " seconds");
+        assertEquals(800000, this.messageStore.getMessageCount());
 
     }
 
@@ -584,7 +614,7 @@ public class MessageStoreUnitTest {
 
 
     private void assertMessages(final long id1, final long id2) throws FileNotFoundException, IOException,
-            InvalidMessageException {
+    InvalidMessageException {
         final File partDir = this.messageStore.getPartitionDir();
         final File[] logs = partDir.listFiles();
         assertEquals(1, logs.length);
