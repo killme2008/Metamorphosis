@@ -38,6 +38,7 @@ import org.apache.commons.logging.LogFactory;
 
 import com.taobao.gecko.core.command.Constants;
 import com.taobao.gecko.core.command.ResponseStatus;
+import com.taobao.gecko.core.util.ExceptionMonitor;
 import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.gecko.service.RemotingFactory;
 import com.taobao.gecko.service.config.ClientConfig;
@@ -110,6 +111,19 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
     protected final IdGenerator sessionIdGenerator;
 
     protected MetaZookeeper metaZookeeper;
+
+    static {
+        ExceptionMonitor.setInstance(new ExceptionMonitor() {
+            @Override
+            public void exceptionCaught(final Throwable cause) {
+                boolean isResetConnEx =
+                        cause instanceof IOException && cause.getMessage().indexOf("Connection reset by peer") >= 0;
+                if (log.isErrorEnabled() && !isResetConnEx) {
+                    log.error("Networking unexpected exception", cause);
+                }
+            }
+        });
+    }
 
 
     /**
@@ -588,7 +602,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
     }
 
     static final char[] INVALID_GROUP_CHAR = { '~', '!', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '`', '\'',
-                                               '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':' };
+                                              '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':' };
 
 
     protected void checkConsumerConfig(final ConsumerConfig consumerConfig) {
