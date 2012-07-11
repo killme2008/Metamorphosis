@@ -65,35 +65,6 @@ import com.taobao.metamorphosis.server.utils.TopicConfig;
  * @Date 2011-6-26
  */
 public class MessageStoreManager implements Service {
-    // private final class DeletePolicyRunner implements Runnable {
-    // @Override
-    // public void run() {
-    // final long start = System.currentTimeMillis();
-    // log.info("Start running delete policy " +
-    // MessageStoreManager.this.deletePolicy);
-    // for (final ConcurrentHashMap<Integer/* partition */, MessageStore> subMap
-    // : MessageStoreManager.this.stores
-    // .values()) {
-    // if (subMap != null) {
-    // for (final MessageStore msgStore : subMap.values()) {
-    // if (msgStore != null) {
-    // try {
-    // msgStore.runDeletePolicy();
-    // }
-    // catch (final Throwable e) {
-    // log.error(
-    // "Try to run delete policy with " + msgStore.getTopic() + ","
-    // + msgStore.getPartition() + " failed", e);
-    // }
-    // }
-    // }
-    // }
-    // }
-    // log.info("End running delete policy " +
-    // MessageStoreManager.this.deletePolicy + " in "
-    // + (System.currentTimeMillis() - start) / 1000 + " secs");
-    // }
-    // }
 
     private final class FlushRunner implements Runnable {
         int unflushInterval;
@@ -170,15 +141,6 @@ public class MessageStoreManager implements Service {
 
         // 定时flush
         this.scheduleFlushTask();
-
-        // this.scheduledExecutorService.scheduleAtFixedRate(new FlushRunner(),
-        // metaConfig.getUnflushInterval(),
-        // metaConfig.getUnflushInterval(), TimeUnit.MILLISECONDS);
-
-        // 定时做删除
-        // this.scheduledExecutorService.scheduleAtFixedRate(new
-        // DeletePolicyRunner(), this.calcDelay(), HALF_DAY,
-        // TimeUnit.MILLISECONDS);
 
     }
 
@@ -568,7 +530,7 @@ public class MessageStoreManager implements Service {
                 messageStore =
                         new MessageStore(topic, partition, this.metaConfig, this.deletePolicySelector.select(topic,
                             this.deletePolicy), offsetIfCreate);
-                log.info("新创建消息存储，topic=" + topic + ",partition=" + partition);
+                log.info("Created a new message storage for topic=" + topic + ",partition=" + partition);
                 map.put(partition, messageStore);
 
             }

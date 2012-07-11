@@ -37,7 +37,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.taobao.gecko.core.util.LinkedTransferQueue;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.server.utils.SystemTimer;
@@ -205,9 +204,9 @@ public class MessageStore implements Closeable {
     private final AtomicLong lastFlushTime;
     private final MetaConfig metaConfig;
     private final DeletePolicy deletePolicy;
-    private final LinkedTransferQueue<WriteRequest> bufferQueue = new LinkedTransferQueue<WriteRequest>();
     private final LinkedList<WriteRequest> toFlush = new LinkedList<WriteRequest>();
-    private final int MAX_BATCH_SIZE = 512 * 1024;
+    private final int putProcessThreadCount;
+    private final long maxTransferSize;
     int unflushThreshold = 1000;
 
 
@@ -246,6 +245,12 @@ public class MessageStore implements Closeable {
         this.lastFlushTime = new AtomicLong(SystemTimer.currentTimeMillis());
         this.unflushThreshold = topicConfig.getUnflushThreshold();
         this.deletePolicy = deletePolicy;
+
+        // Make a copy to avoid getting it again and again.
+        this.putProcessThreadCount = metaConfig.getPutProcessThreadCount();
+        this.maxTransferSize = metaConfig.getMaxTransferSize();
+
+        // Check directory and load exists segments.
         this.checkDir(this.partitionDir);
         this.loadSegments(offsetIfCreate);
     }
@@ -448,11 +453,14 @@ public class MessageStore implements Closeable {
                 writeRequest.location = location;
                 this.toFlush.offer(writeRequest);
 
-                // Two conditions to flush writes:
+                // Three situations to flush writes:
                 // 1.No threads are waiting for write lock
                 // 2.Unflush bytes is greater than max batch size
+                // 3.Unflush messages count is greater than 'put' thread pool
+                // size.
                 if (!this.writeLock.hasQueuedThreads()
-                        || cur.fileMessageSet.getSizeInBytes() > lastFlushPos + this.MAX_BATCH_SIZE) {
+                        || cur.fileMessageSet.getSizeInBytes() >= lastFlushPos + this.maxTransferSize
+                        || this.toFlush.size() >= this.putProcessThreadCount) {
                     this.flush0();
                     this.notifyCallbacks();
                     this.toFlush.clear();
