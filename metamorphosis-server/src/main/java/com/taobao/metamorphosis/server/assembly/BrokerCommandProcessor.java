@@ -198,7 +198,6 @@ public class BrokerCommandProcessor implements CommandProcessor {
     protected MetaConfig metaConfig;
     protected IdWorker idWorker;
     protected BrokerZooKeeper brokerZooKeeper;
-    protected final boolean tellMaxOffset = Boolean.parseBoolean(System.getProperty("meta.get.tellMaxOffset", "false"));
 
 
     /**
@@ -426,7 +425,8 @@ public class BrokerCommandProcessor implements CommandProcessor {
                 // 当请求的偏移量大于实际最大值时,返回给客户端实际最大的偏移量.
                 final long maxOffset = store.getMaxOffset();
                 final long requestOffset = request.getOffset();
-                if (requestOffset > maxOffset && (this.tellMaxOffset || requestOffset == Long.MAX_VALUE)) {
+                if (requestOffset > maxOffset
+                        && (this.metaConfig.isUpdateConsumerOffsets() || requestOffset == Long.MAX_VALUE)) {
                     log.info("offset[" + requestOffset + "] is exceeded,tell the client real max offset: " + maxOffset
                         + ",topic=" + topic + ",group=" + group);
                     this.statsManager.statsOffset(topic, group, 1);

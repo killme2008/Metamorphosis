@@ -32,6 +32,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.ini4j.Ini;
@@ -127,6 +129,8 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
 
     private boolean stat;
 
+    private boolean updateConsumerOffsets = Boolean.parseBoolean(System.getProperty("meta.get.tellMaxOffset", "false"));
+
 
     public int getQuartzThreadCount() {
         return this.quartzThreadCount;
@@ -135,6 +139,16 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
 
     public boolean isAcceptPublish() {
         return this.acceptPublish;
+    }
+
+
+    public boolean isUpdateConsumerOffsets() {
+        return this.updateConsumerOffsets;
+    }
+
+
+    public void setUpdateConsumerOffsets(boolean updateConsumerOffsets) {
+        this.updateConsumerOffsets = updateConsumerOffsets;
     }
 
 
@@ -616,6 +630,9 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         if (!StringUtils.isBlank(sysConf.get("stat"))) {
             this.stat = this.getBoolean(sysConf, "stat");
         }
+        if (!StringUtils.isBlank(sysConf.get("updateConsumerOffsets"))) {
+            this.updateConsumerOffsets = this.getBoolean(sysConf, "updateConsumerOffsets");
+        }
     }
 
 
@@ -721,23 +738,7 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
 
     @Override
     public String toString() {
-        return "MetaConfig [brokerId=" + this.brokerId + ", dataPath=" + this.dataPath + ", serverPort="
-                + this.serverPort + ", hostName=" + this.hostName + ", numPartitions=" + this.numPartitions
-                + ", unflushThreshold=" + this.unflushThreshold + ", unflushInterval=" + this.unflushInterval
-                + ", maxSegmentSize=" + this.maxSegmentSize + ", maxTransferSize=" + this.maxTransferSize + ", topics="
-                + this.topics + ", slaveConfig=" + this.slaveConfig + ", getProcessThreadCount="
-                + this.getProcessThreadCount + ", putProcessThreadCount=" + this.putProcessThreadCount + ", zkConfig="
-                + this.zkConfig + ", diamondZKDataId=" + this.diamondZKDataId + ", diamondZKGroup="
-                + this.diamondZKGroup + ", deletePolicy=" + this.deletePolicy + ", topicConfigMap="
-                + this.topicConfigMap + ", propertyChangeSupport=" + this.propertyChangeSupport + ", stat=" + this.stat
-                + ", lastModified=" + this.lastModified + ", path=" + this.path + ", maxCheckpoints="
-                + this.maxCheckpoints + ", checkpointInterval=" + this.checkpointInterval
-                + ", maxTxTimeoutTimerCapacity=" + this.maxTxTimeoutTimerCapacity + ", flushTxLogAtCommit="
-                + this.flushTxLogAtCommit + ", maxTxTimeoutInSeconds=" + this.maxTxTimeoutInSeconds + ", dataLogPath="
-                + this.dataLogPath + ", deleteWhen=" + this.deleteWhen + ", quartzThreadCount="
-                + this.quartzThreadCount + ", configFileChecksum=" + this.configFileChecksum + ", acceptPublish="
-                + this.acceptPublish + ", acceptSubscribe=" + this.acceptSubscribe + ", closedPartitionMap="
-                + this.closedPartitionMap + "]";
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
     }
 
 
