@@ -113,7 +113,7 @@ public class JournalStore implements Closeable {
 
     public JournalStore(final String path, final MessageStoreManager storeManager,
             final JournalTransactionStore transactionStore, final int maxCheckpoints, final int flushTxLogAtCommit)
-            throws Exception {
+                    throws Exception {
         FileUtils.makesureDir(new File(path));
         this.transactionsDir = new File(path + File.separator + "transactions");
         FileUtils.makesureDir(this.transactionsDir);
@@ -517,18 +517,18 @@ public class JournalStore implements Closeable {
                             counter.incrementAndGet();
                             msgStore.replayAppend(addedLocation.getOffset(), addedLocation.getLength(),
                                 addedLocation.checksum, idList, cmdList, new AppendCallback() {
-                                    @Override
-                                    public void appendComplete(final Location newLocation) {
-                                        // 如果重放的时候更新了位置，则需要更新位置信息
-                                        if (newLocation != null) {
-                                            replayed.set(true);
-                                            locations.put(msgStore.getDescription(),
-                                                new AddMsgLocation(newLocation.getOffset(), newLocation.getLength(),
-                                                    addedLocation.checksum, addedLocation.storeDesc));
-                                        }
-                                        counter.decrementAndGet();
+                                @Override
+                                public void appendComplete(final Location newLocation) {
+                                    // 如果重放的时候更新了位置，则需要更新位置信息
+                                    if (newLocation != null) {
+                                        replayed.set(true);
+                                        locations.put(msgStore.getDescription(),
+                                            new AddMsgLocation(newLocation.getOffset(), newLocation.getLength(),
+                                                addedLocation.checksum, addedLocation.storeDesc));
                                     }
-                                });
+                                    counter.decrementAndGet();
+                                }
+                            });
 
                         }
                     }
@@ -591,7 +591,7 @@ public class JournalStore implements Closeable {
         this.currDataFile =
                 new DataFile(new File(this.transactionsDir + File.separator + this.FILE_PREFIX + n), n, false);
         this.dataFiles.put(Integer.valueOf(n), this.currDataFile);
-        log.info("生成新文件：" + this.currDataFile);
+        log.info("Created a new redo log：" + this.currDataFile);
         return this.currDataFile;
     }
 
