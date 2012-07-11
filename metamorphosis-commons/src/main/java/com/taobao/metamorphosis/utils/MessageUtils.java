@@ -22,6 +22,7 @@ import java.util.List;
 
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.MessageAccessor;
+import com.taobao.metamorphosis.exception.InvalidCheckSumException;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.network.ByteUtils;
 import com.taobao.metamorphosis.network.PutCommand;
@@ -50,7 +51,7 @@ public class MessageUtils {
      * <li>checksum(4 bytes)</li>
      * <li>message id(8 bytes)</li>
      * <li>message flag(4 bytes)</li>
-     * <li>attribute length(4 bytes) + attribute,not nessary</li>
+     * <li>attribute length(4 bytes) + attribute,optional</li>
      * <li>payload</li>
      * </ul>
      * 
@@ -61,7 +62,15 @@ public class MessageUtils {
         // message length + checksum + id +flag + data
         final ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 8 + 4 + req.getData().length);
         buffer.putInt(req.getData().length);
-        buffer.putInt(CheckSum.crc32(req.getData()));
+        int checkSum = CheckSum.crc32(req.getData());
+        // If client passes checksum,compare them
+        if (req.getCheckSum() != -1) {
+            if (checkSum != req.getCheckSum()) {
+                throw new InvalidCheckSumException(
+                        "Checksum failure,message may be corrupted when transfering on networking.");
+            }
+        }
+        buffer.putInt(checkSum);
         buffer.putLong(msgId);
         buffer.putInt(req.getFlag());
         buffer.put(req.getData());

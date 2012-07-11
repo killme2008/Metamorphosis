@@ -49,6 +49,7 @@ import com.taobao.metamorphosis.network.BooleanCommand;
 import com.taobao.metamorphosis.network.HttpStatus;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.transaction.TransactionId;
+import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.LongSequenceGenerator;
 import com.taobao.metamorphosis.utils.MessageFlagUtils;
 import com.taobao.metamorphosis.utils.MessageUtils;
@@ -432,7 +433,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
             final int flag = MessageFlagUtils.getFlag(message);
             final PutCommand putCommand =
                     new PutCommand(topic, partition.getPartition(), encodedData, this.getTransactionId(), flag,
-                        OpaqueGenerator.getNextOpaque());
+                        CheckSum.crc32(encodedData), OpaqueGenerator.getNextOpaque());
             final BooleanCommand resp = this.invokeToGroup(serverUrl, partition, putCommand, message, timeout, unit);
             return this.genSendResult(message, partition, serverUrl, resp);
         }
@@ -524,7 +525,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
             final byte[] encodedData = MessageUtils.encodePayload(message);
             final PutCommand putCommand =
                     new PutCommand(topic, partition.getPartition(), encodedData, this.getTransactionId(), flag,
-                        OpaqueGenerator.getNextOpaque());
+                        CheckSum.crc32(encodedData), OpaqueGenerator.getNextOpaque());
             this.remotingClient.sendToGroup(serverUrl, putCommand, new SingleRequestCallBackListener() {
                 @Override
                 public void onResponse(final ResponseCommand responseCommand, final Connection conn) {

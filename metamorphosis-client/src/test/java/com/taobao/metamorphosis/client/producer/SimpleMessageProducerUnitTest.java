@@ -46,6 +46,7 @@ import com.taobao.metamorphosis.network.TransactionCommand;
 import com.taobao.metamorphosis.transaction.LocalTransactionId;
 import com.taobao.metamorphosis.transaction.TransactionInfo;
 import com.taobao.metamorphosis.transaction.TransactionInfo.TransactionType;
+import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.MessageFlagUtils;
 import com.taobao.metamorphosis.utils.MessageUtils;
 
@@ -152,8 +153,9 @@ public class SimpleMessageProducerUnitTest {
         final int flag = MessageFlagUtils.getFlag(null);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, null, flag,
+                CheckSum.crc32(data),
                 Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
-            new BooleanCommand(Integer.MIN_VALUE, 500, "server error"));
+                    new BooleanCommand(Integer.MIN_VALUE, 500, "server error"));
         // EasyMock.expect(
         // this.remotingClient.invokeToGroup(url, new PutCommand(topic,
         // partition.getPartition(), data, null, flag,
@@ -192,7 +194,8 @@ public class SimpleMessageProducerUnitTest {
             final int flag = MessageFlagUtils.getFlag(null);
             EasyMock.expect(
                 this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, null,
-                    flag, Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andThrow(new InterruptedException());
+                    flag, CheckSum.crc32(data), Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andThrow(
+                new InterruptedException());
             this.mocksControl.replay();
             this.producer.sendMessage(message);
         }
@@ -267,10 +270,10 @@ public class SimpleMessageProducerUnitTest {
     private void mockInvokeSuccess(final String serverUrl, final TransactionInfo info, final String result)
             throws InterruptedException, TimeoutException, NotifyRemotingException {
         EasyMock
-            .expect(
-                this.remotingClient.invokeToGroup(serverUrl,
-                    new TransactionCommand(info, OpaqueGenerator.getNextOpaque()))).andReturn(
-                new BooleanCommand(0, HttpStatus.Success, result));
+        .expect(
+            this.remotingClient.invokeToGroup(serverUrl,
+                new TransactionCommand(info, OpaqueGenerator.getNextOpaque()))).andReturn(
+                    new BooleanCommand(0, HttpStatus.Success, result));
     }
 
 

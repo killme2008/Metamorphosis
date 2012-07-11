@@ -47,30 +47,55 @@ public class MetaCodecFactoryUnitTest {
 
 
     @Test
-    public void testDecodePutCommand() {
+    public void testDecodeOldPutCommand() {
 
         final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), null, 0, 0);
-        final IoBuffer buf = putCommand.encode();
 
-        final PutCommand decodedCmd = (PutCommand) this.decoder.decode(buf, null);
+        final PutCommand decodedCmd =
+                (PutCommand) this.decoder.decode(IoBuffer.wrap("put test 1 5 0 0\r\nhello".getBytes()), null);
         assertNotNull(decodedCmd);
         assertEquals(putCommand, decodedCmd);
-        assertFalse(buf.hasRemaining());
     }
 
 
     @Test
-    public void testDecodePutCommand_HasTransactionId() {
+    public void testDecodeNewPutCommand() {
+
+        final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), null, 0, 100, 0);
+        final PutCommand decodedCmd =
+                (PutCommand) this.decoder.decode(IoBuffer.wrap("put test 1 5 0 100 0\r\nhello".getBytes()), null);
+        assertNotNull(decodedCmd);
+        assertEquals(putCommand, decodedCmd);
+    }
+
+
+    @Test
+    public void testDecodeOldPutCommand_HasTransactionId() {
         final TransactionId xid = new LocalTransactionId("test", 100);
         final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), xid, 0, 0);
-        final IoBuffer buf = putCommand.encode();
 
-        final PutCommand decodedCmd = (PutCommand) this.decoder.decode(buf, null);
+        final PutCommand decodedCmd =
+                (PutCommand) this.decoder.decode(IoBuffer.wrap("put test 1 5 0 TX:test:100 0\r\nhello".getBytes()),
+                    null);
         assertNotNull(decodedCmd);
         assertNotNull(decodedCmd.getTransactionId());
         assertEquals(putCommand, decodedCmd);
         assertEquals(putCommand.getTransactionId(), decodedCmd.getTransactionId());
-        assertFalse(buf.hasRemaining());
+    }
+
+
+    @Test
+    public void testDecodeNewPutCommand_HasTransactionId() {
+        final TransactionId xid = new LocalTransactionId("test", 100);
+        final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), xid, 0, 9999, 0);
+
+        final PutCommand decodedCmd =
+                (PutCommand) this.decoder.decode(
+                    IoBuffer.wrap("put test 1 5 0 9999 TX:test:100 0\r\nhello".getBytes()), null);
+        assertNotNull(decodedCmd);
+        assertNotNull(decodedCmd.getTransactionId());
+        assertEquals(putCommand, decodedCmd);
+        assertEquals(putCommand.getTransactionId(), decodedCmd.getTransactionId());
     }
 
 

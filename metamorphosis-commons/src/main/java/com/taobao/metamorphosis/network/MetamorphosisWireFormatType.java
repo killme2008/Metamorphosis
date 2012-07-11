@@ -220,13 +220,6 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                 private Object decodeData(final IoBuffer buff, final String[] tmps) {
                     this.assertCommand(tmps[0], "value");
                     final int valueLen = Integer.parseInt(tmps[1]);
-                    // 防止意外情况创建超大数组
-                    // if (valueLen >
-                    // com.taobao.notify.remoting.core.config.Configuration.MAX_READ_BUFFER_SIZE
-                    // * 2) {
-                    // throw new MetaCodecException("Invalid data length:" +
-                    // valueLen);
-                    // }
                     if (buff.remaining() < valueLen) {
                         buff.reset();
                         return null;
@@ -280,18 +273,18 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                     this.assertCommand(tmps[0], "transaction");
                     final TransactionId transactionId = this.getTransactionId(tmps[1]);
                     final TransactionType type = TransactionType.valueOf(tmps[3]);
-                    if (tmps.length == 6) {
+                    switch (tmps.length) {
+                    case 6:
                         final int timeout = Integer.valueOf(tmps[4]);
-                        final TransactionInfo info = new TransactionInfo(transactionId, tmps[2], type, timeout);
+                        TransactionInfo info = new TransactionInfo(transactionId, tmps[2], type, timeout);
                         return new TransactionCommand(info, Integer.parseInt(tmps[5]));
-                    }
-                    else if (tmps.length == 5) {
-                        final TransactionInfo info = new TransactionInfo(transactionId, tmps[2], type);
+                    case 5:
+                        info = new TransactionInfo(transactionId, tmps[2], type);
                         return new TransactionCommand(info, Integer.parseInt(tmps[4]));
-                    }
-                    else {
+                    default:
                         throw new MetaCodecException("Invalid transaction command:" + StringUtils.join(tmps));
                     }
+
                 }
 
 
@@ -323,7 +316,8 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                 }
 
 
-                // put topic partition value-length flag [transactionKey]
+                // put topic partition value-length flag checksum
+                // [transactionKey]
                 // opaque\r\n
                 private Object decodePut(final IoBuffer buff, final String[] tmps) {
                     this.assertCommand(tmps[0], "put");
@@ -335,17 +329,34 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                     else {
                         final byte[] data = new byte[valueLen];
                         buff.get(data);
-                        if (tmps.length == 6) {
+                        switch (tmps.length) {
+                        case 6:
+                            // old clients before 1.4.4
                             return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data, null,
                                 Integer.parseInt(tmps[4]), Integer.parseInt(tmps[5]));
-                        }
-                        else if (tmps.length == 7) {
-                            // 事务性消息
-                            // added by boyan,2011-08-18
+                        case 7:
+                            // either transaction command or new clients since
+                            // 1.4.4
+                            String slot = tmps[5];
+                            char firstChar = slot.charAt(0);
+                            if (Character.isDigit(firstChar) || '-' == firstChar) {
+                                // slot is checksum.
+                                int checkSum = Integer.parseInt(slot);
+                                return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data, null,
+                                    Integer.parseInt(tmps[4]), checkSum, Integer.parseInt(tmps[6]));
+                            }
+                            else {
+                                // slot is transaction id.
+                                return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data,
+                                    this.getTransactionId(slot), Integer.parseInt(tmps[4]), Integer.parseInt(tmps[6]));
+                            }
+                        case 8:
+                            // New clients since 1.4.4
+                            // A transaction command
                             return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data,
-                                this.getTransactionId(tmps[5]), Integer.parseInt(tmps[4]), Integer.parseInt(tmps[6]));
-                        }
-                        else {
+                                this.getTransactionId(tmps[6]), Integer.parseInt(tmps[4]), Integer.parseInt(tmps[5]),
+                                Integer.parseInt(tmps[7]));
+                        default:
                             throw new MetaCodecException("Invalid put command:" + StringUtils.join(tmps));
                         }
                     }

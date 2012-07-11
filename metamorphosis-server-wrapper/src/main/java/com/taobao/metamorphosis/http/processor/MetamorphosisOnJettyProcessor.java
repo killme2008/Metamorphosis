@@ -24,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jetty.server.Request;
@@ -113,14 +114,19 @@ public class MetamorphosisOnJettyProcessor extends AbstractHandler {
             // Validation should be done on client side already
             final int partition = Integer.parseInt(jettyRequest.getParameter("partition"));
             final int flag = Integer.parseInt(jettyRequest.getParameter("flag"));
+            int checkSum = -1;
+            if (StringUtils.isNotBlank(jettyRequest.getParameter("checksum"))) {
+                checkSum = Integer.parseInt(jettyRequest.getParameter("checksum"));
+            }
             // This stream should be handle by Jetty server and therefore it is
             // out of scope here without care close
             final InputStream inputStream = jettyRequest.getInputStream();
             final int dataLength = Integer.parseInt(jettyRequest.getParameter("length"));
             final byte[] data = new byte[dataLength];
+
             inputStream.read(data);
             this.doResponseHeaders(response, "text/plain");
-            final PutCommand putCommand = this.convert2PutCommand(topic, partition, data, flag);
+            final PutCommand putCommand = this.convert2PutCommand(topic, partition, data, flag, checkSum);
             this.commandProcessor.processPutCommand(putCommand, null, new PutCallback() {
 
                 @Override
@@ -202,8 +208,9 @@ public class MetamorphosisOnJettyProcessor extends AbstractHandler {
     }
 
 
-    private PutCommand convert2PutCommand(final String topic, final int partition, final byte[] data, final int flag) {
-        return new PutCommand(topic, partition, data, null, flag, 0);
+    private PutCommand convert2PutCommand(final String topic, final int partition, final byte[] data, final int flag,
+            int checkSum) {
+        return new PutCommand(topic, partition, data, null, flag, checkSum, 0);
     }
 
 }

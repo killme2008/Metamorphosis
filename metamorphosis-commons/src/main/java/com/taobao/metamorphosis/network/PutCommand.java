@@ -25,7 +25,7 @@ import com.taobao.metamorphosis.transaction.TransactionId;
 
 
 /**
- * 发送消息命令，协议格式： </br></br> put topic partition value-length flag
+ * 发送消息命令，协议格式： </br></br> put topic partition value-length flag checksum
  * [transactionkey] opaque\r\n data </br></br> data的结构如下：</br> </br>
  * attribute(0个或者1个，固定长度字符串，取决于flag字段) + binary data
  * 
@@ -38,6 +38,8 @@ public class PutCommand extends AbstractRequestCommand {
     protected byte[] data;
     protected int partition;
     protected final int flag;
+    protected int checkSum = -1; // added by dennis<killme2008@gmail.com>,issue
+    // 23.
     private TransactionId transactionId;
 
 
@@ -53,6 +55,16 @@ public class PutCommand extends AbstractRequestCommand {
 
     public byte[] getData() {
         return this.data;
+    }
+
+
+    public int getCheckSum() {
+        return this.checkSum;
+    }
+
+
+    public void setCheckSum(int checkSum) {
+        this.checkSum = checkSum;
     }
 
 
@@ -78,10 +90,17 @@ public class PutCommand extends AbstractRequestCommand {
 
     public PutCommand(final String topic, final int partition, final byte[] data, final TransactionId transactionId,
             final int flag, final Integer opaque) {
+        this(topic, partition, data, transactionId, flag, -1, opaque);
+    }
+
+
+    public PutCommand(final String topic, final int partition, final byte[] data, final TransactionId transactionId,
+            final int flag, final int checkSum, final Integer opaque) {
         super(topic, opaque);
         this.partition = partition;
         this.data = data;
         this.flag = flag;
+        this.checkSum = checkSum;
         this.transactionId = transactionId;
     }
 
@@ -103,17 +122,17 @@ public class PutCommand extends AbstractRequestCommand {
         final String transactionKey = this.transactionId != null ? this.transactionId.getTransactionKey() : null;
 
         final IoBuffer buffer =
-                IoBuffer.allocate(10 + ByteUtils.stringSize(this.partition) + ByteUtils.stringSize(dataLen)
+                IoBuffer.allocate(11 + ByteUtils.stringSize(this.partition) + ByteUtils.stringSize(dataLen)
                         + ByteUtils.stringSize(this.getOpaque()) + this.getTopic().length()
                         + (transactionKey != null ? transactionKey.length() + 1 : 0) + ByteUtils.stringSize(this.flag)
-                        + dataLen);
+                        + ByteUtils.stringSize(this.checkSum) + dataLen);
         if (transactionKey != null) {
             ByteUtils.setArguments(buffer, MetaEncodeCommand.PUT_CMD, this.getTopic(), this.partition, dataLen,
-                this.flag, transactionKey, this.getOpaque());
+                this.flag, this.checkSum, transactionKey, this.getOpaque());
         }
         else {
             ByteUtils.setArguments(buffer, MetaEncodeCommand.PUT_CMD, this.getTopic(), this.partition, dataLen,
-                this.flag, this.getOpaque());
+                this.flag, this.checkSum, this.getOpaque());
         }
         if (this.data != null) {
             buffer.put(this.data);
@@ -127,6 +146,7 @@ public class PutCommand extends AbstractRequestCommand {
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
+        result = prime * result + this.checkSum;
         result = prime * result + Arrays.hashCode(this.data);
         result = prime * result + this.flag;
         result = prime * result + this.partition;
@@ -136,7 +156,7 @@ public class PutCommand extends AbstractRequestCommand {
 
 
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -146,7 +166,10 @@ public class PutCommand extends AbstractRequestCommand {
         if (this.getClass() != obj.getClass()) {
             return false;
         }
-        final PutCommand other = (PutCommand) obj;
+        PutCommand other = (PutCommand) obj;
+        if (this.checkSum != other.checkSum) {
+            return false;
+        }
         if (!Arrays.equals(this.data, other.data)) {
             return false;
         }

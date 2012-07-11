@@ -34,7 +34,7 @@ public class PutCommandUnitTest {
         final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), id, 0, 0);
         final IoBuffer buf = putCommand.encode();
         assertEquals(0, buf.position());
-        assertEquals("put test 1 5 0 TX:test:1 0\r\nhello", new String(buf.array()));
+        assertEquals("put test 1 5 0 -1 TX:test:1 0\r\nhello", new String(buf.array()));
     }
 
 
@@ -43,6 +43,6 @@ public class PutCommandUnitTest {
         final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), null, 0, 0);
         final IoBuffer buf = putCommand.encode();
         assertEquals(0, buf.position());
-        assertEquals("put test 1 5 0 0\r\nhello", new String(buf.array()));
+        assertEquals("put test 1 5 0 -1 0\r\nhello", new String(buf.array()));
     }
 }

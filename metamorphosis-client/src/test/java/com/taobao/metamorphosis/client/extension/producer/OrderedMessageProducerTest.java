@@ -39,6 +39,7 @@ import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.network.BooleanCommand;
 import com.taobao.metamorphosis.network.PutCommand;
+import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.MessageFlagUtils;
 
 
@@ -78,15 +79,15 @@ public class OrderedMessageProducerTest {
         final String url = "meta://localhost:0";
         final Partition partition = new Partition("0-0");
         EasyMock.expect(this.producerZooKeeper.selectPartition(topic, message, this.partitionSelector))
-            .andReturn(partition).times(2);
+        .andReturn(partition).times(2);
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(this.localMessageStorageManager.getMessageCount(topic, partition)).andReturn(0);
         OpaqueGenerator.resetOpaque();
         final int flag = MessageFlagUtils.getFlag(null);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, null, flag,
-                Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
-            new BooleanCommand(Integer.MIN_VALUE, 200, "1111 1 1024"));
+                CheckSum.crc32(data), Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
+                    new BooleanCommand(Integer.MIN_VALUE, 200, "1111 1 1024"));
         this.mocksControl.replay();
         assertEquals(0, message.getId());
         final SendResult sendResult = this.producer.sendMessage(message);
