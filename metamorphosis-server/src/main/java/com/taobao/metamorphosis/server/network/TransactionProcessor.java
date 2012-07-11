@@ -77,7 +77,7 @@ public class TransactionProcessor implements RequestProcessor<TransactionCommand
                 final int rt = this.processor.prepareTransaction(context, xid);
                 // prepare结果需返回
                 RemotingUtils.response(conn,
-                    new BooleanCommand(request.getOpaque(), HttpStatus.Success, String.valueOf(rt)));
+                    new BooleanCommand(HttpStatus.Success, String.valueOf(rt), request.getOpaque()));
                 break;
             // 提交和,forget和rollback的时候是同步调用，因此需要应答
             case COMMIT_ONE_PHASE:
@@ -110,11 +110,11 @@ public class TransactionProcessor implements RequestProcessor<TransactionCommand
                     }
                 }
                 RemotingUtils
-                    .response(conn, new BooleanCommand(request.getOpaque(), HttpStatus.Success, sb.toString()));
+                    .response(conn, new BooleanCommand(HttpStatus.Success, sb.toString(), request.getOpaque()));
                 break;
             default:
-                RemotingUtils.response(conn, new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError,
-                    "Unknow transaction command type:" + request.getTransactionInfo().getType()));
+                RemotingUtils.response(conn, new BooleanCommand(HttpStatus.InternalServerError, "Unknow transaction command type:" + request.getTransactionInfo().getType(),
+                    request.getOpaque()));
 
             }
         }
@@ -137,20 +137,20 @@ public class TransactionProcessor implements RequestProcessor<TransactionCommand
 
     private void responseError(final TransactionCommand request, final Connection conn, final Exception e) {
         RemotingUtils.response(conn,
-            new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, e.getMessage()));
+            new BooleanCommand(HttpStatus.InternalServerError, e.getMessage(), request.getOpaque()));
     }
 
 
     private void responseXAE(final TransactionCommand request, final Connection conn, final XAException e) {
-        RemotingUtils.response(conn, new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError,
-            "XAException:code=" + e.errorCode + ",msg=" + e.getMessage()));
+        RemotingUtils.response(conn, new BooleanCommand(HttpStatus.InternalServerError, "XAException:code=" + e.errorCode + ",msg=" + e.getMessage(),
+            request.getOpaque()));
     }
 
     static final Log log = LogFactory.getLog(TransactionProcessor.class);
 
 
     private void responseOK(final TransactionCommand request, final Connection conn) {
-        RemotingUtils.response(conn, new BooleanCommand(request.getOpaque(), HttpStatus.Success, null));
+        RemotingUtils.response(conn, new BooleanCommand(HttpStatus.Success, null, request.getOpaque()));
     }
 
 

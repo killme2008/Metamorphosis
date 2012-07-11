@@ -85,9 +85,9 @@ public class OrderedMessageProducerTest {
         OpaqueGenerator.resetOpaque();
         final int flag = MessageFlagUtils.getFlag(null);
         EasyMock.expect(
-            this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, null, flag,
-                CheckSum.crc32(data), Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
-                    new BooleanCommand(Integer.MIN_VALUE, 200, "1111 1 1024"));
+            this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, flag, CheckSum.crc32(data),
+                null, Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
+                    new BooleanCommand(200, "1111 1 1024", Integer.MIN_VALUE));
         this.mocksControl.replay();
         assertEquals(0, message.getId());
         final SendResult sendResult = this.producer.sendMessage(message);

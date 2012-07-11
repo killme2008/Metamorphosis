@@ -210,7 +210,7 @@ public class MetamorphosisOnJettyProcessor extends AbstractHandler {
 
     private PutCommand convert2PutCommand(final String topic, final int partition, final byte[] data, final int flag,
             int checkSum) {
-        return new PutCommand(topic, partition, data, null, flag, checkSum, 0);
+        return new PutCommand(topic, partition, data, flag, checkSum, null, 0);
     }
 
 }

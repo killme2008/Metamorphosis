@@ -51,8 +51,8 @@ public class OffsetProcessorUnitTest extends BaseProcessorUnitTest {
         final int opaque = 0;
         final long offset = 1024;
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(null);
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.NotFound, "The topic `" + this.topic
-                + "` in partition `" + partition + "` is not exists"));
+        this.conn.response(new BooleanCommand(HttpStatus.NotFound, "The topic `" + this.topic
+                + "` in partition `" + partition + "` is not exists", opaque));
         this.mocksControl.replay();
         this.offsetProcessor.handleRequest(new OffsetCommand(this.topic, this.group, partition, offset, opaque),
             this.conn);
@@ -70,7 +70,7 @@ public class OffsetProcessorUnitTest extends BaseProcessorUnitTest {
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
         EasyMock.expect(store.getNearestOffset(offset)).andReturn(resultOffset);
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.Success, String.valueOf(resultOffset)));
+        this.conn.response(new BooleanCommand(HttpStatus.Success, String.valueOf(resultOffset), opaque));
         this.mocksControl.replay();
         this.offsetProcessor.handleRequest(new OffsetCommand(this.topic, this.group, partition, offset, opaque),
             this.conn);

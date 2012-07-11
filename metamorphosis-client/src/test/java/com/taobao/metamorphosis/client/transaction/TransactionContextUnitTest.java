@@ -478,7 +478,7 @@ public class TransactionContextUnitTest {
             .expect(
                 this.remotingClient.invokeToGroup(serverUrl,
                     new TransactionCommand(info, OpaqueGenerator.getNextOpaque()))).andReturn(
-                new BooleanCommand(0, HttpStatus.Success, result));
+                new BooleanCommand(HttpStatus.Success, result, 0));
     }
 
 

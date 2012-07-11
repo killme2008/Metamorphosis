@@ -48,6 +48,7 @@ import com.taobao.metamorphosis.server.store.Location;
 import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.IdWorker;
 import com.taobao.metamorphosis.utils.MessageFlagUtils;
 
@@ -78,7 +79,7 @@ public class SamsaCommandProcessorUnitTest {
         this.remotingClient = this.mocksControl.createMock(RemotingClient.class);
         this.sessionContext = new SessionContextImpl(null, this.conn);
         EasyMock.expect(this.conn.getAttribute(SessionContextHolder.GLOBAL_SESSION_KEY)).andReturn(this.sessionContext)
-            .anyTimes();
+        .anyTimes();
         this.statsManager = new StatsManager(new MetaConfig(), null, null);
         this.idWorker = this.mocksControl.createMock(IdWorker.class);
         this.brokerZooKeeper = this.mocksControl.createMock(BrokerZooKeeper.class);
@@ -109,14 +110,15 @@ public class SamsaCommandProcessorUnitTest {
         final long offset = 1024L;
         final byte[] data = new byte[1024];
         final int flag = MessageFlagUtils.getFlag(null);
-        final PutCommand request = new PutCommand(this.topic, partition, data, null, flag, opaque);
+        final PutCommand request =
+                new PutCommand(this.topic, partition, data, flag, CheckSum.crc32(data), null, opaque);
         final long msgId = 100000L;
         EasyMock.expect(this.remotingClient.isConnected(this.slaveUrl)).andReturn(true);
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(opaque, HttpStatus.Success, msgId + " " + partition + " " + offset);
+                new BooleanCommand(HttpStatus.Success, msgId + " " + partition + " " + offset, opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
@@ -137,19 +139,19 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                    .appendComplete(new Location(offset, 1024));
+                .appendComplete(new Location(offset, 1024));
                 return null;
             }
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), msgId, request.getFlag(), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
             public Object answer() throws Throwable {
                 ((SingleRequestCallBackListener) EasyMock.getCurrentArguments()[2]).onResponse(new BooleanCommand(
-                    OpaqueGenerator.getNextOpaque(), HttpStatus.Success, null), SamsaCommandProcessorUnitTest.this.conn);
+                    HttpStatus.Success, null, OpaqueGenerator.getNextOpaque()), SamsaCommandProcessorUnitTest.this.conn);
                 return null;
             }
 
@@ -178,7 +180,7 @@ public class SamsaCommandProcessorUnitTest {
         // Slave is disconnected
         EasyMock.expect(this.remotingClient.isConnected(this.slaveUrl)).andReturn(false);
         final BooleanCommand expectResp =
-                new BooleanCommand(opaque, HttpStatus.InternalServerError, "Slave is disconnected ");
+                new BooleanCommand(HttpStatus.InternalServerError, "Slave is disconnected ", opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
@@ -209,14 +211,15 @@ public class SamsaCommandProcessorUnitTest {
         final long offset = 1024L;
         final byte[] data = new byte[1024];
         final int flag = MessageFlagUtils.getFlag(null);
-        final PutCommand request = new PutCommand(this.topic, partition, data, null, flag, opaque);
+        final PutCommand request =
+                new PutCommand(this.topic, partition, data, flag, CheckSum.crc32(data), null, opaque);
         final long msgId = 100000L;
         EasyMock.expect(this.remotingClient.isConnected(this.slaveUrl)).andReturn(true);
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(opaque, HttpStatus.InternalServerError, "Put message to slave failed");
+                new BooleanCommand(HttpStatus.InternalServerError, "Put message to slave failed", opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
@@ -237,19 +240,19 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                    .appendComplete(new Location(offset, 1024));
+                .appendComplete(new Location(offset, 1024));
                 return null;
             }
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), msgId, request.getFlag(), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
             public Object answer() throws Throwable {
                 ((SingleRequestCallBackListener) EasyMock.getCurrentArguments()[2]).onResponse(new BooleanCommand(
-                    OpaqueGenerator.getNextOpaque(), HttpStatus.InternalServerError, "Put to slave failed"),
+                    HttpStatus.InternalServerError, "Put to slave failed", OpaqueGenerator.getNextOpaque()),
                     SamsaCommandProcessorUnitTest.this.conn);
                 return null;
             }
@@ -274,14 +277,15 @@ public class SamsaCommandProcessorUnitTest {
         final long offset = -1;
         final byte[] data = new byte[1024];
         final int flag = MessageFlagUtils.getFlag(null);
-        final PutCommand request = new PutCommand(this.topic, partition, data, null, flag, opaque);
+        final PutCommand request =
+                new PutCommand(this.topic, partition, data, flag, CheckSum.crc32(data), null, opaque);
         final long msgId = 100000L;
         EasyMock.expect(this.remotingClient.isConnected(this.slaveUrl)).andReturn(true);
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(opaque, HttpStatus.InternalServerError, "Put message to master failed");
+                new BooleanCommand(HttpStatus.InternalServerError, "Put message to master failed", opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
@@ -302,19 +306,19 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                    .appendComplete(new Location(offset, 1024));
+                .appendComplete(new Location(offset, 1024));
                 return null;
             }
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), msgId, request.getFlag(), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
             public Object answer() throws Throwable {
                 ((SingleRequestCallBackListener) EasyMock.getCurrentArguments()[2]).onResponse(new BooleanCommand(
-                    OpaqueGenerator.getNextOpaque(), HttpStatus.Success, null), SamsaCommandProcessorUnitTest.this.conn);
+                    HttpStatus.Success, null, OpaqueGenerator.getNextOpaque()), SamsaCommandProcessorUnitTest.this.conn);
                 return null;
             }
 

@@ -179,8 +179,8 @@ public class AsyncMetaMessageProducer extends SimpleMessageProducer implements A
             try {
                 super.remotingClient.sendToGroup(serverUrl, putCommand, new MessageSendCallBackListener(putCommand),
                     timeout, unit);
-                return new BooleanCommand(putCommand.getOpaque(), HttpStatus.Success, "-1 " + putCommand.getPartition()
-                        + " -1");
+                return new BooleanCommand(HttpStatus.Success, "-1 " + putCommand.getPartition()
+                        + " -1", putCommand.getOpaque());
             }
             catch (final NotifyRemotingException e) {
                 this.slidingWindow.releaseByLenth(dataLength);
@@ -203,8 +203,8 @@ public class AsyncMetaMessageProducer extends SimpleMessageProducer implements A
         if (this.ignoreMessageProcessor != null) {
             // 不管处理结果怎样都返回成功
             this.handleSendFailMessage(message);
-            return new BooleanCommand(putCommand.getOpaque(), HttpStatus.Success, "-1 " + putCommand.getPartition()
-                    + " -1");
+            return new BooleanCommand(HttpStatus.Success, "-1 " + putCommand.getPartition()
+                    + " -1", putCommand.getOpaque());
         }
         else {
             throw e2;

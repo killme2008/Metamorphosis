@@ -27,7 +27,7 @@ import com.taobao.gecko.core.buffer.IoBuffer;
 public class BooleanCommandUnitTest {
     @Test
     public void testEncodeWithMessage() {
-        final BooleanCommand cmd = new BooleanCommand(99, HttpStatus.NotFound, "not found");
+        final BooleanCommand cmd = new BooleanCommand(HttpStatus.NotFound, "not found", 99);
         final IoBuffer buf = cmd.encode();
         assertEquals(0, buf.position());
         assertEquals("result 404 9 99\r\nnot found", new String(buf.array()));
@@ -36,7 +36,7 @@ public class BooleanCommandUnitTest {
 
     @Test
     public void testEncodeWithoutMessage() {
-        final BooleanCommand cmd = new BooleanCommand(99, HttpStatus.NotFound, null);
+        final BooleanCommand cmd = new BooleanCommand(HttpStatus.NotFound, null, 99);
         final IoBuffer buf = cmd.encode();
         assertEquals(0, buf.position());
         assertEquals("result 404 0 99\r\n", new String(buf.array()));

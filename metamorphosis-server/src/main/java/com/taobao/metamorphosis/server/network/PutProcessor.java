@@ -75,8 +75,8 @@ public class PutProcessor implements RequestProcessor<PutCommand> {
             // PutProcessor.this.processor.processPutCommand(request, context));
         }
         catch (final Exception e) {
-            RemotingUtils.response(context.getConnection(), new BooleanCommand(request.getOpaque(),
-                HttpStatus.InternalServerError, e.getMessage()));
+            RemotingUtils.response(context.getConnection(), new BooleanCommand(HttpStatus.InternalServerError,
+                e.getMessage(), request.getOpaque()));
         }
     }
 

@@ -330,8 +330,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             if (context.isInRecoverMode()) {
                 // 恢复模式，不需要处理
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(cmd.getOpaque(), HttpStatus.Forbidden,
-                        "The broker is in recover mode."));
+                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, "The broker is in recover mode.",
+                        cmd.getOpaque()));
                 }
                 return;
             }
@@ -342,8 +342,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             if (partition == Partition.RandomPartiton.getPartition()) {
                 this.statsManager.statsPutFailed(topic, partitionString, 1);
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(cmd.getOpaque(), HttpStatus.InternalServerError,
-                        "Invalid partition for transaction command:" + partition));
+                    cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "Invalid partition for transaction command:" + partition,
+                        cmd.getOpaque()));
                 }
                 return;
             }
@@ -351,8 +351,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             if (store == null) {
                 this.statsManager.statsPutFailed(topic, partitionString, 1);
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(cmd.getOpaque(), HttpStatus.InternalServerError,
-                        "Could not get or create message store for topic=" + topic + ",partition=" + partition));
+                    cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "Could not get or create message store for topic=" + topic + ",partition=" + partition,
+                        cmd.getOpaque()));
                 }
                 return;
             }
@@ -360,8 +360,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             this.transactionStore.addMessage(store, msgId, cmd, null);
             this.statsManager.statsPut(topic, partitionString, 1);
             if (cb != null) {
-                cb.putComplete(new BooleanCommand(cmd.getOpaque(), HttpStatus.Success, this.genPutResultString(
-                    partition, msgId, -1)));
+                cb.putComplete(new BooleanCommand(HttpStatus.Success, this.genPutResultString(
+                    partition, msgId, -1), cmd.getOpaque()));
             }
         }
         else {

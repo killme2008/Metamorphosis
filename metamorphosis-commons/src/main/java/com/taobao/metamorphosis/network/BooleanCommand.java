@@ -40,7 +40,7 @@ public class BooleanCommand extends AbstractResponseCommand implements BooleanAc
     static final long serialVersionUID = -1L;
 
 
-    public BooleanCommand(final Integer opaque, final int code, final String message) {
+    public BooleanCommand(final int code, final String message, final Integer opaque) {
         super(opaque);
         this.code = code;
         switch (this.code) {

@@ -93,7 +93,7 @@ public class SlaveOffsetStorageTest {
         final String topic = "topictest";
         final int partition = 1;
         final String masterUrl = "meta://testhost:8123";
-        final BooleanCommand resp = new BooleanCommand(0, HttpStatus.Success, "555");
+        final BooleanCommand resp = new BooleanCommand(HttpStatus.Success, "555", 0);
         // EasyMock.expect(this.broker.getCommandProcessor()).andReturn(this.brokerCommandProcessor).anyTimes();
         EasyMock.expect(this.broker.getStoreManager()).andReturn(this.storeManager);
         EasyMock.expect(this.storeManager.getMessageStore(topic, partition)).andReturn(null);
@@ -136,7 +136,7 @@ public class SlaveOffsetStorageTest {
         final String topic = "topictest";
         final int partition = 1;
         final String masterUrl = "meta://testhost:8123";
-        final BooleanCommand resp = new BooleanCommand(0, HttpStatus.NotFound, "");
+        final BooleanCommand resp = new BooleanCommand(HttpStatus.NotFound, "", 0);
         // EasyMock.expect(this.broker.getCommandProcessor()).andReturn(this.brokerCommandProcessor).anyTimes();
         EasyMock.expect(this.broker.getStoreManager()).andReturn(this.storeManager);
         EasyMock.expect(this.storeManager.getMessageStore(topic, partition)).andReturn(null);

@@ -90,12 +90,12 @@ public class PutCommand extends AbstractRequestCommand {
 
     public PutCommand(final String topic, final int partition, final byte[] data, final TransactionId transactionId,
             final int flag, final Integer opaque) {
-        this(topic, partition, data, transactionId, flag, -1, opaque);
+        this(topic, partition, data, flag, -1, transactionId, opaque);
     }
 
 
-    public PutCommand(final String topic, final int partition, final byte[] data, final TransactionId transactionId,
-            final int flag, final int checkSum, final Integer opaque) {
+    public PutCommand(final String topic, final int partition, final byte[] data, final int flag,
+            final int checkSum, final TransactionId transactionId, final Integer opaque) {
         super(topic, opaque);
         this.partition = partition;
         this.data = data;

@@ -66,7 +66,7 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(opaque, HttpStatus.Success, msgId + " " + partition + " " + offset);
+                new BooleanCommand(HttpStatus.Success, msgId + " " + partition + " " + offset, opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
@@ -113,7 +113,7 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final BooleanCommand expectResp =
-                new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, "put message failed");
+                new BooleanCommand(HttpStatus.InternalServerError, "put message failed", request.getOpaque());
         final PutCallback cb = new PutCallback() {
 
             @Override
@@ -157,8 +157,8 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
         this.metaConfig.setTopics(Arrays.asList(this.topic));
         this.metaConfig.closePartitions(this.topic, partition, partition);
         final BooleanCommand expectedResp =
-                new BooleanCommand(request.getOpaque(), HttpStatus.Forbidden, "Partition["
-                        + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed");
+                new BooleanCommand(HttpStatus.Forbidden, "Partition["
+                        + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed", request.getOpaque());
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 

@@ -61,7 +61,7 @@ public class MetaCodecFactoryUnitTest {
     @Test
     public void testDecodeNewPutCommand() {
 
-        final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), null, 0, 100, 0);
+        final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), 0, 100, null, 0);
         final PutCommand decodedCmd =
                 (PutCommand) this.decoder.decode(IoBuffer.wrap("put test 1 5 0 100 0\r\nhello".getBytes()), null);
         assertNotNull(decodedCmd);
@@ -87,7 +87,7 @@ public class MetaCodecFactoryUnitTest {
     @Test
     public void testDecodeNewPutCommand_HasTransactionId() {
         final TransactionId xid = new LocalTransactionId("test", 100);
-        final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), xid, 0, 9999, 0);
+        final PutCommand putCommand = new PutCommand("test", 1, "hello".getBytes(), 0, 9999, xid, 0);
 
         final PutCommand decodedCmd =
                 (PutCommand) this.decoder.decode(
@@ -101,7 +101,7 @@ public class MetaCodecFactoryUnitTest {
 
     @Test
     public void testDecodeSyncCommand() {
-        final SyncCommand syncCmd = new SyncCommand("test", 1, "hello".getBytes(), 9999L, 0, 0);
+        final SyncCommand syncCmd = new SyncCommand("test", 1, "hello".getBytes(), 0, 9999L, 0, -1);
         final IoBuffer buf = syncCmd.encode();
 
         final SyncCommand decodedCmd = (SyncCommand) this.decoder.decode(buf, null);
@@ -143,7 +143,7 @@ public class MetaCodecFactoryUnitTest {
 
     @Test
     public void testDecodeBooleanCommand() {
-        final BooleanCommand cmd = new BooleanCommand(99, HttpStatus.NotFound, "not found");
+        final BooleanCommand cmd = new BooleanCommand(HttpStatus.NotFound, "not found", 99);
         final IoBuffer buf = cmd.encode();
         final BooleanCommand decodedCmd = (BooleanCommand) this.decoder.decode(buf, null);
         assertNotNull(decodedCmd);

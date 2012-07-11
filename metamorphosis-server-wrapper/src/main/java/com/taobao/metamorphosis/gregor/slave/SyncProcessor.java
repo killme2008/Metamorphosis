@@ -80,8 +80,8 @@ public class SyncProcessor implements RequestProcessor<SyncCommand> {
                     });
                 }
                 catch (final Exception e) {
-                    RemotingUtils.response(context.getConnection(), new BooleanCommand(request.getOpaque(),
-                        HttpStatus.InternalServerError, e.getMessage()));
+                    RemotingUtils.response(context.getConnection(), new BooleanCommand(HttpStatus.InternalServerError,
+                        e.getMessage(), request.getOpaque()));
                 }
 
             }

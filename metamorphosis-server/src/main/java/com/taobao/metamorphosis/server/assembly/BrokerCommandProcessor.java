@@ -169,15 +169,15 @@ public class BrokerCommandProcessor implements CommandProcessor {
                 final String resultStr =
                         BrokerCommandProcessor.this.genPutResultString(this.partition, this.messageId, offset);
                 if (this.cb != null) {
-                    this.cb.putComplete(new BooleanCommand(this.request.getOpaque(), HttpStatus.Success, resultStr));
+                    this.cb.putComplete(new BooleanCommand(HttpStatus.Success, resultStr, this.request.getOpaque()));
                 }
             }
             else {
                 BrokerCommandProcessor.this.statsManager.statsPutFailed(this.request.getTopic(), this.partitionString,
                     1);
                 if (this.cb != null) {
-                    this.cb.putComplete(new BooleanCommand(this.request.getOpaque(), HttpStatus.InternalServerError,
-                            "put message failed"));
+                    this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "put message failed",
+                            this.request.getOpaque()));
                 }
             }
 
@@ -314,8 +314,8 @@ public class BrokerCommandProcessor implements CommandProcessor {
                 log.warn("Can not put message to partition " + request.getPartition() + " for topic="
                         + request.getTopic() + ",it was closed");
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(request.getOpaque(), HttpStatus.Forbidden, "Partition["
-                            + partitionString + "] has been closed"));
+                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, "Partition["
+                            + partitionString + "] has been closed", request.getOpaque()));
                 }
                 return;
             }
@@ -333,7 +333,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
             this.statsManager.statsPutFailed(request.getTopic(), partitionString, 1);
             log.error("Put message failed", e);
             if (cb != null) {
-                cb.putComplete(new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, e.getMessage()));
+                cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, e.getMessage(), request.getOpaque()));
             }
         }
     }
@@ -381,19 +381,19 @@ public class BrokerCommandProcessor implements CommandProcessor {
         if (this.metaConfig.isClosedPartition(topic, request.getPartition())) {
             log.warn("can not get message for topic=" + topic + " from partition " + request.getPartition()
                 + ",it closed,");
-            return new BooleanCommand(request.getOpaque(), HttpStatus.Forbidden, "Partition["
-                    + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed");
+            return new BooleanCommand(HttpStatus.Forbidden, "Partition["
+                    + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed", request.getOpaque());
         }
 
         final MessageStore store = this.storeManager.getMessageStore(topic, request.getPartition());
         if (store == null) {
             this.statsManager.statsGetMiss(topic, group, 1);
-            return new BooleanCommand(request.getOpaque(), HttpStatus.NotFound, "The topic `" + topic
-                + "` in partition `" + request.getPartition() + "` is not exists");
+            return new BooleanCommand(HttpStatus.NotFound, "The topic `" + topic
+                + "` in partition `" + request.getPartition() + "` is not exists", request.getOpaque());
         }
         if (request.getMaxSize() <= 0) {
-            return new BooleanCommand(request.getOpaque(), HttpStatus.BadRequest, "Bad request,invalid max size:"
-                    + request.getMaxSize());
+            return new BooleanCommand(HttpStatus.BadRequest, "Bad request,invalid max size:"
+                    + request.getMaxSize(), request.getOpaque());
         }
         try {
             final MessageSet set =
@@ -430,11 +430,11 @@ public class BrokerCommandProcessor implements CommandProcessor {
                     log.info("offset[" + requestOffset + "] is exceeded,tell the client real max offset: " + maxOffset
                         + ",topic=" + topic + ",group=" + group);
                     this.statsManager.statsOffset(topic, group, 1);
-                    return new BooleanCommand(request.getOpaque(), HttpStatus.Moved, String.valueOf(maxOffset));
+                    return new BooleanCommand(HttpStatus.Moved, String.valueOf(maxOffset), request.getOpaque());
                 }
                 else {
-                    return new BooleanCommand(request.getOpaque(), HttpStatus.NotFound,
-                        "Could not find message at position " + requestOffset);
+                    return new BooleanCommand(HttpStatus.NotFound, "Could not find message at position " + requestOffset,
+                        request.getOpaque());
                 }
             }
         }
@@ -446,13 +446,13 @@ public class BrokerCommandProcessor implements CommandProcessor {
             this.statsManager.statsGetFailed(topic, group, 1);
             final long validOffset = store.getNearestOffset(request.getOffset());
             this.statsManager.statsOffset(topic, group, 1);
-            return new BooleanCommand(request.getOpaque(), HttpStatus.Moved, String.valueOf(validOffset));
+            return new BooleanCommand(HttpStatus.Moved, String.valueOf(validOffset), request.getOpaque());
 
         }
         catch (final Throwable e) {
             log.error("Could not get message from position " + request.getOffset(), e);
             this.statsManager.statsGetFailed(topic, group, 1);
-            return new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, e.getMessage());
+            return new BooleanCommand(HttpStatus.InternalServerError, e.getMessage(), request.getOpaque());
         }
 
     }
@@ -463,11 +463,11 @@ public class BrokerCommandProcessor implements CommandProcessor {
         this.statsManager.statsOffset(request.getTopic(), request.getGroup(), 1);
         final MessageStore store = this.storeManager.getMessageStore(request.getTopic(), request.getPartition());
         if (store == null) {
-            return new BooleanCommand(request.getOpaque(), HttpStatus.NotFound, "The topic `" + request.getTopic()
-                + "` in partition `" + request.getPartition() + "` is not exists");
+            return new BooleanCommand(HttpStatus.NotFound, "The topic `" + request.getTopic()
+                + "` in partition `" + request.getPartition() + "` is not exists", request.getOpaque());
         }
         final long offset = store.getNearestOffset(request.getOffset());
-        return new BooleanCommand(request.getOpaque(), HttpStatus.Success, String.valueOf(offset));
+        return new BooleanCommand(HttpStatus.Success, String.valueOf(offset), request.getOpaque());
 
     }
 
@@ -488,7 +488,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
 
     @Override
     public ResponseCommand processVesionCommand(final VersionCommand request, final SessionContext ctx) {
-        return new BooleanCommand(request.getOpaque(), HttpStatus.Success, BuildProperties.VERSION);
+        return new BooleanCommand(HttpStatus.Success, BuildProperties.VERSION, request.getOpaque());
 
     }
 
@@ -501,7 +501,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
         }
         else {
             final String statsInfo = this.statsManager.getStatsInfo(item);
-            return new BooleanCommand(request.getOpaque(), HttpStatus.Success, statsInfo);
+            return new BooleanCommand(HttpStatus.Success, statsInfo, request.getOpaque());
         }
     }
 
@@ -549,13 +549,13 @@ public class BrokerCommandProcessor implements CommandProcessor {
         }
         catch (FileNotFoundException e) {
             log.error("Config file not found:" + this.metaConfig.getConfigFilePath(), e);
-            return new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, "Config file not found:"
-                    + this.metaConfig.getConfigFilePath());
+            return new BooleanCommand(HttpStatus.InternalServerError, "Config file not found:"
+                    + this.metaConfig.getConfigFilePath(), request.getOpaque());
         }
         catch (IOException e) {
             log.error("IOException while stats config", e);
-            return new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, "Read config file error:"
-                    + e.getMessage());
+            return new BooleanCommand(HttpStatus.InternalServerError, "Read config file error:"
+                    + e.getMessage(), request.getOpaque());
         }
         catch (NotifyRemotingException e) {
             log.error("NotifyRemotingException while stats config", e);

@@ -175,7 +175,7 @@ public class SimpleMessageConsumerUnitTest {
             this.remotingClient.invokeToGroup(url,
                 new OffsetCommand(topic, this.consumerConfig.getGroup(), partition.getPartition(), offset,
                     Integer.MIN_VALUE), this.consumerConfig.getFetchTimeoutInMills(), TimeUnit.MILLISECONDS))
-                    .andReturn(new BooleanCommand(Integer.MIN_VALUE, HttpStatus.Success, String.valueOf(offset)));
+                    .andReturn(new BooleanCommand(HttpStatus.Success, String.valueOf(offset), Integer.MIN_VALUE));
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         assertEquals(offset, this.consumer.offset(new FetchRequest(broker, delay, topicPartitionRegInfo, maxSize)));
@@ -200,7 +200,7 @@ public class SimpleMessageConsumerUnitTest {
             this.remotingClient.invokeToGroup(url,
                 new GetCommand(topic, this.consumerConfig.getGroup(), partition.getPartition(), offset, maxSize,
                     Integer.MIN_VALUE), 10000, TimeUnit.MILLISECONDS)).andReturn(
-                        new BooleanCommand(Integer.MIN_VALUE, 500, "test error"));
+                        new BooleanCommand(500, "test error", Integer.MIN_VALUE));
         this.mocksControl.replay();
         try {
             OpaqueGenerator.resetOpaque();
@@ -229,7 +229,7 @@ public class SimpleMessageConsumerUnitTest {
             this.remotingClient.invokeToGroup(url,
                 new GetCommand(topic, this.consumerConfig.getGroup(), partition.getPartition(), offset, maxSize,
                     Integer.MIN_VALUE), 10000, TimeUnit.MILLISECONDS)).andReturn(
-                        new BooleanCommand(Integer.MIN_VALUE, 404, "not found"));
+                        new BooleanCommand(404, "not found", Integer.MIN_VALUE));
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         assertNull(this.consumer.get(topic, partition, offset, maxSize));

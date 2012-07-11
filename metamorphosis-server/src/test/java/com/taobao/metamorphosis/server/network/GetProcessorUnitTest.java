@@ -50,8 +50,8 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         final int partition = 1;
         final int opaque = 0;
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(null);
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.NotFound, "The topic `" + this.topic
-            + "` in partition `" + partition + "` is not exists"));
+        this.conn.response(new BooleanCommand(HttpStatus.NotFound, "The topic `" + this.topic
+            + "` in partition `" + partition + "` is not exists", opaque));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
 
@@ -73,7 +73,7 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(
             new MessageStore(this.topic, partition, this.metaConfig, null));
         this.conn
-        .response(new BooleanCommand(opaque, HttpStatus.BadRequest, "Bad request,invalid max size:" + maxSize));
+        .response(new BooleanCommand(HttpStatus.BadRequest, "Bad request,invalid max size:" + maxSize, opaque));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
 
@@ -95,8 +95,8 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
         EasyMock.expect(store.slice(offset, maxSize)).andReturn(null);
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.NotFound, "Could not find message at position "
-                + offset));
+        this.conn.response(new BooleanCommand(HttpStatus.NotFound, "Could not find message at position "
+                + offset, opaque));
         EasyMock.expect(store.getMaxOffset()).andReturn(offset);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
@@ -119,8 +119,8 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
         EasyMock.expect(store.slice(offset, maxSize)).andReturn(null);
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.NotFound, "Could not find message at position "
-                + offset));
+        this.conn.response(new BooleanCommand(HttpStatus.NotFound, "Could not find message at position "
+                + offset, opaque));
         EasyMock.expect(store.getMaxOffset()).andReturn(offset - 1);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
@@ -145,7 +145,7 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
         EasyMock.expect(store.slice(offset, maxSize)).andReturn(null);
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.Moved, String.valueOf(realMaxOffset)));
+        this.conn.response(new BooleanCommand(HttpStatus.Moved, String.valueOf(realMaxOffset), opaque));
         EasyMock.expect(store.getMaxOffset()).andReturn(realMaxOffset);
         EasyMock.expectLastCall();
         this.mocksControl.replay();
@@ -170,7 +170,7 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
         EasyMock.expect(store.slice(offset, maxSize)).andThrow(new ArrayIndexOutOfBoundsException());
         EasyMock.expect(store.getNearestOffset(offset)).andReturn(newOffset);
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.Moved, String.valueOf(newOffset)));
+        this.conn.response(new BooleanCommand(HttpStatus.Moved, String.valueOf(newOffset), opaque));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
 
@@ -216,8 +216,8 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         this.metaConfig.setTopics(Arrays.asList(this.topic));
         this.metaConfig.closePartitions(this.topic, partition, partition);
         final GetCommand request = new GetCommand(this.topic, this.group, partition, offset, maxSize, opaque);
-        this.conn.response(new BooleanCommand(request.getOpaque(), HttpStatus.Forbidden, "Partition["
-                + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed"));
+        this.conn.response(new BooleanCommand(HttpStatus.Forbidden, "Partition["
+                + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed", request.getOpaque()));
         EasyMock.expectLastCall();
 
         this.mocksControl.replay();

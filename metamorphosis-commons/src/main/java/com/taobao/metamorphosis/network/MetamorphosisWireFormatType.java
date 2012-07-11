@@ -100,7 +100,7 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                 httpCode = HttpStatus.InternalServerError;
                 break;
             }
-            return new BooleanCommand(request.getOpaque(), httpCode, errorMsg);
+            return new BooleanCommand(httpCode, errorMsg, request.getOpaque());
         }
 
 
@@ -135,36 +135,36 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                         if (log.isDebugEnabled()) {
                             log.debug("Receive command:" + line);
                         }
-                        final String[] tmps = SPLITER.split(line);
-                        if (tmps == null || tmps.length == 0) {
-                            throw new MetaCodecException("Unknow command:" + line);
+                        final String[] sa = SPLITER.split(line);
+                        if (sa == null || sa.length == 0) {
+                            throw new MetaCodecException("Blank command line.");
                         }
-                        final byte op = (byte) tmps[0].charAt(0);
+                        final byte op = (byte) sa[0].charAt(0);
                         switch (op) {
                         case 'p':
-                            return this.decodePut(buff, tmps);
+                            return this.decodePut(buff, sa);
                         case 'g':
-                            return this.decodeGet(tmps);
+                            return this.decodeGet(sa);
                         case 't':
-                            return this.decodeTransaction(tmps);
+                            return this.decodeTransaction(sa);
                         case 'r':
-                            return this.decodeBoolean(buff, tmps);
+                            return this.decodeBoolean(buff, sa);
                         case 'v':
-                            if (tmps[0].equals("value")) {
-                                return this.decodeData(buff, tmps);
+                            if (sa[0].equals("value")) {
+                                return this.decodeData(buff, sa);
                             }
                             else {
-                                return this.decodeVersion(tmps);
+                                return this.decodeVersion(sa);
                             }
                         case 's':
-                            if (tmps[0].equals("stats")) {
-                                return this.decodeStats(tmps);
+                            if (sa[0].equals("stats")) {
+                                return this.decodeStats(sa);
                             }
                             else {
-                                return this.decodeSync(buff, tmps);
+                                return this.decodeSync(buff, sa);
                             }
                         case 'o':
-                            return this.decodeOffset(tmps);
+                            return this.decodeOffset(sa);
                         case 'q':
                             return this.decodeQuit();
                         default:
@@ -182,9 +182,9 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                 }
 
 
-                private Object decodeVersion(final String[] tmps) {
-                    if (tmps.length >= 2) {
-                        return new VersionCommand(Integer.parseInt(tmps[1]));
+                private Object decodeVersion(final String[] sa) {
+                    if (sa.length >= 2) {
+                        return new VersionCommand(Integer.parseInt(sa[1]));
                     }
                     else {
                         return new VersionCommand(Integer.MAX_VALUE);
@@ -193,33 +193,33 @@ public class MetamorphosisWireFormatType extends WireFormatType {
 
 
                 // offset topic group partition offset opaque\r\n
-                private Object decodeOffset(final String[] tmps) {
-                    this.assertCommand(tmps[0], "offset");
-                    return new OffsetCommand(tmps[1], tmps[2], Integer.parseInt(tmps[3]), Long.parseLong(tmps[4]),
-                        Integer.parseInt(tmps[5]));
+                private Object decodeOffset(final String[] sa) {
+                    this.assertCommand(sa[0], "offset");
+                    return new OffsetCommand(sa[1], sa[2], Integer.parseInt(sa[3]), Long.parseLong(sa[4]),
+                        Integer.parseInt(sa[5]));
                 }
 
 
                 // stats item opaque\r\n
                 // opaque¿ÉÒÔÎª¿Õ
-                private Object decodeStats(final String[] tmps) {
-                    this.assertCommand(tmps[0], "stats");
+                private Object decodeStats(final String[] sa) {
+                    this.assertCommand(sa[0], "stats");
                     int opaque = Integer.MAX_VALUE;
-                    if (tmps.length >= 3) {
-                        opaque = Integer.parseInt(tmps[2]);
+                    if (sa.length >= 3) {
+                        opaque = Integer.parseInt(sa[2]);
                     }
                     String item = null;
-                    if (tmps.length >= 2) {
-                        item = tmps[1];
+                    if (sa.length >= 2) {
+                        item = sa[1];
                     }
                     return new StatsCommand(opaque, item);
                 }
 
 
                 // value totalLen opaque\r\n data
-                private Object decodeData(final IoBuffer buff, final String[] tmps) {
-                    this.assertCommand(tmps[0], "value");
-                    final int valueLen = Integer.parseInt(tmps[1]);
+                private Object decodeData(final IoBuffer buff, final String[] sa) {
+                    this.assertCommand(sa[0], "value");
+                    final int valueLen = Integer.parseInt(sa[1]);
                     if (buff.remaining() < valueLen) {
                         buff.reset();
                         return null;
@@ -227,7 +227,7 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                     else {
                         final byte[] data = new byte[valueLen];
                         buff.get(data);
-                        return new DataCommand(data, Integer.parseInt(tmps[2]));
+                        return new DataCommand(data, Integer.parseInt(sa[2]));
                     }
                 }
 
@@ -236,14 +236,14 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                  * result code length opaque\r\n message
                  * 
                  * @param buff
-                 * @param tmps
+                 * @param sa
                  * @return
                  */
-                private Object decodeBoolean(final IoBuffer buff, final String[] tmps) {
-                    this.assertCommand(tmps[0], "result");
-                    final int valueLen = Integer.parseInt(tmps[2]);
+                private Object decodeBoolean(final IoBuffer buff, final String[] sa) {
+                    this.assertCommand(sa[0], "result");
+                    final int valueLen = Integer.parseInt(sa[2]);
                     if (valueLen == 0) {
-                        return new BooleanCommand(Integer.parseInt(tmps[3]), Integer.parseInt(tmps[1]), null);
+                        return new BooleanCommand(Integer.parseInt(sa[1]), null, Integer.parseInt(sa[3]));
                     }
                     else {
                         if (buff.remaining() < valueLen) {
@@ -253,36 +253,36 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                         else {
                             final byte[] data = new byte[valueLen];
                             buff.get(data);
-                            return new BooleanCommand(Integer.parseInt(tmps[3]), Integer.parseInt(tmps[1]),
-                                ByteUtils.getString(data));
+                            return new BooleanCommand(Integer.parseInt(sa[1]), ByteUtils.getString(data),
+                                Integer.parseInt(sa[3]));
                         }
                     }
                 }
 
 
                 // get topic group partition offset maxSize opaque\r\n
-                private Object decodeGet(final String[] tmps) {
-                    this.assertCommand(tmps[0], "get");
-                    return new GetCommand(tmps[1], tmps[2], Integer.parseInt(tmps[3]), Long.parseLong(tmps[4]),
-                        Integer.parseInt(tmps[5]), Integer.parseInt(tmps[6]));
+                private Object decodeGet(final String[] sa) {
+                    this.assertCommand(sa[0], "get");
+                    return new GetCommand(sa[1], sa[2], Integer.parseInt(sa[3]), Long.parseLong(sa[4]),
+                        Integer.parseInt(sa[5]), Integer.parseInt(sa[6]));
                 }
 
 
                 // transaction key sessionId type [timeout] opaque\r\n
-                private Object decodeTransaction(final String[] tmps) {
-                    this.assertCommand(tmps[0], "transaction");
-                    final TransactionId transactionId = this.getTransactionId(tmps[1]);
-                    final TransactionType type = TransactionType.valueOf(tmps[3]);
-                    switch (tmps.length) {
+                private Object decodeTransaction(final String[] sa) {
+                    this.assertCommand(sa[0], "transaction");
+                    final TransactionId transactionId = this.getTransactionId(sa[1]);
+                    final TransactionType type = TransactionType.valueOf(sa[3]);
+                    switch (sa.length) {
                     case 6:
-                        final int timeout = Integer.valueOf(tmps[4]);
-                        TransactionInfo info = new TransactionInfo(transactionId, tmps[2], type, timeout);
-                        return new TransactionCommand(info, Integer.parseInt(tmps[5]));
+                        final int timeout = Integer.valueOf(sa[4]);
+                        TransactionInfo info = new TransactionInfo(transactionId, sa[2], type, timeout);
+                        return new TransactionCommand(info, Integer.parseInt(sa[5]));
                     case 5:
-                        info = new TransactionInfo(transactionId, tmps[2], type);
-                        return new TransactionCommand(info, Integer.parseInt(tmps[4]));
+                        info = new TransactionInfo(transactionId, sa[2], type);
+                        return new TransactionCommand(info, Integer.parseInt(sa[4]));
                     default:
-                        throw new MetaCodecException("Invalid transaction command:" + StringUtils.join(tmps));
+                        throw new MetaCodecException("Invalid transaction command:" + StringUtils.join(sa));
                     }
 
                 }
@@ -295,9 +295,9 @@ public class MetamorphosisWireFormatType extends WireFormatType {
 
                 // sync topic partition value-length flag msgId
                 // opaque\r\n
-                private Object decodeSync(final IoBuffer buff, final String[] tmps) {
-                    this.assertCommand(tmps[0], "sync");
-                    final int valueLen = Integer.parseInt(tmps[3]);
+                private Object decodeSync(final IoBuffer buff, final String[] sa) {
+                    this.assertCommand(sa[0], "sync");
+                    final int valueLen = Integer.parseInt(sa[3]);
                     if (buff.remaining() < valueLen) {
                         buff.reset();
                         return null;
@@ -305,12 +305,17 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                     else {
                         final byte[] data = new byte[valueLen];
                         buff.get(data);
-                        if (tmps.length == 7) {
-                            return new SyncCommand(tmps[1], Integer.parseInt(tmps[2]), data, Long.valueOf(tmps[5]),
-                                Integer.parseInt(tmps[4]), Integer.parseInt(tmps[6]));
-                        }
-                        else {
-                            throw new MetaCodecException("Invalid Sync command:" + StringUtils.join(tmps));
+                        switch (sa.length) {
+                        case 7:
+                            // old master before 1.4.4
+                            return new SyncCommand(sa[1], Integer.parseInt(sa[2]), data, Integer.parseInt(sa[4]),
+                                Long.valueOf(sa[5]), -1, Integer.parseInt(sa[6]));
+                        case 8:
+                            // new master since 1.4.4
+                            return new SyncCommand(sa[1], Integer.parseInt(sa[2]), data, Integer.parseInt(sa[4]),
+                                Long.valueOf(sa[5]), Integer.parseInt(sa[6]), Integer.parseInt(sa[7]));
+                        default:
+                            throw new MetaCodecException("Invalid Sync command:" + StringUtils.join(sa));
                         }
                     }
                 }
@@ -319,9 +324,9 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                 // put topic partition value-length flag checksum
                 // [transactionKey]
                 // opaque\r\n
-                private Object decodePut(final IoBuffer buff, final String[] tmps) {
-                    this.assertCommand(tmps[0], "put");
-                    final int valueLen = Integer.parseInt(tmps[3]);
+                private Object decodePut(final IoBuffer buff, final String[] sa) {
+                    this.assertCommand(sa[0], "put");
+                    final int valueLen = Integer.parseInt(sa[3]);
                     if (buff.remaining() < valueLen) {
                         buff.reset();
                         return null;
@@ -329,35 +334,34 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                     else {
                         final byte[] data = new byte[valueLen];
                         buff.get(data);
-                        switch (tmps.length) {
+                        switch (sa.length) {
                         case 6:
                             // old clients before 1.4.4
-                            return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data, null,
-                                Integer.parseInt(tmps[4]), Integer.parseInt(tmps[5]));
+                            return new PutCommand(sa[1], Integer.parseInt(sa[2]), data, null, Integer.parseInt(sa[4]),
+                                Integer.parseInt(sa[5]));
                         case 7:
                             // either transaction command or new clients since
                             // 1.4.4
-                            String slot = tmps[5];
+                            String slot = sa[5];
                             char firstChar = slot.charAt(0);
                             if (Character.isDigit(firstChar) || '-' == firstChar) {
                                 // slot is checksum.
                                 int checkSum = Integer.parseInt(slot);
-                                return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data, null,
-                                    Integer.parseInt(tmps[4]), checkSum, Integer.parseInt(tmps[6]));
+                                return new PutCommand(sa[1], Integer.parseInt(sa[2]), data, Integer.parseInt(sa[4]),
+                                    checkSum, null, Integer.parseInt(sa[6]));
                             }
                             else {
                                 // slot is transaction id.
-                                return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data,
-                                    this.getTransactionId(slot), Integer.parseInt(tmps[4]), Integer.parseInt(tmps[6]));
+                                return new PutCommand(sa[1], Integer.parseInt(sa[2]), data,
+                                    this.getTransactionId(slot), Integer.parseInt(sa[4]), Integer.parseInt(sa[6]));
                             }
                         case 8:
                             // New clients since 1.4.4
                             // A transaction command
-                            return new PutCommand(tmps[1], Integer.parseInt(tmps[2]), data,
-                                this.getTransactionId(tmps[6]), Integer.parseInt(tmps[4]), Integer.parseInt(tmps[5]),
-                                Integer.parseInt(tmps[7]));
+                            return new PutCommand(sa[1], Integer.parseInt(sa[2]), data, Integer.parseInt(sa[4]),
+                                Integer.parseInt(sa[5]), this.getTransactionId(sa[6]), Integer.parseInt(sa[7]));
                         default:
-                            throw new MetaCodecException("Invalid put command:" + StringUtils.join(tmps));
+                            throw new MetaCodecException("Invalid put command:" + StringUtils.join(sa));
                         }
                     }
                 }

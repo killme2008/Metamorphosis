@@ -75,7 +75,7 @@ public class GregorCommandProcessorUnitTest {
         this.remotingClient = this.mocksControl.createMock(RemotingClient.class);
         this.sessionContext = new SessionContextImpl(null, this.conn);
         EasyMock.expect(this.conn.getAttribute(SessionContextHolder.GLOBAL_SESSION_KEY)).andReturn(this.sessionContext)
-            .anyTimes();
+        .anyTimes();
         this.statsManager = new StatsManager(new MetaConfig(), null, null);
         this.idWorker = this.mocksControl.createMock(IdWorker.class);
         this.brokerZooKeeper = this.mocksControl.createMock(BrokerZooKeeper.class);
@@ -105,12 +105,12 @@ public class GregorCommandProcessorUnitTest {
         final byte[] data = new byte[1024];
         final long msgId = 100000L;
         final int flag = MessageFlagUtils.getFlag(null);
-        final SyncCommand request = new SyncCommand(this.topic, partition, data, msgId, flag, opaque);
+        final SyncCommand request = new SyncCommand(this.topic, partition, data, flag, msgId, -1, opaque);
 
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(opaque, HttpStatus.Success, msgId + " " + partition + " " + offset);
+                new BooleanCommand(HttpStatus.Success, msgId + " " + partition + " " + offset, opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
             @Override
@@ -148,13 +148,13 @@ public class GregorCommandProcessorUnitTest {
         final byte[] data = new byte[1024];
         final int flag = MessageFlagUtils.getFlag(null);
         final long msgId = 100000L;
-        final SyncCommand request = new SyncCommand(this.topic, partition, data, msgId, flag, opaque);
+        final SyncCommand request = new SyncCommand(this.topic, partition, data, flag, msgId, -1, opaque);
 
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final BooleanCommand expectResp =
-                new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, "put message failed");
+                new BooleanCommand(HttpStatus.InternalServerError, "put message failed", request.getOpaque());
         final PutCallback cb = new PutCallback() {
 
             @Override
@@ -193,13 +193,13 @@ public class GregorCommandProcessorUnitTest {
         final byte[] data = new byte[1024];
         final int flag = MessageFlagUtils.getFlag(null);
         final long msgId = 100000L;
-        final SyncCommand request = new SyncCommand(this.topic, partition, data, msgId, flag, opaque);
+        final SyncCommand request = new SyncCommand(this.topic, partition, data, flag, msgId, -1, opaque);
 
         final MessageStore store = this.mocksControl.createMock(MessageStore.class);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final BooleanCommand expectResp =
-                new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, "Mock exception");
+                new BooleanCommand(HttpStatus.InternalServerError, "Mock exception", request.getOpaque());
         final PutCallback cb = new PutCallback() {
 
             @Override

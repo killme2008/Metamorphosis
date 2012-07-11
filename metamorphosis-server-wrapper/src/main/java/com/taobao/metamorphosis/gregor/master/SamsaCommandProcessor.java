@@ -181,25 +181,25 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
             if (this.respCount == 2) {
                 final String resultStr =
                         SamsaCommandProcessor.this
-                            .genPutResultString(this.partition, this.messageId, this.appendOffset);
+                        .genPutResultString(this.partition, this.messageId, this.appendOffset);
                 // 仅在两者都成功的情况下，认为发送成功
                 if (this.masterSuccess && this.slaveSuccess) {
                     if (this.cb != null) {
                         this.cb
-                            .putComplete(new BooleanCommand(this.request.getOpaque(), HttpStatus.Success, resultStr));
+                        .putComplete(new BooleanCommand(HttpStatus.Success, resultStr, this.request.getOpaque()));
                     }
                 }
                 else if (this.masterSuccess) {
                     SamsaCommandProcessor.this.statsManager.statsPutFailed(this.request.getTopic(),
                         this.partitionString, 1);
-                    this.cb.putComplete(new BooleanCommand(this.request.getOpaque(), HttpStatus.InternalServerError,
-                        "Put message to slave failed"));
+                    this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "Put message to slave failed",
+                        this.request.getOpaque()));
                 }
                 else if (this.slaveSuccess) {
                     SamsaCommandProcessor.this.statsManager.statsPutFailed(this.request.getTopic(),
                         this.partitionString, 1);
-                    this.cb.putComplete(new BooleanCommand(this.request.getOpaque(), HttpStatus.InternalServerError,
-                        "Put message to master failed"));
+                    this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "Put message to master failed",
+                            this.request.getOpaque()));
                 }
             }
         }
@@ -305,8 +305,8 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                 log.warn("Can not put message to partition " + request.getPartition() + " for topic="
                         + request.getTopic() + ",it was closed");
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(request.getOpaque(), HttpStatus.Forbidden, "Partition["
-                            + partitionString + "] has been closed"));
+                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, "Partition["
+                            + partitionString + "] has been closed", request.getOpaque()));
                 }
                 return;
             }
@@ -316,8 +316,8 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
             // 如果slave没有链接，马上返回失败，防止master重复消息过多
             if (!this.remotingClient.isConnected(this.slaveUrl)) {
                 this.statsManager.statsPutFailed(request.getTopic(), partitionString, 1);
-                cb.putComplete(new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError,
-                    "Slave is disconnected "));
+                cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "Slave is disconnected ",
+                        request.getOpaque()));
                 return;
             }
 
@@ -333,8 +333,8 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                         new SyncAppendCallback(partition, partitionString, request, messageId, cb);
                 // 发往slave
                 this.remotingClient.sendToGroup(this.slaveUrl,
-                    new SyncCommand(request.getTopic(), partition, request.getData(), messageId, request.getFlag(),
-                        OpaqueGenerator.getNextOpaque()), syncCB);
+                    new SyncCommand(request.getTopic(), partition, request.getData(), request.getFlag(), messageId,
+                        request.getCheckSum(), OpaqueGenerator.getNextOpaque()), syncCB);
                 // 写入master
                 store.append(messageId, request, syncCB);
             }
@@ -343,7 +343,7 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
             this.statsManager.statsPutFailed(request.getTopic(), partitionString, 1);
             log.error("Put message failed", e);
             if (cb != null) {
-                cb.putComplete(new BooleanCommand(request.getOpaque(), HttpStatus.InternalServerError, e.getMessage()));
+                cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, e.getMessage(), request.getOpaque()));
             }
         }
     }

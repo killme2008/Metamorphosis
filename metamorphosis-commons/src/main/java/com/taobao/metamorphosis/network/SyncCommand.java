@@ -22,7 +22,7 @@ import com.taobao.gecko.core.buffer.IoBuffer;
 
 /**
  * 同步复制，master/slave复制消息的协议,协议格式如下：</br> sync topic partition value-length flag
- * msgId opaque\r\ndata
+ * msgId checksum opaque\r\ndata
  * 
  * @author boyan(boyan@taobao.com)
  * @date 2011-12-14
@@ -32,9 +32,9 @@ public class SyncCommand extends PutCommand {
     private final long msgId;
 
 
-    public SyncCommand(final String topic, final int partition, final byte[] data, final long msgId, final int flag,
-            final Integer opaque) {
-        super(topic, partition, data, null, flag, opaque);
+    public SyncCommand(final String topic, final int partition, final byte[] data, final int flag, final long msgId,
+            int checksum, final Integer opaque) {
+        super(topic, partition, data, flag, checksum, null, opaque);
         this.msgId = msgId;
     }
 
@@ -48,12 +48,13 @@ public class SyncCommand extends PutCommand {
     public IoBuffer encode() {
         final int dataLen = this.data == null ? 0 : this.data.length;
         final IoBuffer buffer =
-                IoBuffer.allocate(12 + ByteUtils.stringSize(this.partition) + ByteUtils.stringSize(dataLen)
-                        + ByteUtils.stringSize(this.getOpaque()) + this.getTopic().length()
-                        + ByteUtils.stringSize(this.msgId) + ByteUtils.stringSize(this.flag) + dataLen);
+                IoBuffer.allocate(13 + ByteUtils.stringSize(this.partition) + ByteUtils.stringSize(dataLen)
+                    + ByteUtils.stringSize(this.getOpaque()) + this.getTopic().length()
+                    + ByteUtils.stringSize(this.msgId) + ByteUtils.stringSize(this.flag)
+                    + ByteUtils.stringSize(this.checkSum) + dataLen);
 
         ByteUtils.setArguments(buffer, MetaEncodeCommand.SYNC_CMD, this.getTopic(), this.partition, dataLen, this.flag,
-            this.msgId, this.getOpaque());
+            this.msgId, this.checkSum, this.getOpaque());
 
         if (this.data != null) {
             buffer.put(this.data);

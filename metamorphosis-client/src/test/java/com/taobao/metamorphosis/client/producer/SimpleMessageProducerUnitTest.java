@@ -152,10 +152,10 @@ public class SimpleMessageProducerUnitTest {
         OpaqueGenerator.resetOpaque();
         final int flag = MessageFlagUtils.getFlag(null);
         EasyMock.expect(
-            this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, null, flag,
-                CheckSum.crc32(data),
+            this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, flag, CheckSum.crc32(data),
+                null,
                 Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
-                    new BooleanCommand(Integer.MIN_VALUE, 500, "server error"));
+                    new BooleanCommand(500, "server error", Integer.MIN_VALUE));
         // EasyMock.expect(
         // this.remotingClient.invokeToGroup(url, new PutCommand(topic,
         // partition.getPartition(), data, null, flag,
@@ -193,8 +193,8 @@ public class SimpleMessageProducerUnitTest {
             OpaqueGenerator.resetOpaque();
             final int flag = MessageFlagUtils.getFlag(null);
             EasyMock.expect(
-                this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, null,
-                    flag, CheckSum.crc32(data), Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andThrow(
+                this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, flag,
+                    CheckSum.crc32(data), null, Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andThrow(
                 new InterruptedException());
             this.mocksControl.replay();
             this.producer.sendMessage(message);
@@ -273,7 +273,7 @@ public class SimpleMessageProducerUnitTest {
         .expect(
             this.remotingClient.invokeToGroup(serverUrl,
                 new TransactionCommand(info, OpaqueGenerator.getNextOpaque()))).andReturn(
-                    new BooleanCommand(0, HttpStatus.Success, result));
+                    new BooleanCommand(HttpStatus.Success, result, 0));
     }
 
 

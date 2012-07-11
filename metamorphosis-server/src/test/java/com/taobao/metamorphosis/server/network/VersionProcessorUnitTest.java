@@ -42,7 +42,7 @@ public class VersionProcessorUnitTest extends BaseProcessorUnitTest {
     @Test
     public void testHandleRequest() throws Exception {
         final int opaque = 1;
-        this.conn.response(new BooleanCommand(opaque, HttpStatus.Success, BuildProperties.VERSION));
+        this.conn.response(new BooleanCommand(HttpStatus.Success, BuildProperties.VERSION, opaque));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
         this.processor.handleRequest(new VersionCommand(opaque), this.conn);

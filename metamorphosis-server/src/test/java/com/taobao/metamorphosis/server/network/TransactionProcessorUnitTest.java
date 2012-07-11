@@ -103,7 +103,7 @@ public class TransactionProcessorUnitTest {
         EasyMock.expect(
             this.commandProcessor.prepareTransaction(new SessionContextImpl(sessionId, this.conn), transactionId))
             .andReturn(XAResource.XA_OK);
-        this.conn.response(new BooleanCommand(1, HttpStatus.Success, String.valueOf(XAResource.XA_OK)));
+        this.conn.response(new BooleanCommand(HttpStatus.Success, String.valueOf(XAResource.XA_OK), 1));
         this.mockSessionContext(sessionId, sessionId);
         this.replay();
         this.transactionProcessor.handleRequest(tc, this.conn);
@@ -206,7 +206,7 @@ public class TransactionProcessorUnitTest {
         EasyMock.expect(this.commandProcessor.getPreparedTransactions(new SessionContextImpl("test", this.conn)))
             .andReturn(ids);
 
-        this.conn.response(new BooleanCommand(1, HttpStatus.Success, resultString));
+        this.conn.response(new BooleanCommand(HttpStatus.Success, resultString, 1));
         EasyMock.expectLastCall();
         this.replay();
         this.transactionProcessor.handleRequest(tc, this.conn);
@@ -224,7 +224,7 @@ public class TransactionProcessorUnitTest {
         EasyMock.expect(this.commandProcessor.getPreparedTransactions(new SessionContextImpl("test", this.conn)))
             .andThrow(new RuntimeException("just for test"));
 
-        this.conn.response(new BooleanCommand(1, HttpStatus.InternalServerError, "just for test"));
+        this.conn.response(new BooleanCommand(HttpStatus.InternalServerError, "just for test", 1));
         EasyMock.expectLastCall();
         this.replay();
         this.transactionProcessor.handleRequest(tc, this.conn);
@@ -232,6 +232,6 @@ public class TransactionProcessorUnitTest {
 
 
     private void mockResponseOK() throws NotifyRemotingException {
-        this.conn.response(new BooleanCommand(1, HttpStatus.Success, null));
+        this.conn.response(new BooleanCommand(HttpStatus.Success, null, 1));
     }
 }

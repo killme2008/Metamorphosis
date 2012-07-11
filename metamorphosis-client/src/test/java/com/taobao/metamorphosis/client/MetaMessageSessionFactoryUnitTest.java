@@ -96,7 +96,7 @@ public class MetaMessageSessionFactoryUnitTest {
                     rt += "\r\nitem " + (StringUtils.isBlank(request.getItem()) ? "null" : request.getItem()) + "\r\n";
                     System.out.println(rt);
                     try {
-                        conn.response(new BooleanCommand(request.getOpaque(), 200, rt));
+                        conn.response(new BooleanCommand(200, rt, request.getOpaque()));
                     }
                     catch (Exception e) {
                         e.printStackTrace();
