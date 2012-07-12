@@ -127,6 +127,15 @@ function reload_config() {
     $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.ReloadConfig -host 127.0.0.1 -port $JMX_PORT $@
 }
 
+function slave_status() {
+	if ! running; then
+		echo "Broker is not running."
+		exit 1
+	fi
+	echo "Getting asynchronous slave status..."
+    $JAVA $TOOLS_ARGS com.taobao.metamorphosis.tools.shell.SlaveStatus -host 127.0.0.1 -port $JMX_PORT $@
+}
+
 function open_partitions() {
 	if ! running; then
 		echo "Broker is not running."
@@ -175,6 +184,7 @@ function help() {
     echo "             samsa               start the broker as an synchronous replication master."
     echo "       stop:              stop the broker server"
     echo "       status:            get broker current status,running or stopped."
+    echo "       slave-status:      get broker(it must be an asynchronous slave) current status,replication status etc."
     echo "       restart:           restart the broker server"
     echo "       reload:            reload broker config file server.ini when adding new topics etc."
     echo "       stats:             get current broker's statistics"
@@ -194,7 +204,10 @@ case $command in
         ;;
     reload)
         reload_config $@;
-        ;;    
+        ;;
+    slave-status)
+        slave_status $@;
+        ;;     
     restart)
         $0 stop $@
         $0 start $@

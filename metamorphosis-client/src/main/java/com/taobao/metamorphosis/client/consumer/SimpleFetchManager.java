@@ -45,7 +45,7 @@ public class SimpleFetchManager implements FetchManager {
 
     private Thread[] fetchRunners;
 
-    private int fetchRequestCount;
+    private volatile int fetchRequestCount;
 
     private FetchRequestQueue requestQueue;
 
@@ -58,6 +58,11 @@ public class SimpleFetchManager implements FetchManager {
         super();
         this.consumerConfig = consumerConfig;
         this.consumer = consumer;
+    }
+
+
+    public int getFetchRequestCount() {
+        return this.fetchRequestCount;
     }
 
 
@@ -91,6 +96,7 @@ public class SimpleFetchManager implements FetchManager {
                 Thread.sleep(50);
             }
         }
+        this.fetchRequestCount = 0;
 
     }
 
@@ -411,7 +417,7 @@ public class SimpleFetchManager implements FetchManager {
 
         private void ackRequest(final FetchRequest request, final MessageIterator it, final boolean ack) {
             request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage() != null ? it.getPrevMessage()
-                .getId() : -1, ack);
+                    .getId() : -1, ack);
             this.addRequst(request);
         }
 

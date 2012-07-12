@@ -33,8 +33,6 @@ public abstract class ShellTool {
     protected PrintWriter out;
 
     final static protected String METACONFIG_NAME = "com.taobao.metamorphosis.server.utils:type=MetaConfig,*";
-
-
     public ShellTool(PrintWriter out) {
         this.out = out;
     }

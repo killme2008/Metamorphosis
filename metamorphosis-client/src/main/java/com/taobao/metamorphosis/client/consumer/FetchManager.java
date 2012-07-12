@@ -26,6 +26,15 @@ package com.taobao.metamorphosis.client.consumer;
  */
 public interface FetchManager {
     /**
+     * Returns current fetch requests count.
+     * 
+     * @since 1.4.4
+     * @return
+     */
+    public int getFetchRequestCount();
+
+
+    /**
      * ֹͣfetch
      * 
      * @throws InterruptedException

@@ -125,7 +125,7 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
     }
 
 
-    FetchManager getFetchManager() {
+    public FetchManager getFetchManager() {
         return this.fetchManager;
     }
 

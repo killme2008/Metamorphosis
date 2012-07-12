@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -29,5 +29,14 @@ public interface SubscribeHandlerMBean {
      * 重启slave数据同步
      */
     public void restart();
+
+
+    /**
+     * Returns a string described current status.
+     * 
+     * @since 1.4.4
+     * @return
+     */
+    public String getStatus();
 
 }

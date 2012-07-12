@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -55,7 +55,7 @@ public class SlaveMetaMessageSessionFactory extends MetaMessageSessionFactory {
     protected ConsumerZooKeeper initConsumerZooKeeper(final RemotingClientWrapper remotingClient,
             final ZkClient zkClient, final ZKConfig zkConfig) {
         if (SlaveMetaMessageSessionFactory.brokerId < 0) {
-            throw new IllegalStateException("please set brokerId first");
+            throw new IllegalStateException("please set brokerId at first");
         }
         return new SlaveConsumerZooKeeper(this.metaZookeeper, remotingClient, zkClient, zkConfig,
             SlaveMetaMessageSessionFactory.brokerId);

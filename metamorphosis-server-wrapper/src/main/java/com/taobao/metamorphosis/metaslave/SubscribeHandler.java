@@ -38,8 +38,11 @@ import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.client.consumer.ConsumerConfig;
+import com.taobao.metamorphosis.client.consumer.ConsumerZooKeeper.ZKLoadRebalanceListener;
+import com.taobao.metamorphosis.client.consumer.FetchManager;
 import com.taobao.metamorphosis.client.consumer.MessageConsumer;
 import com.taobao.metamorphosis.client.consumer.MessageListener;
+import com.taobao.metamorphosis.client.consumer.SimpleMessageConsumer;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.network.BooleanCommand;
@@ -294,6 +297,40 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
             log.warn("start subscribe from meta master fail", e);
             throw e;
         }
+    }
+
+
+    @Override
+    public String getStatus() {
+        StringBuilder sb = new StringBuilder();
+        this.appendKeyValue(sb, "Subscriber handler", this.isStarted.get() ? "running" : "stop");
+        if (!this.isStarted() || this.consumer == null) {
+            return sb.toString();
+        }
+        SlaveConsumerZooKeeper scz = (SlaveConsumerZooKeeper) this.sessionFactory.getConsumerZooKeeper();
+        FetchManager fetchManager = ((SimpleMessageConsumer) this.consumer).getFetchManager();
+        ZKLoadRebalanceListener listener = scz.getBrokerConnectionListener(fetchManager);
+        Map<String, Set<Partition>> topicPartitions = listener.getTopicPartitions();
+        int totalPartitions = 0;
+        for (Set<Partition> set : topicPartitions.values()) {
+            totalPartitions += set.size();
+        }
+        this.appendKeyValue(sb, "Replicate partitions", totalPartitions);
+        this.appendKeyValue(sb, "Replicate topic partitions detail", "");
+        for (Map.Entry<String, Set<Partition>> entry : topicPartitions.entrySet()) {
+            this.appendKeyValue(sb, "    " + entry.getKey(), entry.getValue().size());
+        }
+        int fetchRequestCount = fetchManager.getFetchRequestCount();
+        this.appendKeyValue(sb, "Replicate requests", fetchRequestCount);
+        this.appendKeyValue(sb, "Replicate runner", fetchManager.isShutdown() ? "stop" : "running");
+        this.appendKeyValue(sb, "Replicate status",
+            fetchRequestCount == totalPartitions && !fetchManager.isShutdown() ? "yes" : "no");
+        return sb.toString();
+    }
+
+
+    private void appendKeyValue(StringBuilder sb, Object key, Object v) {
+        sb.append(key).append(":").append(v).append("\r\n");
     }
 
 
