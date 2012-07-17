@@ -55,6 +55,7 @@ import com.taobao.metamorphosis.utils.MessageUtils;
  * 
  */
 public class MessageStore implements Closeable {
+    private static final int ONE_M_BYTES = 1024 * 1024;
     private static final String FILE_SUFFIX = ".meta";
     static final Log log = LogFactory.getLog(MessageStore.class);
 
@@ -205,7 +206,7 @@ public class MessageStore implements Closeable {
     private final MetaConfig metaConfig;
     private final DeletePolicy deletePolicy;
     private final LinkedList<WriteRequest> toFlush = new LinkedList<WriteRequest>();
-    private final long maxTransferSize;
+    private long maxTransferSize;
     int unflushThreshold = 1000;
 
 
@@ -247,6 +248,7 @@ public class MessageStore implements Closeable {
 
         // Make a copy to avoid getting it again and again.
         this.maxTransferSize = metaConfig.getMaxTransferSize();
+        this.maxTransferSize = this.maxTransferSize > ONE_M_BYTES ? ONE_M_BYTES : this.maxTransferSize;
 
         // Check directory and load exists segments.
         this.checkDir(this.partitionDir);
