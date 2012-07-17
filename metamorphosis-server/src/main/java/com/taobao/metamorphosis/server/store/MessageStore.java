@@ -205,7 +205,6 @@ public class MessageStore implements Closeable {
     private final MetaConfig metaConfig;
     private final DeletePolicy deletePolicy;
     private final LinkedList<WriteRequest> toFlush = new LinkedList<WriteRequest>();
-    private final int putProcessThreadCount;
     private final long maxTransferSize;
     int unflushThreshold = 1000;
 
@@ -247,7 +246,6 @@ public class MessageStore implements Closeable {
         this.deletePolicy = deletePolicy;
 
         // Make a copy to avoid getting it again and again.
-        this.putProcessThreadCount = metaConfig.getPutProcessThreadCount();
         this.maxTransferSize = metaConfig.getMaxTransferSize();
 
         // Check directory and load exists segments.
@@ -456,11 +454,8 @@ public class MessageStore implements Closeable {
                 // Three situations to flush writes:
                 // 1.No threads are waiting for write lock
                 // 2.Unflush bytes is greater than max batch size
-                // 3.Unflush messages count is greater than 'put' thread pool
-                // size.
                 if (!this.writeLock.hasQueuedThreads()
-                        || cur.fileMessageSet.getSizeInBytes() >= lastFlushPos + this.maxTransferSize
-                        || this.toFlush.size() >= this.putProcessThreadCount) {
+                        || cur.fileMessageSet.getSizeInBytes() >= lastFlushPos + this.maxTransferSize) {
                     this.flush0();
                     this.notifyCallbacks();
                     this.toFlush.clear();
