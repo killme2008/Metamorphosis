@@ -8,9 +8,11 @@ import time
 import threading
 from zkclient import ZKClient, zookeeper, watchmethod
 from urlparse import urlparse
+from threading import Timer
 
 _DEAD_RETRY = 5  # number of seconds before retrying a dead server.
 _SOCKET_TIMEOUT = 10  #  number of seconds before sockets timeout.
+_IDLE_TIMEOUT = 5 # number of seconds to consider connection is idle.
 
 class _Error(Exception):
     pass
@@ -121,8 +123,7 @@ class HttpStatus:
      Moved = 301
 
 class Conn:
-
-    def __init__(self, uri, dead_retry=_DEAD_RETRY, socket_timeout=_SOCKET_TIMEOUT, debug=True):
+    def __init__(self, uri, dead_retry=_DEAD_RETRY, socket_timeout=_SOCKET_TIMEOUT, idle_timeout=_IDLE_TIMEOUT, debug=True):
         self.uri = uri
         self.debug = debug
         self.socket = None
@@ -130,7 +131,12 @@ class Conn:
         self.dead_retry = dead_retry
         self.socket_timeout = socket_timeout
         self.deaduntil = 0
+        self.idle_timeout = idle_timeout
+        self.io_timestamp = 0
         self.connect()
+
+    def _update_io_timestamp(self):
+        self.io_timestamp = time.time()
 
     def _config_socket(self, s):
         s.setsockopt(socket.SOL_TCP, socket.TCP_NODELAY,1)
@@ -140,17 +146,20 @@ class Conn:
     def send_msg(self,msg):
         if not self._get_socket():
             raise _ConnectionDeadError("Connection was broken:%s"% (self.uri))
+        self._update_io_timestamp()
         self.socket.sendall(msg)
 
     def recv(self, rlen):
         if not self._get_socket():
             raise _ConnectionDeadError("Connection was broken:%s"% (self.uri))
+        self._update_io_timestamp()
         return self.fd.read(rlen)
 
     def readline(self):
         if not self._get_socket():
             raise _ConnectionDeadError("Connection was broken:%s"% (self.uri))
         line = self.fd.readline()
+        self._update_io_timestamp()
         if line == '':
             raise _ConnectionDeadError("Connection was broken:%s"% (self.uri))
         return line
@@ -160,6 +169,9 @@ class Conn:
             return True
         self.deaduntil = 0
         return False
+
+    def _check_idle(self):
+        return self.deaduntil != 0 or time.time() - self.io_timestamp > self.idle_timeout
 
     def connect(self):
         if self._get_socket():
@@ -193,6 +205,7 @@ class Conn:
             self.mark_dead("connect: %s" % msg[1])
             return None
         self.debuglog("Connect to %s successfully." % self.uri)
+        self._update_io_timestamp()
         self.socket = s
         self.fd = s.makefile()
         return self.socket
@@ -221,7 +234,7 @@ class SendResult:
 
 class MessageProducer:
     def __init__(self, topic, zk_servers="localhost:2181", partition_selector=get_round_robin_selector(), zk_timeout=10000,zk_root="/meta",
-                 dead_retry=_DEAD_RETRY,  socket_timeout=_SOCKET_TIMEOUT, debug=True):
+                 dead_retry=_DEAD_RETRY,  socket_timeout=_SOCKET_TIMEOUT, idle_timeout=_IDLE_TIMEOUT, debug=True):
         """
          Create a new message producer to send messages to metamorphosis broker
          @param topic:  the topic to be sent by this producer
@@ -231,6 +244,7 @@ class MessageProducer:
          @param zk_root:   the metamorphosis broker root path in zookeeper,default is '/meta'
          @param dead_retry:number of seconds before retrying a blacklisted  server. Default to 30 s.
          @param socket_timeout: timeout in seconds for all calls to a server. Defaults  to 3 seconds.
+         @param idle_timeout: timeout in seconds for marking connection is idle to send heartbeats,default is 5 seconds.
          @param debug:   whether to debug producer,default is True.
          """
         self.partition_selector = partition_selector
@@ -241,6 +255,7 @@ class MessageProducer:
         self.zk_root = zk_root
         self.zk_servers = zk_servers
         self.zk_timeout = zk_timeout
+        self.idle_timeout = idle_timeout
         self._broker_topic_path = "%s/brokers/topics" % (self.zk_root)
         self._broker_ids_of_path = "%s/brokers/ids" % (self.zk_root)
         self.zk = ZKClient(zk_servers, timeout=zk_timeout)
@@ -257,6 +272,7 @@ class MessageProducer:
             raise _Error("Zookeeper servers is none")
         if self.dead_retry is None or self.dead_retry < 0:
             raise _Error("Invalid dead retry times %s" % self.dead_retry)
+        self._start_check_idle_timer()
         self._update_broker_infos()
         
     def _safe_zk_close(self):
@@ -426,15 +442,53 @@ class MessageProducer:
                 conn.mark_dead(msg)
                 return SendResult(False, None, -1, error=msg)
 
+    def _send_heartbeats(self):
+        self._lock.acquire()
+        try:
+            for conn in self._conn_dict.values():
+                if conn._check_idle():
+                    try:
+                        opaque = self._opaque.increase_and_get()
+                        conn.send_msg("version %d\r\n" % opaque)
+                        head = conn.readline()
+                        _, status, bodylen, resp_opaque = head.split(" ")
+                        status = int(status)
+                        bodylen = int(bodylen)
+                        resp_opaque = int(resp_opaque)
+                        body = conn.recv(bodylen)
+                        if  len(body) <> bodylen:
+                            conn.mark_dead("Response format error,expect body length is %s,but is %s" % (bodylen,len(body)))
+                        if resp_opaque <> opaque:
+                            conn.mark_dead("Response opaque is not equals to request opaque")
+                        if status != HttpStatus.Success:
+                            conn.mark_dead("Heartbeat failure")
+                    except:
+                        conn.mark_dead("Heartbeat failure")
+        finally:
+            self._start_check_idle_timer()
+            self._lock.release()
+
+    def _start_check_idle_timer(self):
+        self.idle_timer = Timer(self.idle_timeout/2, self._send_heartbeats)
+        self.idle_timer.start()
+
     def close(self):
         """ Close message producer"""
         if self.zk is not None:
             self.zk.close()
-        for conn in self._conn_dict.values():
-            conn.close()
+        self._lock.acquire()
+        try:
+            if self.idle_timer:
+                self.idle_timer.cancel()
+            for conn in self._conn_dict.values():
+                conn.close()
+            self._conn_dict = {}
+        finally:
+            self._lock.release()
+
 
 if __name__ == '__main__':
-    p = MessageProducer("avos-fetch-tasks")
+    p = MessageProducer("avos-fetch-tasks",zk_root="/avos-fetch-meta")
     message = Message("avos-fetch-tasks","http://www.taobao.com")
     print p.send(message)
     p.close()
