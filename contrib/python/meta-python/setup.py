@@ -11,7 +11,7 @@ packages=['metaq']
 
 setup(
     name = 'metaq',
-    version = '0.2',
+    version = '0.2.1',
     description= 'Metaq client for python.',
     author = 'killme2008',
     author_email = 'killme2008@gmail.com',
