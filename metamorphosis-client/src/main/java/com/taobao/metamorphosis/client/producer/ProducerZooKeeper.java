@@ -143,8 +143,6 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                         log.warn("Connect to " + newBrokerString);
                     }
                 }
-                // Set the new brokers info.
-                this.brokersInfo = new BrokersInfo(newBrokerStringMap, newTopicPartitionMap);
                 // Close removed brokers.
                 for (final Map.Entry<Integer, String> oldEntry : this.brokersInfo.oldBrokerStringMap.entrySet()) {
                     final Integer oldBrokerId = oldEntry.getKey();
@@ -170,6 +168,8 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                     }
                 }
 
+                // Set the new brokers info.
+                this.brokersInfo = new BrokersInfo(newBrokerStringMap, newTopicPartitionMap);
                 log.warn("End receiving broker changes for topic " + this.topic);
             }
             finally {
