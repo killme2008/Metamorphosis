@@ -285,6 +285,17 @@ public class BrokerZooKeeper implements PropertyChangeListener {
     }
 
 
+    public void unregisterEveryThing() {
+        try {
+            this.unregisterBrokerInZk();
+            this.unregisterTopics();
+        }
+        catch (Exception e) {
+            log.error("Unregister broker failed", e);
+        }
+    }
+
+
     private void unregisterTopic(final String topic) {
         try {
             int brokerId = this.config.getBrokerId();
