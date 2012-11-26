@@ -20,8 +20,6 @@ package com.taobao.metamorphosis.gregor.master;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,7 +28,6 @@ import com.taobao.gecko.core.command.ResponseCommand;
 import com.taobao.gecko.core.command.ResponseStatus;
 import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.gecko.service.Connection;
-import com.taobao.gecko.service.ConnectionLifeCycleListener;
 import com.taobao.gecko.service.RemotingClient;
 import com.taobao.gecko.service.RemotingServer;
 import com.taobao.gecko.service.SingleRequestCallBackListener;
@@ -62,108 +59,6 @@ import com.taobao.metamorphosis.utils.IdWorker;
  * 
  */
 public class SamsaCommandProcessor extends BrokerCommandProcessor {
-
-    private static final int SENT_SLAVE_FAILED_TIMES_THRESHOLD = Integer.parseInt(System.getProperty(
-        "meta.samsa.sent_slave_failed_times.threshold", "30"));
-    private static final long CHECK_SLAVE_INTERVAL = Long.parseLong(System.getProperty(
-        "meta.samsa.check_slave_status.interval", "100"));
-
-    private AtomicInteger sentSlaveFailureCounter;
-
-    private final AtomicBoolean slaveFailed = new AtomicBoolean(false);
-
-    private CheckSlaveStatusThread checkSlaveStatusThread;
-
-    private volatile boolean disposed = false;
-
-
-    @Override
-    public void dispose() {
-        this.disposed = true;
-    }
-
-    private class CheckSlaveStatusThread extends Thread {
-
-        @Override
-        public void run() {
-            while (SamsaCommandProcessor.this.slaveFailed.get()) {
-                try {
-                    if (SamsaCommandProcessor.this.remotingClient.isConnected(SamsaCommandProcessor.this.slaveUrl)) {
-                        // The slave is back
-                        if (SamsaCommandProcessor.this.slaveFailed.compareAndSet(true, false)) {
-                            try {
-                                SamsaCommandProcessor.this.brokerZooKeeper.reRegisterEveryThing();
-                            }
-                            catch (Exception e) {
-                                log.error("Re-register broker failed", e);
-                            }
-                        }
-                    }
-                    Thread.sleep(CHECK_SLAVE_INTERVAL);
-                }
-                catch (InterruptedException e) {
-                    // ignore
-                }
-            }
-        }
-    }
-
-    private class SlaveConnectionLifeCycleListener implements ConnectionLifeCycleListener {
-
-        @Override
-        public void onConnectionCreated(Connection conn) {
-
-        }
-
-
-        @Override
-        public void onConnectionReady(Connection conn) {
-            if (this.isSlaveConnection(conn)) {
-                if (SamsaCommandProcessor.this.slaveFailed.compareAndSet(true, false)) {
-                    try {
-                        SamsaCommandProcessor.this.brokerZooKeeper.reRegisterEveryThing();
-                    }
-                    catch (Exception e) {
-                        log.error("Re-register broker failed", e);
-                    }
-                }
-            }
-
-        }
-
-
-        private boolean isSlaveConnection(Connection conn) {
-            return conn.getGroupSet().contains(SamsaCommandProcessor.this.slaveUrl);
-        }
-
-
-        @Override
-        public void onConnectionClosed(Connection conn) {
-            if (this.isSlaveConnection(conn) && !SamsaCommandProcessor.this.disposed) {
-                if (SamsaCommandProcessor.this.slaveFailed.compareAndSet(false, true)) {
-                    SamsaCommandProcessor.this.brokerZooKeeper.unregisterEveryThing();
-                    SamsaCommandProcessor.this.checkSlaveStatusThread = new CheckSlaveStatusThread();
-                    SamsaCommandProcessor.this.checkSlaveStatusThread.start();
-                }
-            }
-        }
-
-    }
-
-
-    private void whenSentSlaveFailed() {
-        // Sent message to slave failed many times continually,we must
-        // unregister the master broker,so client will not send message to this
-        // broker.
-        if (this.sentSlaveFailureCounter.incrementAndGet() > SENT_SLAVE_FAILED_TIMES_THRESHOLD
-                && !this.remotingClient.isConnected(this.slaveUrl)) {
-            if (this.slaveFailed.compareAndSet(false, true) && !this.disposed) {
-                this.brokerZooKeeper.unregisterEveryThing();
-                this.checkSlaveStatusThread = new CheckSlaveStatusThread();
-                this.checkSlaveStatusThread.start();
-            }
-        }
-    }
 
     /**
      * append到message store的callback
@@ -314,13 +209,9 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
         public void onResponse(final ResponseCommand responseCommand, final Connection conn) {
             // Slave响应成功
             if (responseCommand.getResponseStatus() == ResponseStatus.NO_ERROR) {
-                SamsaCommandProcessor.this.sentSlaveFailureCounter.set(0);
                 synchronized (this) {
                     this.slaveSuccess = true;
                 }
-            }
-            else {
-                SamsaCommandProcessor.this.whenSentSlaveFailed();
             }
             this.tryComplete();
         }
@@ -390,9 +281,7 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
         this.callBackExecutor =
                 new ThreadPoolExecutor(callbackThreadCount, callbackThreadCount, 60, TimeUnit.SECONDS,
                     new ArrayBlockingQueue<Runnable>(10000), new ThreadPoolExecutor.CallerRunsPolicy());
-        this.sentSlaveFailureCounter = new AtomicInteger(0);
         log.info("Connecting to slave broker:" + this.slaveUrl);
-        this.remotingClient.addConnectionLifeCycleListener(new SlaveConnectionLifeCycleListener());
         this.remotingClient.connect(this.slaveUrl);
         try {
             this.remotingClient.awaitReadyInterrupt(this.slaveUrl);
