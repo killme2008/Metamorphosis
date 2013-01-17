@@ -36,7 +36,7 @@ public interface MessageListener {
      * @param messages
      *            TODO 拼写错误，应该是单数，暂时将错就错吧
      */
-    public void recieveMessages(Message message);
+    public void recieveMessages(Message message) throws InterruptedException;
 
 
     /**

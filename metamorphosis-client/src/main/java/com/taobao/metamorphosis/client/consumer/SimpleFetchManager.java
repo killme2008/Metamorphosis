@@ -22,6 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.taobao.gecko.core.util.ConcurrentHashSet;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.MessageAccessor;
@@ -45,6 +46,8 @@ public class SimpleFetchManager implements FetchManager {
 
     private Thread[] fetchRunners;
 
+    private FetchRequestRunner[] requestRunners;
+
     private volatile int fetchRequestCount;
 
     private FetchRequestQueue requestQueue;
@@ -61,6 +64,7 @@ public class SimpleFetchManager implements FetchManager {
     }
 
 
+    @Override
     public int getFetchRequestCount() {
         return this.fetchRequestCount;
     }
@@ -77,9 +81,12 @@ public class SimpleFetchManager implements FetchManager {
         this.shutdown = true;
         // 中断所有任务
         if (this.fetchRunners != null) {
-            for (final Thread thread : this.fetchRunners) {
+            for (int i = 0; i < this.fetchRunners.length; i++) {
+                Thread thread = this.fetchRunners[i];
+                FetchRequestRunner runner = this.requestRunners[i];
                 if (thread != null) {
                     thread.interrupt();
+                    runner.interruptExecutor();
                     try {
                         thread.join(5000);
                     }
@@ -105,8 +112,11 @@ public class SimpleFetchManager implements FetchManager {
     public void resetFetchState() {
         this.requestQueue = new FetchRequestQueue();
         this.fetchRunners = new Thread[this.consumerConfig.getFetchRunnerCount()];
+        this.requestRunners = new FetchRequestRunner[this.consumerConfig.getFetchRunnerCount()];
         for (int i = 0; i < this.fetchRunners.length; i++) {
-            this.fetchRunners[i] = new Thread(new FetchRequestRunner());
+            FetchRequestRunner runner = new FetchRequestRunner();
+            this.requestRunners[i] = runner;
+            this.fetchRunners[i] = new Thread(runner);
             this.fetchRunners[i].setName(this.consumerConfig.getGroup() + "Fetch-Runner-" + i);
         }
 
@@ -214,6 +224,17 @@ public class SimpleFetchManager implements FetchManager {
         }
 
 
+        public void interruptExecutor() {
+            for (Thread thread : this.executorThreads) {
+                if (!thread.isInterrupted()) {
+                    thread.interrupt();
+                }
+            }
+        }
+
+        private final ConcurrentHashSet<Thread> executorThreads = new ConcurrentHashSet<Thread>();
+
+
         private void notifyListener(final FetchRequest request, final MessageIterator it, final MessageListener listener) {
             if (listener != null) {
                 if (listener.getExecutor() != null) {
@@ -221,7 +242,14 @@ public class SimpleFetchManager implements FetchManager {
                         listener.getExecutor().execute(new Runnable() {
                             @Override
                             public void run() {
-                                FetchRequestRunner.this.receiveMessages(request, it, listener);
+                                Thread currentThread = Thread.currentThread();
+                                FetchRequestRunner.this.executorThreads.add(currentThread);
+                                try {
+                                    FetchRequestRunner.this.receiveMessages(request, it, listener);
+                                }
+                                finally {
+                                    FetchRequestRunner.this.executorThreads.remove(currentThread);
+                                }
                             }
                         });
                     }
@@ -328,6 +356,13 @@ public class SimpleFetchManager implements FetchManager {
                         }
                     }
                 }
+                catch (InterruptedException e) {
+                    // Receive messages thread is interrupted
+                    it.setOffset(prevOffset);
+                    log.error("Process messages thread was interrupted,topic=" + request.getTopic() + ",partition="
+                            + request.getPartition(), e);
+                    break;
+                }
                 catch (final InvalidMessageException e) {
                     MetaStatLog.addStat(null, StatConstants.INVALID_MSG_STAT, request.getTopic());
                     // 消息体非法，获取有效offset，重新发起查询
@@ -338,7 +373,8 @@ public class SimpleFetchManager implements FetchManager {
                     // 将指针移到上一条消息
                     it.setOffset(prevOffset);
                     log.error(
-                        "MessageListener处理消息异常,topic=" + request.getTopic() + ",partition=" + request.getPartition(), e);
+                        "Process messages failed,topic=" + request.getTopic() + ",partition=" + request.getPartition(),
+                        e);
                     // 跳出循环，处理消息异常，到此为止
                     break;
                 }
