@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis;
 
@@ -55,17 +55,17 @@ public class EnhancedBroker {
 
 
     public EnhancedBroker(final MetaConfig metaConfig, final Map<String/*
-                                                                        * plugin
-                                                                        * name
-                                                                        */, Properties> pluginsInfo) {
+     * plugin
+     * name
+     */, Properties> pluginsInfo) {
         this.broker = new MetaMorphosisBroker(metaConfig);
-        this.brokerPlugins = new BrokerPlugins(pluginsInfo, broker);
-        this.brokerPlugins.init(broker, null);
+        this.brokerPlugins = new BrokerPlugins(pluginsInfo, this.broker);
+        this.brokerPlugins.init(this.broker, null);
     }
 
 
     public MetaMorphosisBroker getBroker() {
-        return broker;
+        return this.broker;
     }
 
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis;
 
@@ -64,12 +64,15 @@ public class StartupHelp {
     public static Options options() {
         final Options options = new Options();
         final Option brokerFile = new Option("f", true, "Broker configuration file path");
+        final Option localMode = new Option("l", false, "Broker configuration file path");
+        localMode.setRequired(false);
         brokerFile.setRequired(true);
         options.addOption(brokerFile);
+        options.addOption(localMode);
 
         final Option pluginParams =
                 OptionBuilder.withArgName("pluginname=configfile").hasArgs(2).withValueSeparator()
-                    .withDescription("use value for given param").create("F");
+                .withDescription("use value for given param").create("F");
         options.addOption(pluginParams);
 
         return options;

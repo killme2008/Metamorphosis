@@ -293,6 +293,8 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
 
         this.brokerProcessor.dispose();
 
+        EmbedZookeeperServer.getInstance().stop();
+
         log.info("Stop metamorphosis server successfully");
 
     }
