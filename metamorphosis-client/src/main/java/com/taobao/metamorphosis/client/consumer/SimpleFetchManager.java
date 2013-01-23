@@ -45,6 +45,8 @@ public class SimpleFetchManager implements FetchManager {
 
     private Thread[] fetchRunners;
 
+    private FetchRequestRunner[] runnerables;
+
     private int fetchRequestCount;
 
     private FetchRequestQueue requestQueue;
@@ -72,11 +74,14 @@ public class SimpleFetchManager implements FetchManager {
         this.shutdown = true;
         // 中断所有任务
         if (this.fetchRunners != null) {
-            for (final Thread thread : this.fetchRunners) {
+            for (int i = 0; i < this.fetchRunners.length; i++) {
+                final Thread thread = this.fetchRunners[i];
+                final FetchRequestRunner runnable = this.runnerables[i];
+                runnable.stopped = true;
                 if (thread != null) {
                     thread.interrupt();
                     try {
-                        thread.join(5000);
+                        thread.join(100);
                     }
                     catch (final InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -85,12 +90,12 @@ public class SimpleFetchManager implements FetchManager {
 
             }
         }
-        // 等待所有任务结束
-        if (this.requestQueue != null) {
-            while (this.requestQueue.size() != this.fetchRequestCount) {
-                Thread.sleep(50);
-            }
-        }
+        // // 等待所有任务结束
+        // if (this.requestQueue != null) {
+        // while (this.requestQueue.size() != this.fetchRequestCount) {
+        // Thread.sleep(50);
+        // }
+        // }
 
     }
 
@@ -99,8 +104,11 @@ public class SimpleFetchManager implements FetchManager {
     public void resetFetchState() {
         this.requestQueue = new FetchRequestQueue();
         this.fetchRunners = new Thread[this.consumerConfig.getFetchRunnerCount()];
+        this.runnerables = new FetchRequestRunner[this.consumerConfig.getFetchRunnerCount()];
         for (int i = 0; i < this.fetchRunners.length; i++) {
-            this.fetchRunners[i] = new Thread(new FetchRequestRunner());
+            FetchRequestRunner runnable = new FetchRequestRunner();
+            this.runnerables[i] = runnable;
+            this.fetchRunners[i] = new Thread(runnable);
             this.fetchRunners[i].setName(this.consumerConfig.getGroup() + "Fetch-Runner-" + i);
         }
 
@@ -134,12 +142,14 @@ public class SimpleFetchManager implements FetchManager {
 
     class FetchRequestRunner implements Runnable {
 
+        private volatile boolean stopped = false;
+
         private static final int DELAY_NPARTS = 10;
 
 
         @Override
         public void run() {
-            while (!SimpleFetchManager.this.shutdown) {
+            while (!this.stopped) {
                 try {
                     final FetchRequest request = SimpleFetchManager.this.requestQueue.take();
                     this.processRequest(request);
@@ -197,7 +207,9 @@ public class SimpleFetchManager implements FetchManager {
             try {
                 final long newOffset = SimpleFetchManager.this.consumer.offset(request);
                 request.resetRetries();
-                request.setOffset(newOffset, request.getLastMessageId(), request.getPartitionObject().isAutoAck());
+                if (!this.stopped) {
+                    request.setOffset(newOffset, request.getLastMessageId(), request.getPartitionObject().isAutoAck());
+                }
             }
             catch (final MetaClientException ex) {
                 log.error("查询offset失败,topic=" + request.getTopic() + ",partition=" + request.getPartition(), e);
@@ -363,7 +375,9 @@ public class SimpleFetchManager implements FetchManager {
 
                 request.resetRetries();
                 // 跳过这条不能处理的消息
-                request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage().getId(), true);
+                if (!this.stopped) {
+                    request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage().getId(), true);
+                }
                 // 强制设置延迟为0
                 request.setDelay(0);
                 SimpleFetchManager.this.addFetchRequest(request);
@@ -410,8 +424,10 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private void ackRequest(final FetchRequest request, final MessageIterator it, final boolean ack) {
-            request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage() != null ? it.getPrevMessage()
-                .getId() : -1, ack);
+            if (!this.stopped) {
+                request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage() != null ? it.getPrevMessage()
+                        .getId() : -1, ack);
+            }
             this.addRequst(request);
         }
 
