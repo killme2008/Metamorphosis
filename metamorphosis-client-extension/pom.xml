@@ -5,7 +5,6 @@
 		<groupId>com.taobao.metamorphosis</groupId>
 		<version>1.4.0.3-SNAPSHOT</version>
 	</parent>
-
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>metamorphosis-client-extension</artifactId>
 	<name>metamorphosis-client-extension v${project.version}</name>
