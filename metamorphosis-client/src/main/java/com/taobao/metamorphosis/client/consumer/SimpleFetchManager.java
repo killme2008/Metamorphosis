@@ -187,8 +187,7 @@ public class SimpleFetchManager implements FetchManager {
                 this.LogAddRequest(request, e);
             }
             catch (final InterruptedException e) {
-                // 仍然需要加入队列，可能是停止信号
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
             }
             catch (final Throwable e) {
                 this.updateDelay(request);
@@ -212,7 +211,7 @@ public class SimpleFetchManager implements FetchManager {
             else {
                 log.error("获取消息失败,topic=" + request.getTopic() + ",partition=" + request.getPartition(), e);
             }
-            SimpleFetchManager.this.addFetchRequest(request);
+            this.reAddFetchRequest2Queue(request);
         }
 
 
@@ -228,7 +227,7 @@ public class SimpleFetchManager implements FetchManager {
                 log.error("查询offset失败,topic=" + request.getTopic() + ",partition=" + request.getPartition(), e);
             }
             finally {
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
             }
         }
 
@@ -266,13 +265,20 @@ public class SimpleFetchManager implements FetchManager {
                         log.error(
                             "MessageListener线程池繁忙，无法处理消息,topic=" + request.getTopic() + ",partition="
                                     + request.getPartition(), e);
-                        SimpleFetchManager.this.addFetchRequest(request);
+                        this.reAddFetchRequest2Queue(request);
                     }
 
                 }
                 else {
                     this.receiveMessages(request, it, listener);
                 }
+            }
+        }
+
+
+        private void reAddFetchRequest2Queue(final FetchRequest request) {
+            if (!this.stopped) {
+                SimpleFetchManager.this.addFetchRequest(request);
             }
         }
 
@@ -324,7 +330,7 @@ public class SimpleFetchManager implements FetchManager {
                 }
 
                 this.updateDelay(request);
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
             }
         }
 
@@ -419,7 +425,7 @@ public class SimpleFetchManager implements FetchManager {
                 }
                 // 强制设置延迟为0
                 request.setDelay(0);
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
                 return true;
             }
             else {
@@ -474,7 +480,7 @@ public class SimpleFetchManager implements FetchManager {
         private void addRequst(final FetchRequest request) {
             final long delay = this.getRetryDelay(request);
             request.setDelay(delay);
-            SimpleFetchManager.this.addFetchRequest(request);
+            this.reAddFetchRequest2Queue(request);
         }
 
 
