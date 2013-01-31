@@ -72,8 +72,17 @@ class FetchRequestQueue {
     public void offer(final FetchRequest request) {
         this.lock.lock();
         try {
+            /**
+             * A request is not referenced by this queue,so we don't want to add
+             * it.
+             */
+            if (request.getRefQueue() != null && request.getRefQueue() != this) {
+                return;
+            }
             final FetchRequest first = this.queue.peek();
             this.queue.offer(request);
+            // Reference to request.
+            request.setRefQueue(this);
             Collections.sort(this.queue);
             if (first == null || request.compareTo(first) < 0) {
                 this.available.signalAll();
