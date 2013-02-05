@@ -110,4 +110,17 @@ public interface MessageConsumer extends Shutdownable {
      */
     public ConsumerConfig getConsumerConfig();
 
+    /**
+     * Returns current RejectConsumptionHandler
+     *
+     * @return
+     */
+    public RejectConsumptionHandler getRejectConsumptionHandler();
+
+    /**
+     * Sets RejectConsumptionHandler for this consumer.
+     *
+     * @param rejectConsumptionHandler
+     */
+    public void setRejectConsumptionHandler(RejectConsumptionHandler rejectConsumptionHandler);
 }

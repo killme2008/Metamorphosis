@@ -92,6 +92,9 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
 
     private final ConcurrentHashSet<String> publishedTopics = new ConcurrentHashSet<String>();
 
+    private RejectConsumptionHandler rejectConsumptionHandler;
+
+
 
     public SimpleMessageConsumer(final MetaMessageSessionFactory messageSessionFactory,
             final RemotingClientWrapper remotingClient, final ConsumerConfig consumerConfig,
@@ -110,6 +113,8 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         this.fetchManager = new SimpleFetchManager(consumerConfig, this);
         this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         this.loadBalanceStrategy = loadBalanceStrategy;
+        //Use local recover policy by default.
+        this.rejectConsumptionHandler = new LocalRecoverPolicy(this.recoverStorageManager);
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -202,10 +207,13 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
 
     @Override
     public void appendCouldNotProcessMessage(final Message message) throws IOException {
-        // 目前的处理是交给本地存储管理并重试
-        log.warn("Message could not process,save to local.MessageId=" + message.getId() + ",Topic="
-                + message.getTopic() + ",Partition=" + message.getPartition());
-        this.recoverStorageManager.append(this.consumerConfig.getGroup(), message);
+        if (log.isInfoEnabled()) {
+            log.info("Message could not process,save to local.MessageId=" + message.getId() + ",Topic="
+                    + message.getTopic() + ",Partition=" + message.getPartition());
+        }
+        if (this.rejectConsumptionHandler != null) {
+            this.rejectConsumptionHandler.rejectConsumption(message, this);
+        }
     }
 
 
@@ -380,6 +388,16 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         return this.fetch(new FetchRequest(broker, 0, topicPartitionRegInfo, maxSize), timeout, timeUnit);
     }
 
+    public RejectConsumptionHandler getRejectConsumptionHandler() {
+        return rejectConsumptionHandler;
+    }
+
+    public void setRejectConsumptionHandler(RejectConsumptionHandler rejectConsumptionHandler) {
+        if (rejectConsumptionHandler == null) {
+            throw new NullPointerException("Null rejectConsumptionHandler");
+        }
+        this.rejectConsumptionHandler = rejectConsumptionHandler;
+    }
 
     @Override
     public ConsumerConfig getConsumerConfig() {
@@ -393,4 +411,40 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         return this.get(topic, partition, offset, maxSize, DEFAULT_OP_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Created with IntelliJ IDEA.
+     * User: dennis (xzhuang@avos.com)
+     * Date: 13-2-5
+     * Time: 上午11:29
+     */
+    public static class DropPolicy implements RejectConsumptionHandler {
+        @Override
+        public void rejectConsumption(Message message, MessageConsumer messageConsumer) {
+            //Drop the message.
+        }
+    }
+
+    /**
+     * Created with IntelliJ IDEA.
+     * User: dennis (xzhuang@avos.com)
+     * Date: 13-2-5
+     * Time: 上午11:25
+     */
+    public static class LocalRecoverPolicy implements RejectConsumptionHandler {
+        private RecoverManager recoverManager;
+        static final Log log = LogFactory.getLog(LocalRecoverPolicy.class);
+
+        public LocalRecoverPolicy(RecoverManager recoverManager) {
+            this.recoverManager = recoverManager;
+        }
+
+        @Override
+        public void rejectConsumption(Message message, MessageConsumer messageConsumer) {
+            try {
+                this.recoverManager.append(messageConsumer.getConsumerConfig().getGroup(), message);
+            } catch (IOException e) {
+                log.error("Append message to local recover manager failed", e);
+            }
+        }
+    }
 }

@@ -6,3 +6,4 @@ target/
 *.pyc
 build/
 .log
+*.iml
