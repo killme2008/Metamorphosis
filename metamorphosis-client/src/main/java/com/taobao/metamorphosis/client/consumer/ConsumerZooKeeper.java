@@ -579,7 +579,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         }
 
 
-        boolean rebalance() throws Exception {
+        synchronized boolean rebalance() throws Exception {
 
             final Map<String/* topic */, String/* consumerId */> myConsumerPerTopicMap =
                     this.getConsumerPerTopic(this.consumerIdString);
