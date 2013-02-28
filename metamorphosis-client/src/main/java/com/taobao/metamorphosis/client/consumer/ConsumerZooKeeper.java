@@ -550,7 +550,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     try {
                         ConsumerZooKeeper.this.remotingClient.connect(broker.getZKString());
                         ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(broker.getZKString());
-                        log.info("Connect to " + broker.getZKString());
+                        log.warn("Connect to " + broker.getZKString());
                     }
                     catch (final NotifyRemotingException e) {
                         log.error("Connect to " + broker.getZKString() + " failed", e);
@@ -565,10 +565,10 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 if (!changedBrokers.contains(broker)) {
                     try {
                         ConsumerZooKeeper.this.remotingClient.close(broker.getZKString(), false);
-                        log.info("Closing " + broker.getZKString());
+                        log.warn("Closed " + broker.getZKString());
                     }
                     catch (final NotifyRemotingException e) {
-                        log.error("Connect to " + broker.getZKString() + " failed", e);
+                        log.error("Close " + broker.getZKString() + " failed", e);
                     }
                 }
             }
