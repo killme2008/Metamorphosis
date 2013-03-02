@@ -253,7 +253,6 @@ public class Message implements Serializable {
 
 
     void setPartition(final Partition partition) {
-        this.checkState();
         this.partition = partition;
     }
 
