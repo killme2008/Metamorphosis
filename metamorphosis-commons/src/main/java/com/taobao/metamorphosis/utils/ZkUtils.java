@@ -269,6 +269,7 @@ public class ZkUtils {
     public static class ZKConfig extends Config implements Serializable {
         static final long serialVersionUID = -1L;
 
+        @Key(name = "zk.zkRoot")
         public String zkRoot = "/meta";
         /**
          * If enable zookeeper
