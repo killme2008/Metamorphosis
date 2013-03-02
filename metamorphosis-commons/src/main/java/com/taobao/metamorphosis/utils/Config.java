@@ -28,7 +28,7 @@ public abstract class Config {
                     rt.add(f.getName());
                 }
             }
-            else if (Character.isLowerCase(name.charAt(0))) {
+            else if (name.length() > 0 && Character.isLowerCase(name.charAt(0))) {
                 rt.add(name);
             }
         }
