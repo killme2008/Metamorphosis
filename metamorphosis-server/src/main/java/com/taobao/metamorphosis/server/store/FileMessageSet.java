@@ -51,7 +51,6 @@ public class FileMessageSet implements MessageSet, Closeable {
     private final AtomicLong sizeInBytes;
     private final AtomicLong highWaterMark; // 已经确保写入磁盘的水位
     private final long offset; // 镜像offset
-    private final long limit; // 镜像limit
     private boolean mutable; // 是否可变
 
     static final Log log = LogFactory.getLog(FileMessageSet.class);
@@ -62,7 +61,6 @@ public class FileMessageSet implements MessageSet, Closeable {
         super();
         this.channel = channel;
         this.offset = offset;
-        this.limit = limit;
         this.messageCount = new AtomicLong(0);
         this.sizeInBytes = new AtomicLong(0);
         this.highWaterMark = new AtomicLong(0);
@@ -70,8 +68,10 @@ public class FileMessageSet implements MessageSet, Closeable {
         if (mutable) {
             final long startMs = System.currentTimeMillis();
             final long truncated = this.recover();
-            log.info("Recovery succeeded in " + (System.currentTimeMillis() - startMs) / 1000 + " seconds. "
-                    + truncated + " bytes truncated.");
+            if (this.messageCount.get() > 0) {
+                log.info("Recovery succeeded in " + (System.currentTimeMillis() - startMs) / 1000 + " seconds. "
+                        + truncated + " bytes truncated.");
+            }
         }
         else {
             try {
@@ -244,9 +244,9 @@ public class FileMessageSet implements MessageSet, Closeable {
             sb.append("sizeInBytes:").append(this.sizeInBytes.get()).append("\r\n");
             final String addrString =
                     conn != null ? RemotingUtils.getAddrString(conn.getRemoteSocketAddress()) : "unknown";
-            sb.append("client:").append(addrString).append("\r\n");
-            sb.append("]\r\n");
-            transferLog.debug(sb.toString());
+                    sb.append("client:").append(addrString).append("\r\n");
+                    sb.append("]\r\n");
+                    transferLog.debug(sb.toString());
         }
     }
 

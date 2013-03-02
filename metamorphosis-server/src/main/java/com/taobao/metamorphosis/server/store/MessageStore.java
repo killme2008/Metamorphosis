@@ -440,46 +440,67 @@ public class MessageStore implements Closeable {
 
     private void appendBuffer(final ByteBuffer buffer, final AppendCallback cb) {
         final int remainning = buffer.remaining();
+        final boolean useGroupCommit = this.useGroupCommit();
+        Location location = null;
+        List<WriteRequest> beFlushed = null;
         this.writeLock.lock();
         try {
             final Segment cur = this.segments.last();
             final long offset = cur.start + cur.fileMessageSet.append(buffer);
 
-            if (this.useGroupCommit()) {
-                // Use group-commit to flush
-                long lastFlushPos = cur.fileMessageSet.highWaterMark();
-                Location location = new Location(offset, remainning);
-                WriteRequest writeRequest = new WriteRequest(cb, location);
-                writeRequest.location = location;
-                this.toFlush.offer(writeRequest);
-
+            if (useGroupCommit) {
+                final long lastFlushPos = cur.fileMessageSet.highWaterMark();
                 // Three situations to flush writes:
                 // 1.No threads are waiting for write lock
                 // 2.Unflush bytes is greater than max batch size
                 if (!this.writeLock.hasQueuedThreads()
                         || cur.fileMessageSet.getSizeInBytes() >= lastFlushPos + this.maxTransferSize) {
                     this.flush0();
-                    this.notifyCallbacks();
+                    // Copied toFlush queue.
+                    beFlushed = new ArrayList<MessageStore.WriteRequest>(this.toFlush);
+                    // Flush current buffer.
+                    location = new Location(offset, remainning);
                     this.toFlush.clear();
                     this.mayBeRoll();
+                }
+                else {
+
+                    // Use group-commit to flush,add it to queue.
+                    if (cb != null) {
+                        this.toFlush.offer(new WriteRequest(cb, new Location(offset, remainning)));
+                    }
                 }
             }
             else {
                 this.mayBeRoll();
                 this.mayBeFlush(1);
-                if (cb != null) {
-                    cb.appendComplete(new Location(offset, remainning));
-                }
+                location = new Location(offset, remainning);
             }
         }
         catch (final IOException e) {
             log.error("Append file failed", e);
-            if (cb != null) {
-                cb.appendComplete(Location.InvalidLocaltion);
-            }
+            location = Location.InvalidLocaltion;
         }
         finally {
             this.writeLock.unlock();
+            if (cb != null && location != null) {
+                this.notifyCallback(cb, location);
+            }
+            if (beFlushed != null) {
+                for (WriteRequest request : beFlushed) {
+                    this.notifyCallback(request.cb, request.location);
+                }
+            }
+        }
+    }
+
+
+    private void notifyCallback(AppendCallback callback, Location location) {
+        try {
+            callback.appendComplete(location);
+        }
+        catch (Exception e) {
+            log.error("Call AppendCallback failed", e);
         }
     }
 
@@ -491,9 +512,7 @@ public class MessageStore implements Closeable {
 
     private void notifyCallbacks() {
         for (final WriteRequest request : this.toFlush) {
-            if (request.cb != null) {
-                request.cb.appendComplete(request.location);
-            }
+            this.notifyCallback(request.cb, request.location);
         }
     }
 
@@ -543,7 +562,7 @@ public class MessageStore implements Closeable {
             else {
                 // 正常存储了消息，无需处理
                 if (cb != null) {
-                    cb.appendComplete(null);
+                    this.notifyCallback(cb, null);
                 }
             }
         }

@@ -214,7 +214,7 @@ public class MessageStoreUnitTest {
     public void testConcurrentAppendMessages() throws Exception {
         System.out.println("Begin concurrent test....");
         this.metaConfig.setMaxSegmentSize(1024 * 1024 * 16);
-        ConcurrentTestCase testCase = new ConcurrentTestCase(80, 1000, new ConcurrentTestTask() {
+        ConcurrentTestCase testCase = new ConcurrentTestCase(80, 10000, new ConcurrentTestTask() {
 
             @Override
             public void run(int index, int times) throws Exception {
@@ -245,7 +245,7 @@ public class MessageStoreUnitTest {
         });
         testCase.start();
         System.out.println("Appended 80000 messages,cost:" + testCase.getDurationInMillis() / 1000 + " seconds");
-        assertEquals(80000, this.messageStore.getMessageCount());
+        assertEquals(800000, this.messageStore.getMessageCount());
 
     }
 
