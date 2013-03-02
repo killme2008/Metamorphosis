@@ -324,6 +324,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
      */
     Partition selectPartition(final String topic, final Message msg, final PartitionSelector selector,
             final String serverUrl) throws MetaClientException {
+        boolean oldReadOnly = msg.isReadOnly();
         try {
             msg.setReadOnly(true);
             final BrokerConnectionListener brokerConnectionListener = this.getBrokerConnectionListener(topic);
@@ -346,7 +347,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
             }
         }
         finally {
-            msg.setReadOnly(false);
+            msg.setReadOnly(oldReadOnly);
         }
     }
 
@@ -407,6 +408,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
      */
     public Partition selectPartition(final String topic, final Message message,
             final PartitionSelector partitionSelector) throws MetaClientException {
+        boolean oldReadOnly = message.isReadOnly();
         try {
             message.setReadOnly(true);
             if (this.metaClientConfig.getServerUrl() != null) {
@@ -422,7 +424,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
             }
         }
         finally {
-            message.setReadOnly(false);
+            message.setReadOnly(oldReadOnly);
         }
     }
 
