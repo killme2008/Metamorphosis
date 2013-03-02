@@ -364,7 +364,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
         protected final String consumerIdString;
 
-        static final int MAX_N_RETRIES = 10;
+        static final int MAX_N_RETRIES = 7;
 
         private final LoadBalanceStrategy loadBalanceStrategy;
 
