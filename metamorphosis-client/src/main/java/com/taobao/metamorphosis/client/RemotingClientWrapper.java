@@ -19,12 +19,12 @@ package com.taobao.metamorphosis.client;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.FileChannel;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.taobao.gecko.core.buffer.IoBuffer;
 import com.taobao.gecko.core.command.RequestCommand;
@@ -52,8 +52,8 @@ import com.taobao.gecko.service.exception.NotifyRemotingException;
  */
 public class RemotingClientWrapper implements RemotingClient {
     private final RemotingClient remotingClient;
-    private final ConcurrentHashMap<String/* url */, AtomicInteger/* counter */> serverCounter =
-            new ConcurrentHashMap<String, AtomicInteger>();
+    private final ConcurrentHashMap<String/* url */, Set<Object>/* references */> refsCache =
+            new ConcurrentHashMap<String, Set<Object>>();
 
 
     public RemotingClientWrapper(final RemotingClient remotingClient) {
@@ -77,7 +77,7 @@ public class RemotingClientWrapper implements RemotingClient {
 
     @Override
     public void awaitReadyInterrupt(final String url, final long time) throws NotifyRemotingException,
-            InterruptedException {
+    InterruptedException {
         this.remotingClient.awaitReadyInterrupt(url, time);
     }
 
@@ -89,41 +89,61 @@ public class RemotingClientWrapper implements RemotingClient {
 
 
     @Override
-    public void close(final String url, final boolean allowReconnect) throws NotifyRemotingException {
-        final AtomicInteger counter = this.serverCounter.get(url);
-        if (counter.decrementAndGet() == 0) {
-            // this.remotingClient.sendToGroup(url, new QuitCommand());
-            this.remotingClient.close(url, allowReconnect);
-        }
+    public void connect(String url) throws NotifyRemotingException {
+        this.connect(url, 1);
     }
 
 
     @Override
-    public void connect(final String url, final int connCount) throws NotifyRemotingException {
-        final AtomicInteger counter = this.getCounter(url);
-        this.remotingClient.connect(url, connCount);
-        counter.incrementAndGet();
+    public void connect(String url, int connCount) throws NotifyRemotingException {
+        this.connect(url, connCount, null);
     }
 
 
-    private AtomicInteger getCounter(final String url) {
-        AtomicInteger counter = this.serverCounter.get(url);
-        if (counter == null) {
-            counter = new AtomicInteger(0);
-            final AtomicInteger oldCounter = this.serverCounter.putIfAbsent(url, counter);
-            if (oldCounter != null) {
-                counter = oldCounter;
+    @Override
+    public void close(String url, boolean allowReconnect) throws NotifyRemotingException {
+        this.close(url, null, allowReconnect);
+    }
+
+
+    public void close(final String url, Object ref, final boolean allowReconnect) throws NotifyRemotingException {
+        final Set<Object> refs = this.refsCache.get(url);
+        if (refs != null) {
+            synchronized (refs) {
+                refs.remove(ref);
+                if (refs.isEmpty()) {
+                    this.remotingClient.close(url, allowReconnect);
+                    this.refsCache.remove(url);
+                }
             }
         }
-        return counter;
     }
 
 
-    @Override
-    public void connect(final String url) throws NotifyRemotingException {
-        final AtomicInteger counter = this.getCounter(url);
-        this.remotingClient.connect(url);
-        counter.incrementAndGet();
+    public void connect(final String url, final int connCount, Object ref) throws NotifyRemotingException {
+        final Set<Object> refs = this.getReferences(url);
+        this.remotingClient.connect(url, connCount);
+        synchronized (refs) {
+            refs.add(ref);
+        }
+    }
+
+
+    private Set<Object> getReferences(final String url) {
+        Set<Object> refs = this.refsCache.get(url);
+        if (refs == null) {
+            refs = new HashSet<Object>();
+            final Set<Object> oldRefs = this.refsCache.putIfAbsent(url, refs);
+            if (oldRefs != null) {
+                refs = oldRefs;
+            }
+        }
+        return refs;
+    }
+
+
+    public void connect(final String url, Object ref) throws NotifyRemotingException {
+        this.connect(url, 1, ref);
     }
 
 
@@ -184,15 +204,15 @@ public class RemotingClientWrapper implements RemotingClient {
 
     @Override
     public ResponseCommand invokeToGroup(final String group, final RequestCommand command) throws InterruptedException,
-            TimeoutException, NotifyRemotingException {
+    TimeoutException, NotifyRemotingException {
         return this.remotingClient.invokeToGroup(group, command);
     }
 
 
     @Override
     public Map<Connection, ResponseCommand> invokeToGroupAllConnections(final String group,
-            final RequestCommand command, final long time, final TimeUnit timeUnit) throws InterruptedException,
-            NotifyRemotingException {
+        final RequestCommand command, final long time, final TimeUnit timeUnit) throws InterruptedException,
+        NotifyRemotingException {
         return this.remotingClient.invokeToGroupAllConnections(group, command, time, timeUnit);
     }
 
@@ -251,7 +271,7 @@ public class RemotingClientWrapper implements RemotingClient {
     @Override
     public void sendToGroup(final String group, final RequestCommand command,
             final SingleRequestCallBackListener listener, final long time, final TimeUnit timeunut)
-            throws NotifyRemotingException {
+                    throws NotifyRemotingException {
         this.remotingClient.sendToGroup(group, command, listener, time, timeunut);
     }
 
@@ -272,7 +292,7 @@ public class RemotingClientWrapper implements RemotingClient {
     @Override
     public void sendToGroupAllConnections(final String group, final RequestCommand command,
             final GroupAllConnectionCallBackListener listener, final long time, final TimeUnit timeUnit)
-            throws NotifyRemotingException {
+                    throws NotifyRemotingException {
         this.remotingClient.sendToGroupAllConnections(group, command, listener, time, timeUnit);
     }
 
@@ -337,6 +357,7 @@ public class RemotingClientWrapper implements RemotingClient {
     @Override
     public void stop() throws NotifyRemotingException {
         this.remotingClient.stop();
+        this.refsCache.clear();
     }
 
 
@@ -349,7 +370,7 @@ public class RemotingClientWrapper implements RemotingClient {
     @Override
     public void transferToGroup(String group, IoBuffer head, IoBuffer tail, FileChannel channel, long position,
             long size, Integer opaque, SingleRequestCallBackListener listener, long time, TimeUnit unit)
-            throws NotifyRemotingException {
+                    throws NotifyRemotingException {
         this.remotingClient.transferToGroup(group, head, tail, channel, position, size, opaque, listener, time, unit);
 
     }

@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.taobao.metamorphosis.utils.ThreadUtils;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
@@ -56,6 +55,7 @@ import com.taobao.metamorphosis.network.RemotingUtils;
 import com.taobao.metamorphosis.utils.MetaZookeeper;
 import com.taobao.metamorphosis.utils.MetaZookeeper.ZKGroupDirs;
 import com.taobao.metamorphosis.utils.MetaZookeeper.ZKGroupTopicDirs;
+import com.taobao.metamorphosis.utils.ThreadUtils;
 import com.taobao.metamorphosis.utils.ZkUtils;
 import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
 
@@ -548,7 +548,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             for (final Broker broker : changedBrokers) {
                 if (!this.oldBrokerSet.contains(broker)) {
                     try {
-                        ConsumerZooKeeper.this.remotingClient.connect(broker.getZKString());
+                        ConsumerZooKeeper.this.remotingClient.connect(broker.getZKString(), this);
                         ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(broker.getZKString());
                         log.warn("Connect to " + broker.getZKString());
                     }
@@ -564,7 +564,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             for (final Broker broker : this.oldBrokerSet) {
                 if (!changedBrokers.contains(broker)) {
                     try {
-                        ConsumerZooKeeper.this.remotingClient.close(broker.getZKString(), false);
+                        ConsumerZooKeeper.this.remotingClient.close(broker.getZKString(), this, false);
                         log.warn("Closed " + broker.getZKString());
                     }
                     catch (final NotifyRemotingException e) {
