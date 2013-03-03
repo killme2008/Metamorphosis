@@ -27,10 +27,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.taobao.metamorphosis.utils.ThreadUtils;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.commons.logging.Log;
@@ -258,15 +260,13 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
         if (task != null) {
             try {
                 return task.get();
-            }
-            catch (final Exception e) {
-                log.error("ªÒ»°BrokerConnectionListener ß∞‹", e);
-                return null;
+            } catch (final ExecutionException e) {
+                throw ThreadUtils.launderThrowable(e.getCause());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
-        else {
-            return null;
-        }
+        return null;
     }
 
 
