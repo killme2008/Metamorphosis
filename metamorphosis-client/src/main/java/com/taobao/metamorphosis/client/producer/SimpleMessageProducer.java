@@ -444,6 +444,9 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
         catch (final InterruptedException e) {
             throw e;
         }
+        catch (final MetaClientException e) {
+            throw e;
+        }
         catch (final Exception e) {
             throw new MetaClientException("send message failed", e);
         }

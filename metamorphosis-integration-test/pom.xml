@@ -24,17 +24,17 @@
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.4-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-server-wrapper</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.4-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client-extension</artifactId>
-			<version>1.4.3-SNAPSHOT</version>
+			<version>1.4.4-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 </project>
