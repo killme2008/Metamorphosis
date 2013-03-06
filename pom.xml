@@ -73,6 +73,7 @@
 		  <descriptors>
 			<!-- <descriptor>metamorphosis-server/release.xml</descriptor> -->
 			<descriptor>metamorphosis-server-wrapper/release.xml</descriptor>
+            <descriptor>metamorphosis-client-extension/release.xml</descriptor>
 		  </descriptors>
 		</configuration>
 	  </plugin>

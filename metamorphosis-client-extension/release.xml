@@ -1,0 +1,39 @@
+<assembly>
+    <id>metamorphosis-client</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+			<includes>
+				<include>COPYING.txt</include>
+				<include>README.md</include>
+			</includes>
+			<excludes>
+				<exclude>**/src/**</exclude>
+				<exclude>**/target/**</exclude>
+				<exclude>**/.*/**</exclude>
+			</excludes>
+		</fileSet>
+    </fileSets>
+   	<moduleSets>
+		<moduleSet>
+			<includes>
+                <include>com.taobao.metamorphosis:metamorphosis-client
+				</include>
+                <include>com.taobao.metamorphosis:metamorphosis-client-extension
+				</include>
+			</includes>
+			<binaries>
+				<outputDirectory>metamorphosis-client/dist/</outputDirectory>
+				<unpack>false</unpack>
+				<dependencySets>
+					<dependencySet>
+						<outputDirectory>metamorphosis-client/lib
+						</outputDirectory>
+					</dependencySet>
+				</dependencySets><!-- -->
+			</binaries>
+		</moduleSet>
+	</moduleSets>
+</assembly>
