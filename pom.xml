@@ -10,7 +10,7 @@
   <groupId>com.taobao.metamorphosis</groupId>
   <artifactId>metamorphosis-all</artifactId>
   <packaging>pom</packaging>
-  <version>1.4.4-SNAPSHOT</version>
+  <version>1.4.4-RC</version>
   <name>taobao metamorphosis v${project.version}</name>
   <url>https://github.com/killme2008/Metamorphosis</url>
   <licenses>
