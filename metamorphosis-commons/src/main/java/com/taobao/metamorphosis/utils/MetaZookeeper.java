@@ -46,6 +46,18 @@ import com.taobao.metamorphosis.cluster.json.TopicBroker;
  * 
  */
 public class MetaZookeeper {
+
+    static{
+        if(Thread.getDefaultUncaughtExceptionHandler()==null){
+            Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    logger.warn("Thread terminated with exception: "+ t.getName(),e);
+                }
+            });
+        }
+    }
+
     private volatile ZkClient zkClient;
 
     private static Log logger = LogFactory.getLog(MetaZookeeper.class);
