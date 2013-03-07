@@ -113,7 +113,6 @@ public class RemotingClientWrapper implements RemotingClient {
                 refs.remove(ref);
                 if (refs.isEmpty()) {
                     this.remotingClient.close(url, allowReconnect);
-                    this.refsCache.remove(url);
                 }
             }
         }
