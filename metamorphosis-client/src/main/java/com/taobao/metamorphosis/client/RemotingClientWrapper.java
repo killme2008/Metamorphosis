@@ -63,6 +63,19 @@ public class RemotingClientWrapper implements RemotingClient {
 
 
     @Override
+    public void connect(String url, String targetGroup, int connCount) throws NotifyRemotingException {
+        this.remotingClient.connect(url, targetGroup, connCount);
+
+    }
+
+
+    @Override
+    public void connect(String url, String targetGroup) throws NotifyRemotingException {
+        this.remotingClient.connect(url, targetGroup);
+    }
+
+
+    @Override
     public void addAllProcessors(
             final Map<Class<? extends RequestCommand>, RequestProcessor<? extends RequestCommand>> map) {
         this.remotingClient.addAllProcessors(map);
