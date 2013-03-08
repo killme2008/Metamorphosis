@@ -260,6 +260,7 @@
 		<configuration>
 		  <encoding>GBK</encoding>
 		  <charset>GBK</charset>
+		  <aggregate>true</aggregate>
 		</configuration>
 		<reportSets>
 		  <reportSet>
