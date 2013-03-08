@@ -1,3 +1,8 @@
+#新闻
+
+* Metaq 1.4.4 released.[Release Notes](https://github.com/killme2008/Metamorphosis/wiki/ReleaseNotes)
+* Meta-ruby 0.1 released: a ruby client for metaq. [SOURCE](https://github.com/killme2008/Metamorphosis/tree/master/contrib/ruby/meta-ruby)
+
 #介绍
 
 ![Logo](http://pic.yupoo.com/killme2008/C5TX2zgZ/f504V.png)
@@ -13,11 +18,6 @@
 #协议
 
 基于Apache License 2.0
-
-#新闻
-
-* Metaq 1.4.3 released.[Release Notes](https://github.com/killme2008/Metamorphosis/wiki/ReleaseNotes)
-* Meta-ruby 0.1 released: a ruby client for metaq. [SOURCE](https://github.com/killme2008/Metamorphosis/tree/master/contrib/ruby/meta-ruby)
 
 #下载
 
