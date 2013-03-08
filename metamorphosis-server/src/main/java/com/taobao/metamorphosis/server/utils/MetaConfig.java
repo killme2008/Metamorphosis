@@ -131,6 +131,18 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
 
     private boolean updateConsumerOffsets = Boolean.parseBoolean(System.getProperty("meta.get.tellMaxOffset", "false"));
 
+    private boolean loadMessageStoresInParallel = false;
+
+
+    public boolean isLoadMessageStoresInParallel() {
+        return this.loadMessageStoresInParallel;
+    }
+
+
+    public void setLoadMessageStoresInParallel(boolean loadMessageStoresInParallel) {
+        this.loadMessageStoresInParallel = loadMessageStoresInParallel;
+    }
+
 
     public int getQuartzThreadCount() {
         return this.quartzThreadCount;
@@ -632,6 +644,9 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         }
         if (!StringUtils.isBlank(sysConf.get("updateConsumerOffsets"))) {
             this.updateConsumerOffsets = this.getBoolean(sysConf, "updateConsumerOffsets");
+        }
+        if (!StringUtils.isBlank(sysConf.get("loadMessageStoresInParallel"))) {
+            this.loadMessageStoresInParallel = this.getBoolean(sysConf, "loadMessageStoresInParallel");
         }
     }
 
