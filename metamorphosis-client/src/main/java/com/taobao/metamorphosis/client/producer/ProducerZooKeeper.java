@@ -140,7 +140,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                     final String newBrokerString = newEntry.getValue();
                     // 新的有，旧的没有，创建
                     if (!this.brokersInfo.oldBrokerStringMap.containsKey(newBrokerId)) {
-                        ProducerZooKeeper.this.remotingClient.connect(newBrokerString, this);
+                        ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
                         ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
                         log.warn("Connect to " + newBrokerString);
                     }
@@ -155,9 +155,9 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                         // 判断内容是否变化
                         if (!newBrokerString.equals(oldBrokerString)) {
                             log.warn("Close " + oldBrokerString + ",connect to " + newBrokerString);
-                            ProducerZooKeeper.this.remotingClient.connect(newBrokerString, this);
+                            ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
                             ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                            ProducerZooKeeper.this.remotingClient.close(oldBrokerString, this, false);
+                            ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, false);
                         }
                         else {
                             // ignore
@@ -165,7 +165,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                     }
                     else {
                         // 新的没有，旧的有，关闭
-                        ProducerZooKeeper.this.remotingClient.close(oldBrokerString, this, false);
+                        ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, false);
                         log.warn("Close " + oldBrokerString);
                     }
                 }

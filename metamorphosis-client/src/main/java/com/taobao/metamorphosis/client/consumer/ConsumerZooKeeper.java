@@ -548,7 +548,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             for (final Broker broker : changedBrokers) {
                 if (!this.oldBrokerSet.contains(broker)) {
                     try {
-                        ConsumerZooKeeper.this.remotingClient.connect(broker.getZKString(), this);
+                        ConsumerZooKeeper.this.remotingClient.connectWithRef(broker.getZKString(), this);
                         ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(broker.getZKString());
                         log.warn("Connect to " + broker.getZKString());
                     }
@@ -564,7 +564,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             for (final Broker broker : this.oldBrokerSet) {
                 if (!changedBrokers.contains(broker)) {
                     try {
-                        ConsumerZooKeeper.this.remotingClient.close(broker.getZKString(), this, false);
+                        ConsumerZooKeeper.this.remotingClient.closeWithRef(broker.getZKString(), this, false);
                         log.warn("Closed " + broker.getZKString());
                     }
                     catch (final NotifyRemotingException e) {

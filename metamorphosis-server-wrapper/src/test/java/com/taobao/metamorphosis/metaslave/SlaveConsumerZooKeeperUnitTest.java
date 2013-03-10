@@ -301,7 +301,7 @@ public class SlaveConsumerZooKeeperUnitTest {
 
 
     private void mockConnect(final String url) throws NotifyRemotingException, InterruptedException {
-        this.remotingClient.connect(EasyMock.eq(url), EasyMock.anyObject());
+        this.remotingClient.connectWithRef(EasyMock.eq(url), EasyMock.anyObject());
         EasyMock.expectLastCall();
         this.remotingClient.awaitReadyInterrupt(url);
         EasyMock.expectLastCall();
@@ -350,7 +350,7 @@ public class SlaveConsumerZooKeeperUnitTest {
 
 
     private void mockConnectCloseAnyTimes(final String url) throws NotifyRemotingException, InterruptedException {
-        this.remotingClient.close(EasyMock.eq(url), EasyMock.anyObject(), EasyMock.eq(false));
+        this.remotingClient.closeWithRef(EasyMock.eq(url), EasyMock.anyObject(), EasyMock.eq(false));
         EasyMock.expectLastCall().anyTimes();
     }
 

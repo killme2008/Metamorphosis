@@ -64,7 +64,7 @@ public class SlaveOffsetStorage implements OffsetStorage {
         final String masterServerUrl = this.slaveZooKeeper.getMasterServerUrl();
         try {
             if (!StringUtils.isBlank(masterServerUrl)) {
-                this.remotingClient.close(masterServerUrl, this, false);
+                this.remotingClient.closeWithRef(masterServerUrl, this, false);
             }
         }
         catch (NotifyRemotingException e) {
@@ -164,7 +164,7 @@ public class SlaveOffsetStorage implements OffsetStorage {
 
     private void connectServer(final String serverUrl) throws NetworkException, InterruptedException {
         try {
-            this.remotingClient.connect(serverUrl, this);
+            this.remotingClient.connectWithRef(serverUrl, this);
             this.remotingClient.awaitReadyInterrupt(serverUrl, 5000);
             // 5秒钟连接不上则认为服务端没起来
             // ,打断查询

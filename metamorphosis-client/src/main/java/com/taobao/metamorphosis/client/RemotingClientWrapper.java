@@ -109,17 +109,17 @@ public class RemotingClientWrapper implements RemotingClient {
 
     @Override
     public void connect(String url, int connCount) throws NotifyRemotingException {
-        this.connect(url, connCount, null);
+        this.connectWithRef(url, connCount, null);
     }
 
 
     @Override
     public void close(String url, boolean allowReconnect) throws NotifyRemotingException {
-        this.close(url, null, allowReconnect);
+        this.closeWithRef(url, null, allowReconnect);
     }
 
 
-    public void close(final String url, Object ref, final boolean allowReconnect) throws NotifyRemotingException {
+    public void closeWithRef(final String url, Object ref, final boolean allowReconnect) throws NotifyRemotingException {
         final Set<Object> refs = this.refsCache.get(url);
         if (refs != null) {
             synchronized (refs) {
@@ -132,7 +132,7 @@ public class RemotingClientWrapper implements RemotingClient {
     }
 
 
-    public void connect(final String url, final int connCount, Object ref) throws NotifyRemotingException {
+    public void connectWithRef(final String url, final int connCount, Object ref) throws NotifyRemotingException {
         final Set<Object> refs = this.getReferences(url);
         this.remotingClient.connect(url, connCount);
         synchronized (refs) {
@@ -154,8 +154,8 @@ public class RemotingClientWrapper implements RemotingClient {
     }
 
 
-    public void connect(final String url, Object ref) throws NotifyRemotingException {
-        this.connect(url, 1, ref);
+    public void connectWithRef(final String url, Object ref) throws NotifyRemotingException {
+        this.connectWithRef(url, 1, ref);
     }
 
 
