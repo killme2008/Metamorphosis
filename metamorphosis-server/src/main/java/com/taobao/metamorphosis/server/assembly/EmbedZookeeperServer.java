@@ -26,10 +26,8 @@ public final class EmbedZookeeperServer {
 
     private static final String TMP_DIR = System.getProperty("java.io.tmpdir");
 
-    private final String snapDir = System.getProperty("zk.server.snapDirectory", TMP_DIR + File.pathSeparator
-        + "zookeeper");
-    private final String logDir = System.getProperty("zk.server.logDirectory", TMP_DIR + File.pathSeparator
-        + "zookeeper");
+    private final String snapDir = System.getProperty("zk.server.snapDirectory", TMP_DIR + "/" + "zookeeper");
+    private final String logDir = System.getProperty("zk.server.logDirectory", TMP_DIR + "/" + "zookeeper");
     private final int maxConnections = Integer.parseInt(System.getProperty("zk.server.max.connections", "4096"));
 
     static final Log logger = LogFactory.getLog(EmbedZookeeperServer.class);
@@ -49,7 +47,13 @@ public final class EmbedZookeeperServer {
 
     public void start() throws IOException, InterruptedException {
         File snapFile = new File(this.snapDir).getAbsoluteFile();
+        if (!snapFile.exists()) {
+            snapFile.mkdirs();
+        }
         File logFile = new File(this.logDir).getAbsoluteFile();
+        if (!logFile.exists()) {
+            logFile.mkdirs();
+        }
 
         ZooKeeperServer server = new ZooKeeperServer(snapFile, logFile, this.tickTime);
         this.standaloneServerFactory =
