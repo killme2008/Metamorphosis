@@ -101,13 +101,13 @@ public class FetchRequestQueueUnitTest {
 
                     }
                     System.out.println(counter.get() + " " + FetchRequestQueueUnitTest.this.fetchRequestQueue.size()
-                            + " ");
+                        + " ");
                 }
             }
 
         }.start();
 
-        final ConcurrentTestCase testCase = new ConcurrentTestCase(500, 1000, new ConcurrentTestTask() {
+        final ConcurrentTestCase testCase = new ConcurrentTestCase(500, 10000, new ConcurrentTestTask() {
 
             @Override
             public void run(final int index, final int times) throws Exception {
@@ -122,7 +122,7 @@ public class FetchRequestQueueUnitTest {
             }
         });
         testCase.start();
-        assertEquals(500000, counter.get());
+        assertEquals(5000000, counter.get());
         assertEquals(0, this.fetchRequestQueue.size());
         System.out.println(testCase.getDurationInMillis());
         shutdown.set(true);
