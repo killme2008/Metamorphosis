@@ -134,8 +134,8 @@ public class RemotingClientWrapper implements RemotingClient {
 
     public void connectWithRef(final String url, final int connCount, Object ref) throws NotifyRemotingException {
         final Set<Object> refs = this.getReferences(url);
-        this.remotingClient.connect(url, connCount);
         synchronized (refs) {
+            this.remotingClient.connect(url, connCount);
             refs.add(ref);
         }
     }
