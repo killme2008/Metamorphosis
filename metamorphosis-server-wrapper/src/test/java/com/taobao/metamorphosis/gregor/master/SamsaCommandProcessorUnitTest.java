@@ -139,7 +139,8 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                .appendComplete(new Location(offset, 1024));
+.appendComplete(Location
+                    .create(offset, 1024));
                 return null;
             }
 
@@ -240,7 +241,8 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                .appendComplete(new Location(offset, 1024));
+.appendComplete(Location
+                    .create(offset, 1024));
                 return null;
             }
 
@@ -306,7 +308,8 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                .appendComplete(new Location(offset, 1024));
+.appendComplete(Location
+                    .create(offset, 1024));
                 return null;
             }
 

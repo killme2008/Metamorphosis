@@ -85,7 +85,7 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
 
             @Override
             public Object answer() throws Throwable {
-                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(new Location(offset, 1024));
+                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(Location.create(offset, 1024));
                 return null;
             }
 
@@ -157,8 +157,8 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
         this.metaConfig.setTopics(Arrays.asList(this.topic));
         this.metaConfig.closePartitions(this.topic, partition, partition);
         final BooleanCommand expectedResp =
-                new BooleanCommand(HttpStatus.Forbidden, "Partition["
-                        + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed", request.getOpaque());
+                new BooleanCommand(HttpStatus.Forbidden, "Partition[" + this.metaConfig.getBrokerId() + "-"
+                        + request.getPartition() + "] has been closed", request.getOpaque());
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 

@@ -31,10 +31,18 @@ public class Location {
     public static Location InvalidLocaltion = new Location(-1, -1);
 
 
-    public Location(final long offset, final int length) {
+    protected Location(final long offset, final int length) {
         super();
         this.offset = offset;
         this.length = length;
+    }
+
+
+    public static Location create(long offset, int length) {
+        if (offset < 0 || length < 0) {
+            return InvalidLocaltion;
+        }
+        return new Location(offset, length);
     }
 
 

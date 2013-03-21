@@ -128,7 +128,7 @@ public class GregorCommandProcessorUnitTest {
 
             @Override
             public Object answer() throws Throwable {
-                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(new Location(offset, 1024));
+                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(Location.create(offset, 1024));
                 return null;
             }
 

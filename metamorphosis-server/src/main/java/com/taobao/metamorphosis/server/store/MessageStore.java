@@ -460,7 +460,7 @@ public class MessageStore extends Thread implements Closeable {
                 final long offset = cur.start + cur.fileMessageSet.append(buffer);
                 this.mayBeFlush(1);
                 this.mayBeRoll();
-                location = new Location(offset, remainning);
+                location = Location.create(offset, remainning);
             }
             catch (final IOException e) {
                 log.error("Append file failed", e);
@@ -535,7 +535,7 @@ public class MessageStore extends Thread implements Closeable {
                 }
                 final int remainning = req.buf.remaining();
                 final long offset = last.start + last.fileMessageSet.append(req.buf);
-                req.result = new Location(offset, remainning);
+                req.result = Location.create(offset, remainning);
                 if (req.cb != null) {
                     toFlush.add(req);
                 }
@@ -556,7 +556,7 @@ public class MessageStore extends Thread implements Closeable {
                 final int remainning = request.buf.remaining();
                 final long offset = last.start + last.fileMessageSet.append(request.buf);
                 if (request.cb != null) {
-                    request.cb.appendComplete(new Location(offset, remainning));
+                    request.cb.appendComplete(Location.create(offset, remainning));
                 }
             }
             this.bufferQueue.clear();
