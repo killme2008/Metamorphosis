@@ -164,10 +164,10 @@ public class BrokerCommandProcessor implements CommandProcessor {
 
         @Override
         public void appendComplete(final Location location) {
-            final long offset = location.getOffset();
-            if (offset != -1) {
+            if (location.isValid()) {
                 final String resultStr =
-                        BrokerCommandProcessor.this.genPutResultString(this.partition, this.messageId, offset);
+                        BrokerCommandProcessor.this.genPutResultString(this.partition, this.messageId,
+                            location.getOffset());
                 if (this.cb != null) {
                     this.cb.putComplete(new BooleanCommand(HttpStatus.Success, resultStr, this.request.getOpaque()));
                 }
@@ -177,7 +177,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
                     1);
                 if (this.cb != null) {
                     this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "put message failed",
-                            this.request.getOpaque()));
+                        this.request.getOpaque()));
                 }
             }
 

@@ -163,7 +163,7 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
         @Override
         public void appendComplete(final Location location) {
             this.appendOffset = location.getOffset();
-            if (this.appendOffset != -1) {
+            if (location.isValid()) {
                 synchronized (this) {
                     this.masterSuccess = true;
                 }
