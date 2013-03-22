@@ -118,9 +118,9 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             public void exceptionCaught(final Throwable cause) {
                 boolean isResetConnEx =
                         cause instanceof IOException && cause.getMessage().indexOf("Connection reset by peer") >= 0;
-                if (log.isErrorEnabled() && !isResetConnEx) {
-                    log.error("Networking unexpected exception", cause);
-                }
+                        if (log.isErrorEnabled() && !isResetConnEx) {
+                            log.error("Networking unexpected exception", cause);
+                        }
             }
         });
     }
@@ -195,15 +195,19 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         return this.children;
     }
 
+    public static final boolean TCP_NO_DELAY = Boolean.valueOf(System.getProperty("metaq.network.tcp_nodelay", "true"));
+    public static final long MAX_SCHEDULE_WRITTEN_BYTES = Long.valueOf(System.getProperty(
+        "metaq.network.max_schedule_written_bytes", String.valueOf(Runtime.getRuntime().maxMemory() / 3)));
+
 
     public MetaMessageSessionFactory(final MetaClientConfig metaClientConfig) throws MetaClientException {
         super();
         this.checkConfig(metaClientConfig);
         this.metaClientConfig = metaClientConfig;
         final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setTcpNoDelay(false);
+        clientConfig.setTcpNoDelay(TCP_NO_DELAY);
         clientConfig.setWireFormatType(new MetamorphosisWireFormatType());
-        clientConfig.setMaxScheduleWrittenBytes(Runtime.getRuntime().maxMemory() / 3);
+        clientConfig.setMaxScheduleWrittenBytes(MAX_SCHEDULE_WRITTEN_BYTES);
         try {
             this.remotingClient = new RemotingClientWrapper(RemotingFactory.connect(clientConfig));
         }
@@ -602,7 +606,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
     }
 
     static final char[] INVALID_GROUP_CHAR = { '~', '!', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '`', '\'',
-                                              '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':' };
+                                               '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':' };
 
 
     protected void checkConsumerConfig(final ConsumerConfig consumerConfig) {
