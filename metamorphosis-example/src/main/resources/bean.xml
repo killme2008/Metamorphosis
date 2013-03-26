@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+    <bean id="sessionFactory" class="com.taobao.metamorphosis.client.MetaMessageSessionFactory">
+         <constructor-arg>
+             <bean class="com.taobao.metamorphosis.client.MetaClientConfig">
+                 <property name="zkConfig">
+                     <bean class="com.taobao.metamorphosis.utils.ZkUtils.ZKConfig">
+                         <constructor-arg>
+                             <value>127.0.0.1:2181</value>
+                         </constructor-arg>
+                        <constructor-arg>
+                             <value>30000</value>
+                         </constructor-arg>
+                          <constructor-arg>
+                             <value>30000</value>
+                         </constructor-arg>
+                          <constructor-arg>
+                             <value>5000</value>
+                         </constructor-arg>
+                     </bean>
+                 </property>
+             </bean>
+         </constructor-arg>
+    </bean>
+    <bean id ="producer" class="com.taobao.metamorphosis.client.producer.SimpleMessageProducer" factory-bean="sessionFactory"
+        factory-method="createProducer">     
+    </bean>
+    <bean id ="consumer" class="com.taobao.metamorphosis.client.consumer.SimpleMessageConsumer" factory-bean="sessionFactory"
+        factory-method="createConsumer"> 
+          <constructor-arg>
+              <bean class="com.taobao.metamorphosis.client.consumer.ConsumerConfig">
+                  <!--  group name -->
+                  <constructor-arg type="java.lang.String" value="meta-example"/>
+                  <!--  other options -->
+                  <property name="maxDelayFetchTimeInMills" value="100"/>
+              </bean>
+          </constructor-arg>    
+    </bean>
+</beans>
