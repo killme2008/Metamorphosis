@@ -25,6 +25,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.transaction.xa.XAException;
@@ -62,6 +63,8 @@ public class TransactionContextUnitTest {
 
     private String sessionId;
 
+    private static final long DEFAULT_REQ_TIMEOUT = 5000L;
+
     static class MockSession implements TransactionSession {
         private final String sessionId;
         private boolean removeCtx = false;
@@ -94,7 +97,9 @@ public class TransactionContextUnitTest {
         this.remotingClient = EasyMock.createMock(RemotingClient.class);
         this.sessionId = this.idGenerator.generateId();
         this.session = new MockSession(this.sessionId);
-        this.context = new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0);
+        this.context =
+                new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0,
+                    DEFAULT_REQ_TIMEOUT);
         this.context.setUniqueQualifier(UNIQUE_QUALIFIER);
         OpaqueGenerator.resetOpaque();
     }
@@ -412,7 +417,8 @@ public class TransactionContextUnitTest {
         this.context.setServerUrl(serverUrl);
 
         final TransactionContext ctx2 =
-                new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0);
+                new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0,
+                    DEFAULT_REQ_TIMEOUT);
         ctx2.setServerUrl(serverUrl);
         assertTrue(this.context.isSameRM(ctx2));
         this.replay();
@@ -473,14 +479,17 @@ public class TransactionContextUnitTest {
         EasyMock
         .expect(
             this.remotingClient.invokeToGroup(serverUrl,
-                new TransactionCommand(info, OpaqueGenerator.getNextOpaque()))).andReturn(
+                new TransactionCommand(info, OpaqueGenerator.getNextOpaque()),
+                DEFAULT_REQ_TIMEOUT, TimeUnit.MILLISECONDS)).andReturn(
                     new BooleanCommand(HttpStatus.Success, result, 0));
     }
 
 
     private void mockSend(final String serverUrl, final TransactionInfo info) throws NotifyRemotingException {
         info.setUniqueQualifier(UNIQUE_QUALIFIER);
-        this.remotingClient.sendToGroup(serverUrl, new TransactionCommand(info, OpaqueGenerator.getNextOpaque()));
+        this.remotingClient.sendToGroup(serverUrl, new TransactionCommand(info, OpaqueGenerator.getNextOpaque()),
+            TransactionContext.END_XA_TX_LISTENER,
+            5000, TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall();
     }
 

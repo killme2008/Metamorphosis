@@ -50,11 +50,6 @@ public class SimpleXAMessageProducer extends SimpleMessageProducer implements XA
 
     private static final String OVERWRITE_HOSTNAME_SYSTEM_PROPERTY = "metaq.client.xaproducer.hostname";
 
-    /**
-     * 与线程关联的事务上下文
-     */
-    final protected ThreadLocal<TransactionContext> transactionContext = new ThreadLocal<TransactionContext>();
-
 
     public static String getLocalhostName() {
         String property = System.getProperty(OVERWRITE_HOSTNAME_SYSTEM_PROPERTY);
@@ -159,6 +154,7 @@ public class SimpleXAMessageProducer extends SimpleMessageProducer implements XA
         this.checkUniqueQualifier(prefix);
         this.uniqueQualifier = prefix + "-" + getLocalhostName();
     }
+
 
     private void checkUniqueQualifier(String prefix) {
         if (StringUtils.isBlank(prefix)) {

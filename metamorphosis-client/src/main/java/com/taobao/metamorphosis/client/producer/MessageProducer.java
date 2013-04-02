@@ -103,7 +103,7 @@ public interface MessageProducer extends Shutdownable {
      *             œÏ”¶÷–∂œ
      */
     public SendResult sendMessage(Message message, long timeout, TimeUnit unit) throws MetaClientException,
-            InterruptedException;
+    InterruptedException;
 
 
     /**
@@ -150,6 +150,15 @@ public interface MessageProducer extends Shutdownable {
      * @see #commit()
      */
     public void setTransactionTimeout(int seconds) throws MetaClientException;
+
+
+    /**
+     * Set transaction command request timeout.default is five seconds.
+     * 
+     * @param time
+     * @param timeUnit
+     */
+    public void setTransactionRequestTimeout(long time, TimeUnit timeUnit);
 
 
     /**

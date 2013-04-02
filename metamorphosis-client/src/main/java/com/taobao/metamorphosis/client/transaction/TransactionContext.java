@@ -20,6 +20,8 @@ package com.taobao.metamorphosis.client.transaction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,9 +33,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.taobao.gecko.core.command.ResponseCommand;
 import com.taobao.gecko.core.command.ResponseStatus;
 import com.taobao.gecko.core.util.OpaqueGenerator;
+import com.taobao.gecko.service.Connection;
 import com.taobao.gecko.service.RemotingClient;
+import com.taobao.gecko.service.SingleRequestCallBackListener;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.exception.TransactionInProgressException;
 import com.taobao.metamorphosis.network.BooleanCommand;
@@ -55,6 +60,28 @@ import com.taobao.metamorphosis.utils.StatConstants;
  * 
  */
 public class TransactionContext implements XAResource {
+
+    private static final class EndXATransactionListener implements SingleRequestCallBackListener {
+        @Override
+        public void onResponse(ResponseCommand responseCommand, Connection conn) {
+
+        }
+
+
+        @Override
+        public void onException(Exception e) {
+            log.warn("End xa transaction failed:" + e.getMessage());
+        }
+
+
+        @Override
+        public ThreadPoolExecutor getExecutor() {
+            return null;
+        }
+    }
+
+    public static final EndXATransactionListener END_XA_TX_LISTENER = new EndXATransactionListener();
+
     public static final Log log = LogFactory.getLog(TransactionContext.class);
 
     private final RemotingClient remotingClient;
@@ -78,6 +105,8 @@ public class TransactionContext implements XAResource {
 
     // XAResource urls
     private String[] xareresourceURLs;
+
+    private final long transactionRequestTimeoutInMills;
 
 
     public String[] getXareresourceURLs() {
@@ -111,14 +140,16 @@ public class TransactionContext implements XAResource {
 
 
     public TransactionContext(final RemotingClient remotingClient, final String serverUrl,
-            final TransactionSession session, final LongSequenceGenerator localTransactionIdGenerator, final int seconds) {
+            final TransactionSession session, final LongSequenceGenerator localTransactionIdGenerator,
+            final int transactionTimeout, final long transactionRequestTimeoutInMills) {
         super();
         this.remotingClient = remotingClient;
         this.serverUrl = serverUrl;
         this.localTransactionIdGenerator = localTransactionIdGenerator;
         this.associatedSession = session;
         this.sessionId = session.getSessionId();
-        this.transactionTimeout = seconds;
+        this.transactionTimeout = transactionTimeout;
+        this.transactionRequestTimeoutInMills = transactionRequestTimeoutInMills;
         this.startMs = System.currentTimeMillis();
     }
 
@@ -321,7 +352,7 @@ public class TransactionContext implements XAResource {
     @Override
     public Xid[] recover(final int flag) throws XAException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Recover: " + flag);
+            LOG.debug("Recover with flag: " + flag);
         }
         final TransactionInfo info =
                 new TransactionInfo(null, this.sessionId, TransactionInfo.TransactionType.RECOVER, this.uniqueQualifier);
@@ -334,7 +365,8 @@ public class TransactionContext implements XAResource {
                 try {
                     final BooleanCommand receipt =
                             (BooleanCommand) this.remotingClient.invokeToGroup(serverUrl, new TransactionCommand(info,
-                                OpaqueGenerator.getNextOpaque()));
+                                OpaqueGenerator.getNextOpaque()), this.transactionRequestTimeoutInMills,
+                                TimeUnit.MILLISECONDS);
                     if (receipt.getCode() != HttpStatus.Success) {
                         log.warn("Recover XAResource(" + serverUrl + ") failed,error message:" + receipt.getErrorMsg());
                         continue;
@@ -411,7 +443,7 @@ public class TransactionContext implements XAResource {
         try {
             final BooleanCommand resp =
                     (BooleanCommand) this.remotingClient.invokeToGroup(this.serverUrl, new TransactionCommand(info,
-                        OpaqueGenerator.getNextOpaque()));
+                        OpaqueGenerator.getNextOpaque()), this.transactionRequestTimeoutInMills, TimeUnit.MILLISECONDS);
             if (resp.getResponseStatus() != ResponseStatus.NO_ERROR) {
                 final String msg = resp.getErrorMsg();
                 if (msg.startsWith("XAException:")) {
@@ -507,7 +539,8 @@ public class TransactionContext implements XAResource {
                         this.uniqueQualifier);
             try {
                 this.remotingClient.sendToGroup(this.serverUrl,
-                    new TransactionCommand(info, OpaqueGenerator.getNextOpaque()));
+                    new TransactionCommand(info, OpaqueGenerator.getNextOpaque()), END_XA_TX_LISTENER,
+                    this.transactionRequestTimeoutInMills, TimeUnit.MILLISECONDS);
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Ended XA transaction: " + this.transactionId);
                 }
@@ -639,7 +672,7 @@ public class TransactionContext implements XAResource {
 
             final BooleanCommand resp =
                     (BooleanCommand) this.remotingClient.invokeToGroup(this.serverUrl, new TransactionCommand(info,
-                        OpaqueGenerator.getNextOpaque()));
+                        OpaqueGenerator.getNextOpaque()), this.transactionRequestTimeoutInMills, TimeUnit.MILLISECONDS);
             if (resp.getResponseStatus() != ResponseStatus.NO_ERROR) {
                 throw new MetaClientException(resp.getErrorMsg());
             }

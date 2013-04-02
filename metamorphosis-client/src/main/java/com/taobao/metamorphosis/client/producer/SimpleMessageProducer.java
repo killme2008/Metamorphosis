@@ -82,6 +82,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
     private static final int MAX_RETRY = 1;
     private final LongSequenceGenerator localTxIdGenerator;
     private final ConcurrentHashSet<String> publishedTopics = new ConcurrentHashSet<String>();
+    protected long transactionRequestTimeoutInMills = 5000;
 
 
     public SimpleMessageProducer(final MetaMessageSessionFactory messageSessionFactory,
@@ -98,6 +99,19 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
         // this.ordered = ordered;
     }
 
+
+    @Override
+    public void setTransactionRequestTimeout(long time, TimeUnit timeUnit) {
+        if (timeUnit == null) {
+            throw new IllegalArgumentException("Invalid time unit");
+        }
+        this.transactionRequestTimeoutInMills = TimeUnit.MILLISECONDS.convert(time, timeUnit);
+    }
+
+
+    long getTransactionRequestTimeoutInMills() {
+        return this.transactionRequestTimeoutInMills;
+    }
 
     public MetaMessageSessionFactory getParent() {
         return this.messageSessionFactory;
@@ -282,7 +296,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
         if (ctx == null) {
             ctx =
                     new TransactionContext(this.remotingClient, null, this, this.localTxIdGenerator,
-                        this.transactionTimeout);
+                        this.transactionTimeout, this.transactionRequestTimeoutInMills);
             this.transactionContext.set(ctx);
         }
         else {

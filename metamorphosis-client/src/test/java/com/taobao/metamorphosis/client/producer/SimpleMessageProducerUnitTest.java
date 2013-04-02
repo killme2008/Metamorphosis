@@ -74,6 +74,14 @@ public class SimpleMessageProducerUnitTest {
 
 
     @Test
+    public void testSetTransactionRequestTimeout() {
+        assertEquals(5000L, this.producer.getTransactionRequestTimeoutInMills());
+        this.producer.setTransactionRequestTimeout(3, TimeUnit.SECONDS);
+        assertEquals(3000L, this.producer.getTransactionRequestTimeoutInMills());
+    }
+
+
+    @Test
     public void testSendInvalidMessage() throws Exception {
         try {
             this.producer.sendMessage(null);
@@ -152,10 +160,10 @@ public class SimpleMessageProducerUnitTest {
         OpaqueGenerator.resetOpaque();
         final int flag = MessageFlagUtils.getFlag(null);
         EasyMock.expect(
-            this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, flag, CheckSum.crc32(data),
-                null,
-                Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
-                    new BooleanCommand(500, "server error", Integer.MIN_VALUE));
+            this.remotingClient.invokeToGroup(url,
+                new PutCommand(topic, partition.getPartition(), data, flag, CheckSum.crc32(data), null,
+                    Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andReturn(
+                        new BooleanCommand(500, "server error", Integer.MIN_VALUE));
         // EasyMock.expect(
         // this.remotingClient.invokeToGroup(url, new PutCommand(topic,
         // partition.getPartition(), data, null, flag,
@@ -195,7 +203,7 @@ public class SimpleMessageProducerUnitTest {
             EasyMock.expect(
                 this.remotingClient.invokeToGroup(url, new PutCommand(topic, partition.getPartition(), data, flag,
                     CheckSum.crc32(data), null, Integer.MIN_VALUE), 3000, TimeUnit.MILLISECONDS)).andThrow(
-                new InterruptedException());
+                        new InterruptedException());
             this.mocksControl.replay();
             this.producer.sendMessage(message);
         }
@@ -269,11 +277,9 @@ public class SimpleMessageProducerUnitTest {
 
     private void mockInvokeSuccess(final String serverUrl, final TransactionInfo info, final String result)
             throws InterruptedException, TimeoutException, NotifyRemotingException {
-        EasyMock
-        .expect(
-            this.remotingClient.invokeToGroup(serverUrl,
-                new TransactionCommand(info, OpaqueGenerator.getNextOpaque()))).andReturn(
-                    new BooleanCommand(HttpStatus.Success, result, 0));
+        EasyMock.expect(
+            this.remotingClient.invokeToGroup(serverUrl, new TransactionCommand(info, OpaqueGenerator.getNextOpaque()),
+                5000L, TimeUnit.MILLISECONDS)).andReturn(new BooleanCommand(HttpStatus.Success, result, 0));
     }
 
 
