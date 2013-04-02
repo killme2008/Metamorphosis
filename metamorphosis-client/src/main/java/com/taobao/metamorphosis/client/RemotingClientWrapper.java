@@ -217,7 +217,7 @@ public class RemotingClientWrapper implements RemotingClient {
             BooleanCommand booleanCommand = (BooleanCommand) resp;
             if (booleanCommand.getErrorMsg().contains("无可用连接")) {
                 // try to connect it.
-                this.connectWithRef(group, null);
+                this.connectWithRef(group, this);
             }
         }
         return resp;
