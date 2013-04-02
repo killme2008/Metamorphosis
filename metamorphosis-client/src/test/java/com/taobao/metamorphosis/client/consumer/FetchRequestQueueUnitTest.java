@@ -62,12 +62,15 @@ public class FetchRequestQueueUnitTest {
         final FetchRequest first = new FetchRequest(1000);
         final FetchRequest second = new FetchRequest(1000);
         final FetchRequest third = new FetchRequest(1000);
+        final FetchRequest four = new FetchRequest(1000);
         this.fetchRequestQueue.offer(first);
         this.fetchRequestQueue.offer(second);
         this.fetchRequestQueue.offer(third);
+        this.fetchRequestQueue.offer(four);
         assertSame(first, this.fetchRequestQueue.take());
         assertSame(second, this.fetchRequestQueue.take());
         assertSame(third, this.fetchRequestQueue.take());
+        assertSame(four, this.fetchRequestQueue.take());
     }
 
 

@@ -79,7 +79,7 @@ public class TransactionProcessor implements RequestProcessor<TransactionCommand
                 RemotingUtils.response(conn,
                     new BooleanCommand(HttpStatus.Success, String.valueOf(rt), request.getOpaque()));
                 break;
-            // 提交和,forget和rollback的时候是同步调用，因此需要应答
+                // 提交和,forget和rollback的时候是同步调用，因此需要应答
             case COMMIT_ONE_PHASE:
                 this.processor.commitTransaction(context, xid, true);
                 this.responseOK(request, conn);
@@ -97,7 +97,9 @@ public class TransactionProcessor implements RequestProcessor<TransactionCommand
                 this.responseOK(request, conn);
                 break;
             case RECOVER:
-                final TransactionId[] xids = this.processor.getPreparedTransactions(context);
+                final TransactionId[] xids =
+                        this.processor.getPreparedTransactions(context, request.getTransactionInfo()
+                            .getUniqueQualifier());
                 final StringBuilder sb = new StringBuilder();
                 boolean wasFirst = true;
                 for (final TransactionId id : xids) {
@@ -110,7 +112,7 @@ public class TransactionProcessor implements RequestProcessor<TransactionCommand
                     }
                 }
                 RemotingUtils
-                    .response(conn, new BooleanCommand(HttpStatus.Success, sb.toString(), request.getOpaque()));
+                .response(conn, new BooleanCommand(HttpStatus.Success, sb.toString(), request.getOpaque()));
                 break;
             default:
                 RemotingUtils.response(conn, new BooleanCommand(HttpStatus.InternalServerError, "Unknow transaction command type:" + request.getTransactionInfo().getType(),

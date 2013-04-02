@@ -28,6 +28,7 @@ import com.taobao.metamorphosis.client.producer.XAMessageProducer;
 public class XATxTenProducerTenConsumerTenGroupTest extends BaseMetaTest {
 
     private final String topic = "meta-test";
+    private final String UNIQUE_QUALIFIER = "XATxTenProducerTenConsumerTenGroupTest";
 
     private final AtomicInteger formatIdIdGenerator = new AtomicInteger();
 
@@ -63,7 +64,8 @@ public class XATxTenProducerTenConsumerTenGroupTest extends BaseMetaTest {
                 final byte[] data = ("hello" + j + i).getBytes();
                 final Message msg = new Message(topic, data);
                 final XAResource xares = messageProducer.getXAResource();
-                final Xid xid = XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet());
+                final Xid xid =
+                        XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet(), this.UNIQUE_QUALIFIER);
                 xares.start(xid, XAResource.TMNOFLAGS);
                 final SendResult result = messageProducer.sendMessage(msg);
                 if (!result.isSuccess()) {

@@ -44,7 +44,7 @@ public class TransactionIdUnitTest {
     public void testValueOf() {
         final byte[] branchQualifier = this.randomBytes();
         final byte[] globalTransactionId = this.randomBytes();
-        final XATransactionId xid = new XATransactionId(100, branchQualifier, globalTransactionId);
+        final XATransactionId xid = new XATransactionId(100, branchQualifier, globalTransactionId, "unique-qualifier");
         final LocalTransactionId id = new LocalTransactionId("sessionId", -99);
 
         final String key1 = xid.getTransactionKey();
@@ -59,10 +59,11 @@ public class TransactionIdUnitTest {
     public void testXATransactionId() {
         final byte[] branchQualifier = this.randomBytes();
         final byte[] globalTransactionId = this.randomBytes();
-        final XATransactionId id = new XATransactionId(100, branchQualifier, globalTransactionId);
+        final XATransactionId id = new XATransactionId(100, branchQualifier, globalTransactionId, "unique-qualifier");
         assertArrayEquals(branchQualifier, id.getBranchQualifier());
         assertArrayEquals(globalTransactionId, id.getGlobalTransactionId());
         assertEquals(100, id.getFormatId());
+        assertEquals("unique-qualifier", id.getUniqueQualifier());
 
         final String key = id.getTransactionKey();
         assertNotNull(key);

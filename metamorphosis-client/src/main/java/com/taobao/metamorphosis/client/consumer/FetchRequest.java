@@ -209,7 +209,12 @@ public class FetchRequest implements Delayed {
         }
         final FetchRequest other = (FetchRequest) o;
         final long sub = this.delayTimeStamp - other.delayTimeStamp;
-        return sub <= 0 ? -1 : 1;
+        if (sub == 0) {
+            return 0;
+        }
+        else {
+            return sub < 0 ? -1 : 1;
+        }
     }
 
 

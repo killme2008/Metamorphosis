@@ -220,6 +220,65 @@ public class MetaCodecFactoryUnitTest {
         final TransactionCommand cmd = (TransactionCommand) this.decoder.decode(buf, null);
         assertNotNull(cmd);
         assertEquals(100, (int) cmd.getOpaque());
+        assertEquals(0, cmd.getTransactionInfo().getTimeout());
+        final TransactionInfo info = cmd.getTransactionInfo();
+        assertNotNull(info);
+        assertNotNull(info.getTransactionId());
+        assertTrue(info.getTransactionId().isLocalTransaction());
+        final LocalTransactionId id = (LocalTransactionId) info.getTransactionId();
+        assertEquals("sessionId", id.getSessionId());
+        assertEquals(99, id.getValue());
+    }
+
+
+    @Test
+    public void testDecodeTransactionCommandWithTimeout() {
+        final IoBuffer buf =
+                IoBuffer.wrap("transaction TX:sessionId:99 sessionId COMMIT_ONE_PHASE 3 100\r\n".getBytes());
+        final TransactionCommand cmd = (TransactionCommand) this.decoder.decode(buf, null);
+        assertNotNull(cmd);
+        assertEquals(100, (int) cmd.getOpaque());
+        assertEquals(3, cmd.getTransactionInfo().getTimeout());
+        final TransactionInfo info = cmd.getTransactionInfo();
+        assertNotNull(info);
+        assertNotNull(info.getTransactionId());
+        assertTrue(info.getTransactionId().isLocalTransaction());
+        final LocalTransactionId id = (LocalTransactionId) info.getTransactionId();
+        assertEquals("sessionId", id.getSessionId());
+        assertEquals(99, id.getValue());
+    }
+
+
+    @Test
+    public void testDecodeTransactionCommandWithUniqueQualifier() {
+        final IoBuffer buf =
+                IoBuffer.wrap("transaction TX:sessionId:99 sessionId COMMIT_ONE_PHASE unique-qualifier 100\r\n"
+                    .getBytes());
+        final TransactionCommand cmd = (TransactionCommand) this.decoder.decode(buf, null);
+        assertNotNull(cmd);
+        assertEquals(100, (int) cmd.getOpaque());
+        assertEquals(0, cmd.getTransactionInfo().getTimeout());
+        assertEquals("unique-qualifier", cmd.getTransactionInfo().getUniqueQualifier());
+        final TransactionInfo info = cmd.getTransactionInfo();
+        assertNotNull(info);
+        assertNotNull(info.getTransactionId());
+        assertTrue(info.getTransactionId().isLocalTransaction());
+        final LocalTransactionId id = (LocalTransactionId) info.getTransactionId();
+        assertEquals("sessionId", id.getSessionId());
+        assertEquals(99, id.getValue());
+    }
+
+
+    @Test
+    public void testDecodeTransactionCommandWithTimeoutAndUniqueQualifier() {
+        final IoBuffer buf =
+                IoBuffer.wrap("transaction TX:sessionId:99 sessionId COMMIT_ONE_PHASE 3 unique-qualifier 100\r\n"
+                    .getBytes());
+        final TransactionCommand cmd = (TransactionCommand) this.decoder.decode(buf, null);
+        assertNotNull(cmd);
+        assertEquals(100, (int) cmd.getOpaque());
+        assertEquals(3, cmd.getTransactionInfo().getTimeout());
+        assertEquals("unique-qualifier", cmd.getTransactionInfo().getUniqueQualifier());
         final TransactionInfo info = cmd.getTransactionInfo();
         assertNotNull(info);
         assertNotNull(info.getTransactionId());

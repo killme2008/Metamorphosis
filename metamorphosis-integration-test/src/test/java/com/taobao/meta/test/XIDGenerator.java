@@ -23,10 +23,11 @@ public class XIDGenerator {
     }
 
 
-    public static XATransactionId createXID(final int formatId) {
+    public static XATransactionId createXID(final int formatId, String uniqueQualifier) {
         final byte[] branchQualifier = randomBytes();
         final byte[] globalTransactionId = randomBytes();
-        final XATransactionId xid = new XATransactionId(formatId, branchQualifier, globalTransactionId);
+        final XATransactionId xid =
+                new XATransactionId(formatId, branchQualifier, globalTransactionId, uniqueQualifier);
         return xid;
     }
 }

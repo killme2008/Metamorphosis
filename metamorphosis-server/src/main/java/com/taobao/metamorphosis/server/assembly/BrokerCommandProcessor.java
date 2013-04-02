@@ -610,7 +610,8 @@ public class BrokerCommandProcessor implements CommandProcessor {
 
 
     @Override
-    public TransactionId[] getPreparedTransactions(final SessionContext context) throws Exception {
+    public TransactionId[] getPreparedTransactions(final SessionContext context, String uniqueQualifier)
+            throws Exception {
         throw new UnsupportedOperationException("Unsupported getPreparedTransactions");
     }
 

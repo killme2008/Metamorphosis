@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.locks.Lock;
@@ -89,6 +90,61 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
     }
 
+    /**
+     * When producer broker list is changed, it will notify the this listener.
+     * 
+     * @author apple
+     * 
+     */
+    public static interface BrokerChangeListener {
+        /**
+         * called when broker list changed.
+         * 
+         * @param topic
+         */
+        public void brokersChanged(String topic);
+    }
+
+    private final ConcurrentHashMap<String, CopyOnWriteArraySet<BrokerChangeListener>> brokerChangeListeners =
+            new ConcurrentHashMap<String, CopyOnWriteArraySet<BrokerChangeListener>>();
+
+
+    public void onBrokerChange(String topic, BrokerChangeListener listener) {
+        CopyOnWriteArraySet<BrokerChangeListener> list = this.getListenerList(topic);
+        list.add(listener);
+    }
+
+
+    public void deregisterBrokerChangeListener(String topic, BrokerChangeListener listener) {
+        CopyOnWriteArraySet<BrokerChangeListener> list = this.getListenerList(topic);
+        list.remove(listener);
+    }
+
+
+    public void notifyBrokersChange(String topic) {
+        for (final BrokerChangeListener listener : this.getListenerList(topic)) {
+            try {
+                listener.brokersChanged(topic);
+            }
+            catch (Exception e) {
+                log.error("Notify brokers changed failed", e);
+            }
+        }
+    }
+
+
+    private CopyOnWriteArraySet<BrokerChangeListener> getListenerList(String topic) {
+        CopyOnWriteArraySet<BrokerChangeListener> set = this.brokerChangeListeners.get(topic);
+        if (set == null) {
+            set = new CopyOnWriteArraySet<ProducerZooKeeper.BrokerChangeListener>();
+            CopyOnWriteArraySet<BrokerChangeListener> oldSet = this.brokerChangeListeners.putIfAbsent(topic, set);
+            if (oldSet != null) {
+                set = oldSet;
+            }
+        }
+        return set;
+    }
+
     final class BrokerConnectionListener implements IZkChildListener {
 
         final Lock lock = new ReentrantLock();
@@ -134,12 +190,14 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
                 log.warn("Begin receiving broker changes for topic " + this.topic + ",broker ids:"
                         + newTopicPartitionMap);
+                boolean changed = false;
                 // Connect to new brokers
                 for (final Map.Entry<Integer, String> newEntry : newBrokerStringMap.entrySet()) {
                     final Integer newBrokerId = newEntry.getKey();
                     final String newBrokerString = newEntry.getValue();
                     // 新的有，旧的没有，创建
                     if (!this.brokersInfo.oldBrokerStringMap.containsKey(newBrokerId)) {
+                        changed = true;
                         ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
                         ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
                         log.warn("Connect to " + newBrokerString);
@@ -154,6 +212,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                     if (newBrokerStringMap.containsKey(oldBrokerId)) {
                         // 判断内容是否变化
                         if (!newBrokerString.equals(oldBrokerString)) {
+                            changed = true;
                             log.warn("Close " + oldBrokerString + ",connect to " + newBrokerString);
                             ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
                             ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
@@ -164,6 +223,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                         }
                     }
                     else {
+                        changed = true;
                         // 新的没有，旧的有，关闭
                         ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, false);
                         log.warn("Close " + oldBrokerString);
@@ -172,6 +232,9 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
                 // Set the new brokers info.
                 this.brokersInfo = new BrokersInfo(newBrokerStringMap, newTopicPartitionMap);
+                if (changed) {
+                    ProducerZooKeeper.this.notifyBrokersChange(this.topic);
+                }
                 log.warn("End receiving broker changes for topic " + this.topic);
             }
             finally {
@@ -260,9 +323,11 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
         if (task != null) {
             try {
                 return task.get();
-            } catch (final ExecutionException e) {
+            }
+            catch (final ExecutionException e) {
                 throw ThreadUtils.launderThrowable(e.getCause());
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }

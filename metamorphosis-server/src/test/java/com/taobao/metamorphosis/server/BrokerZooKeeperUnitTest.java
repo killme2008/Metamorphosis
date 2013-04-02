@@ -22,6 +22,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.Map;
+
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkNodeExistsException;
 import org.junit.After;
@@ -31,6 +33,7 @@ import org.junit.Test;
 import com.taobao.metamorphosis.network.RemotingUtils;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.server.utils.SlaveConfig;
+import com.taobao.metamorphosis.utils.JSONUtils;
 import com.taobao.metamorphosis.utils.ZkUtils;
 
 
@@ -137,9 +140,15 @@ public class BrokerZooKeeperUnitTest {
         assertTrue(ZkUtils.pathExists(this.client, subPath));
         assertEquals("1", ZkUtils.readData(this.client, path));
 
-        assertEquals("{\"numParts\":1,\"broker\":\"0-m\"}", ZkUtils.readData(this.client, pubPath));
-        assertEquals("{\"numParts\":1,\"broker\":\"0-m\"}", ZkUtils.readData(this.client, subPath));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-m\"}"),
+            JSONUtils.deserializeObject(ZkUtils.readData(this.client, pubPath), Map.class));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-m\"}"),
+            JSONUtils.deserializeObject(ZkUtils.readData(this.client, subPath), Map.class));
+    }
 
+
+    private Object deserializeMap(String s) throws Exception {
+        return JSONUtils.deserializeObject(s, Map.class);
     }
 
 
@@ -158,8 +167,10 @@ public class BrokerZooKeeperUnitTest {
         assertTrue(ZkUtils.pathExists(this.client, pubPath));
         assertTrue(ZkUtils.pathExists(this.client, subPath));
         assertEquals("1", ZkUtils.readData(this.client, path));
-        assertEquals("{\"numParts\":1,\"broker\":\"0-s0\"}", ZkUtils.readData(this.client, pubPath));
-        assertEquals("{\"numParts\":1,\"broker\":\"0-s0\"}", ZkUtils.readData(this.client, subPath));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-s0\"}"),
+            this.deserializeMap(ZkUtils.readData(this.client, pubPath)));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-s0\"}"),
+            this.deserializeMap(ZkUtils.readData(this.client, subPath)));
 
     }
 

@@ -54,8 +54,9 @@ public class OneProducerOneConsumerTxTimeoutTest extends BaseMetaTest {
 
             final byte[] data = "hello world".getBytes();
             final Message msg = new Message(this.topic, data);
+            final String uniqueQualifier = "testTxTimeout";
             final XAResource xares = ((XAMessageProducer) this.producer).getXAResource();
-            final Xid xid = XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet());
+            final Xid xid = XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet(), uniqueQualifier);
             // 设置事务超时为2秒
             xares.setTransactionTimeout(2);
             xares.start(xid, XAResource.TMNOFLAGS);

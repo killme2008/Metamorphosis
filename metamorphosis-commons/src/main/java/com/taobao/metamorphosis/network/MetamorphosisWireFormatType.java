@@ -268,18 +268,35 @@ public class MetamorphosisWireFormatType extends WireFormatType {
                 }
 
 
-                // transaction key sessionId type [timeout] opaque\r\n
+                // transaction key sessionId type [timeout] [unique qualifier]
+                // opaque\r\n
                 private Object decodeTransaction(final String[] sa) {
                     this.assertCommand(sa[0], "transaction");
                     final TransactionId transactionId = this.getTransactionId(sa[1]);
                     final TransactionType type = TransactionType.valueOf(sa[3]);
                     switch (sa.length) {
+                    case 7:
+                        // Both include timeout and unique qualifier.
+                        int timeout = Integer.valueOf(sa[4]);
+                        String uniqueQualifier = sa[5];
+                        TransactionInfo info =
+                                new TransactionInfo(transactionId, sa[2], type, uniqueQualifier, timeout);
+                        return new TransactionCommand(info, Integer.parseInt(sa[6]));
                     case 6:
-                        final int timeout = Integer.valueOf(sa[4]);
-                        TransactionInfo info = new TransactionInfo(transactionId, sa[2], type, timeout);
-                        return new TransactionCommand(info, Integer.parseInt(sa[5]));
+                        // Maybe timeout or unique qualifier
+                        if (StringUtils.isNumeric(sa[4])) {
+                            timeout = Integer.valueOf(sa[4]);
+                            info = new TransactionInfo(transactionId, sa[2], type, null, timeout);
+                            return new TransactionCommand(info, Integer.parseInt(sa[5]));
+                        }
+                        else {
+                            uniqueQualifier = sa[4];
+                            info = new TransactionInfo(transactionId, sa[2], type, uniqueQualifier, 0);
+                            return new TransactionCommand(info, Integer.parseInt(sa[5]));
+                        }
                     case 5:
-                        info = new TransactionInfo(transactionId, sa[2], type);
+                        // Without timeout and unique qualifier.
+                        info = new TransactionInfo(transactionId, sa[2], type, null);
                         return new TransactionCommand(info, Integer.parseInt(sa[4]));
                     default:
                         throw new MetaCodecException("Invalid transaction command:" + StringUtils.join(sa));

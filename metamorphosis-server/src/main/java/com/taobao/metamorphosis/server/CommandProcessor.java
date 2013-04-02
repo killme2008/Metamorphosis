@@ -92,7 +92,8 @@ public interface CommandProcessor extends Service {
             throws Exception;
 
 
-    public TransactionId[] getPreparedTransactions(final SessionContext context) throws Exception;
+    public TransactionId[] getPreparedTransactions(final SessionContext context, String uniqueQualifier)
+            throws Exception;
 
     // public void setTransactionTimeout(final SessionContext ctx, final
     // TransactionId xid, int seconds) throws Exception;
