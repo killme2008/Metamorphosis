@@ -110,14 +110,14 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
 
     public void onBrokerChange(String topic, BrokerChangeListener listener) {
-        CopyOnWriteArraySet<BrokerChangeListener> list = this.getListenerList(topic);
-        list.add(listener);
+        CopyOnWriteArraySet<BrokerChangeListener> set = this.getListenerList(topic);
+        set.add(listener);
     }
 
 
     public void deregisterBrokerChangeListener(String topic, BrokerChangeListener listener) {
-        CopyOnWriteArraySet<BrokerChangeListener> list = this.getListenerList(topic);
-        list.remove(listener);
+        CopyOnWriteArraySet<BrokerChangeListener> set = this.getListenerList(topic);
+        set.remove(listener);
     }
 
 

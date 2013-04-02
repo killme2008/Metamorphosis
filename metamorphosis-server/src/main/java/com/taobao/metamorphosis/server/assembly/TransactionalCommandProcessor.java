@@ -184,6 +184,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
 
 
     private boolean isValidTx(final String uniqueQualifier, final XATransaction tx) {
+        assert tx.getUniqueQualifier() != null;
+        // uniqueQualifier should not be null,but it may be sent by old clients.
         return tx.getUniqueQualifier().equals(uniqueQualifier) || uniqueQualifier == null;
     }
 
