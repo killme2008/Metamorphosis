@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 import com.taobao.gecko.core.buffer.IoBuffer;
 import com.taobao.gecko.core.command.RequestCommand;
 import com.taobao.gecko.core.command.ResponseCommand;
+import com.taobao.gecko.core.command.ResponseStatus;
 import com.taobao.gecko.core.nio.impl.TimerRef;
 import com.taobao.gecko.service.Connection;
 import com.taobao.gecko.service.ConnectionLifeCycleListener;
@@ -41,6 +42,7 @@ import com.taobao.gecko.service.RequestProcessor;
 import com.taobao.gecko.service.SingleRequestCallBackListener;
 import com.taobao.gecko.service.config.ClientConfig;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
+import com.taobao.metamorphosis.network.BooleanCommand;
 
 
 /**
@@ -210,7 +212,15 @@ public class RemotingClientWrapper implements RemotingClient {
     @Override
     public ResponseCommand invokeToGroup(final String group, final RequestCommand command, final long time,
             final TimeUnit timeUnit) throws InterruptedException, TimeoutException, NotifyRemotingException {
-        return this.remotingClient.invokeToGroup(group, command, time, timeUnit);
+        ResponseCommand resp = this.remotingClient.invokeToGroup(group, command, time, timeUnit);
+        if (resp.getResponseStatus() == ResponseStatus.ERROR_COMM) {
+            BooleanCommand booleanCommand = (BooleanCommand) resp;
+            if (booleanCommand.getErrorMsg().contains("无可用连接")) {
+                // try to connect it.
+                this.connectWithRef(group, null);
+            }
+        }
+        return resp;
     }
 
 
