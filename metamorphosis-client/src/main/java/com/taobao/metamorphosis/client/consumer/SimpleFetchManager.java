@@ -353,6 +353,11 @@ public class SimpleFetchManager implements FetchManager {
                     final Message msg = it.next();
                     MessageAccessor.setPartition(msg, partition);
                     listener.recieveMessages(msg);
+                    // rollback message if it is in rollback only state.
+                    if (MessageAccessor.isRollbackOnly(msg)) {
+                        it.setOffset(prevOffset);
+                        break;
+                    }
                     if (partition.isAutoAck()) {
                         count++;
                     }

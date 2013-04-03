@@ -297,6 +297,50 @@ public class SimpleFetchManagerUnitTest {
 
 
     @Test
+    public void testProcessRequestMessageRollbackOnly() throws Exception {
+        // this.mockConsumerReInitializeFetchManager();
+        final String topic = "topic1";
+        final int maxSize = 1024;
+        final Partition partition = new Partition("0-0");
+        final long offset = 12;
+        final Broker broker = new Broker(0, "meta://localhost:0");
+        final byte[] data =
+                MessageUtils.makeMessageBuffer(1111,
+                    new PutCommand(topic, partition.getPartition(), "hello".getBytes(), null, 0, 0)).array();
+        final FetchRequest request =
+                new FetchRequest(broker, 0, new TopicPartitionRegInfo(topic, partition, offset), maxSize);
+
+        final FetchRequestRunner runner = this.fetchManager.new FetchRequestRunner();
+
+        EasyMock.expect(this.consumer.fetch(request, -1, null)).andReturn(new MessageIterator(topic, data));
+        EasyMock.expect(this.consumer.getMessageListener(topic)).andReturn(new MessageListener() {
+
+            @Override
+            public void recieveMessages(final Message message) {
+                System.out.println("Rollback current message");
+                message.setRollbackOnly();
+            }
+
+
+            @Override
+            public Executor getExecutor() {
+                return null;
+            }
+        });
+
+        final FetchRequest newRequest =
+                new FetchRequest(broker, this.consumerConfig.getMaxDelayFetchTimeInMills() / 10,
+                    new TopicPartitionRegInfo(topic, partition, offset, 1111), maxSize);
+        newRequest.incrementRetriesAndGet();
+
+        EasyMock.replay(this.consumer);
+        runner.processRequest(request);
+        EasyMock.verify(this.consumer);
+        assertEquals(newRequest, this.fetchManager.takeFetchRequest());
+    }
+
+
+    @Test
     public void testProcessRequestDelayed_IncreaseMaxSize() throws Exception {
         // this.mockConsumerReInitializeFetchManager();
         // 保证超过尝试次数
