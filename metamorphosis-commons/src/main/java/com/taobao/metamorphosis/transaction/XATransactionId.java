@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 
 import javax.transaction.xa.Xid;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.taobao.metamorphosis.utils.HexSupport;
 import com.taobao.metamorphosis.utils.PatternUtils;
 
@@ -105,6 +107,9 @@ public class XATransactionId extends TransactionId implements Xid, Comparable<XA
         this.globalTransactionId = xid.getGlobalTransactionId();
         this.branchQualifier = xid.getBranchQualifier();
         this.uniqueQualifier = uniqueQualifier;
+        if (StringUtils.isBlank(uniqueQualifier)) {
+            throw new IllegalArgumentException("Blank uniqueQualifier");
+        }
     }
 
 

@@ -361,7 +361,8 @@ public class TransactionContext implements XAResource {
             if (this.xareresourceURLs == null || this.xareresourceURLs.length == 0) {
                 throw new XAException(XAException.XAER_RMFAIL);
             }
-            for (String serverUrl : this.xareresourceURLs) {
+            // Recover from all XA resources.
+            for (final String serverUrl : this.xareresourceURLs) {
                 try {
                     final BooleanCommand receipt =
                             (BooleanCommand) this.remotingClient.invokeToGroup(serverUrl, new TransactionCommand(info,
@@ -636,7 +637,7 @@ public class TransactionContext implements XAResource {
             throw new TransactionInProgressException("Cannot commit() if an XA transaction is already in progress ");
         }
 
-        // Only send commit if the transaction was started.
+        // Only send commit command if the transaction was started.
         if (this.transactionId != null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Commit: " + this.transactionId);

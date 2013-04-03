@@ -256,6 +256,7 @@ public class SimpleMessageProducer implements MessageProducer, TransactionSessio
 
     @Override
     public void removeContext(final TransactionContext ctx) {
+        assert this.transactionContext.get() == ctx;
         this.transactionContext.remove();
         this.resetLastSentInfo();
     }

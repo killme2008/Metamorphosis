@@ -205,9 +205,10 @@ public class TransactionalCommandProcessorUnitTest extends BaseTransactionUnitTe
         // prepare
         this.processor.prepareTransaction(context, xid);
         assertEquals(1, this.processor.getPreparedTransactions(context, XIDGenerator.UNIQUE_QUALIFIER).length);
+        assertEquals(1, this.processor.getPreparedTransactions(context, null).length);
+        assertEquals(0, this.processor.getPreparedTransactions(context, "unknown").length);
         assertSame(this.processor.getPreparedTransactions(context, XIDGenerator.UNIQUE_QUALIFIER)[0], this.processor
-            .getTransaction(context, xid)
-            .getTransactionId());
+            .getTransaction(context, xid).getTransactionId());
 
         // close and reopen it
         this.tearDown();
@@ -216,9 +217,10 @@ public class TransactionalCommandProcessorUnitTest extends BaseTransactionUnitTe
         this.processor.recoverPreparedTransactions();
 
         assertEquals(1, this.processor.getPreparedTransactions(context, XIDGenerator.UNIQUE_QUALIFIER).length);
+        assertEquals(1, this.processor.getPreparedTransactions(context, null).length);
+        assertEquals(0, this.processor.getPreparedTransactions(context, "unknown").length);
         assertSame(this.processor.getPreparedTransactions(context, XIDGenerator.UNIQUE_QUALIFIER)[0], this.processor
-            .getTransaction(context, xid)
-            .getTransactionId());
+            .getTransaction(context, xid).getTransactionId());
         store = this.messageStoreManager.getOrCreateMessageStore("topic1", 2);
         store.flush();
         assertEquals(0, store.getSizeInBytes());
