@@ -28,8 +28,8 @@ import org.apache.commons.logging.LogFactory;
 import backtype.storm.spout.Scheme;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichSpout;
 
 import com.taobao.gecko.core.util.LinkedTransferQueue;
 import com.taobao.metamorphosis.Message;
@@ -49,7 +49,7 @@ import com.taobao.metamorphosis.exception.MetaClientException;
  * @date 2011-11-8
  * 
  */
-public class MetaSpout implements IRichSpout {
+public class MetaSpout extends BaseRichSpout {
     private static final long serialVersionUID = 4382748324382L;
     public static final String FETCH_MAX_SIZE = "meta.fetch.max_size";
 
@@ -90,6 +90,7 @@ public class MetaSpout implements IRichSpout {
     }
 
 
+    @Override
     public void open(final Map conf, final TopologyContext context, final SpoutOutputCollector collector) {
         final String topic = (String) conf.get(TOPIC);
         if (topic == null) {
@@ -117,6 +118,7 @@ public class MetaSpout implements IRichSpout {
         this.messageConsumer = this.sessionFactory.createConsumer(this.consumerConfig);
         this.messageConsumer.subscribe(topic, maxSize, new MessageListener() {
 
+            @Override
             public void recieveMessages(final Message message) {
                 final MetaMessageWrapper wrapper = new MetaMessageWrapper(message);
                 MetaSpout.this.id2wrapperMap.put(message.getId(), wrapper);
@@ -134,6 +136,7 @@ public class MetaSpout implements IRichSpout {
             }
 
 
+            @Override
             public Executor getExecutor() {
                 return null;
             }
@@ -141,6 +144,7 @@ public class MetaSpout implements IRichSpout {
     }
 
 
+    @Override
     public void close() {
         try {
             this.messageConsumer.shutdown();
@@ -158,6 +162,7 @@ public class MetaSpout implements IRichSpout {
     }
 
 
+    @Override
     public void nextTuple() {
         if (this.messageConsumer != null) {
             try {
@@ -176,6 +181,7 @@ public class MetaSpout implements IRichSpout {
     }
 
 
+    @Override
     public void ack(final Object msgId) {
         if (msgId instanceof Long) {
             final long id = (Long) msgId;
@@ -194,6 +200,7 @@ public class MetaSpout implements IRichSpout {
     }
 
 
+    @Override
     public void fail(final Object msgId) {
         if (msgId instanceof Long) {
             final long id = (Long) msgId;
@@ -212,6 +219,7 @@ public class MetaSpout implements IRichSpout {
     }
 
 
+    @Override
     public void declareOutputFields(final OutputFieldsDeclarer declarer) {
         declarer.declare(this.scheme.getOutputFields());
     }

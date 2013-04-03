@@ -24,6 +24,7 @@
   <modules>
 	<module>metamorphosis-client</module>
 	<module>metamorphosis-tools</module>
+	<module>metamorphosis-storm-spout</module>
 	<module>metamorphosis-client-extension</module>
 	<module>metamorphosis-server</module>
 	<module>metamorphosis-commons</module>
