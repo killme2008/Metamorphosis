@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+	<meta charset="utf-8">
+	<link href="css/bootstrap.css" rel="stylesheet">
+	<link href="css/docs.css" rel="stylesheet">
+	<title>Metamorphosis admin 1.4.5</title>
+  </head>
+  <body>
+	<div class="container-fluid">
+	  <div class="row-fluid">
+		<div class="span3 bs-docs-sidebar">
+		  <ul class="nav nav-list bs-docs-sidenav">
+			<li><a><i class="icon-chevron-right"></i>Dashboard</a></li>
+			<li><a><i class="icon-chevron-right"></i>Logging</a></li>
+			<li><a><i class="icon-chevron-right"></i>Java properties</a></li>
+			<li><a><i class="icon-chevron-right"></i>Thread Dump</a></li>
+			<li><a><i class="icon-chevron-right"></i>Broker</a></li>
+          </ul>
+		</div>
+		<div class="span9">
+		  content
+		  <!--Body content-->
+		</div>
+	  </div>
+	</div>
+  </body>
+</html>

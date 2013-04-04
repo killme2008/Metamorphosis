@@ -1,5 +1,7 @@
 (ns com.github.killme2008.metamorphosis.dashboard.Server
-  (:import [com.taobao.metamorphosis.server.utils MetaConfig])
+  (:import [com.taobao.metamorphosis.server.utils MetaConfig]
+           [com.taobao.metamorphosis.server.assembly MetaMorphosisBroker]
+           [com.taobao.metamorphosis.utils ZkUtils$ZKConfig])
   (:gen-class
    :methods [[start [com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker] org.eclipse.jetty.server.Server]])
   (:use [ring.adapter.jetty]
@@ -17,5 +19,12 @@
                                  :join? false})]
       (logging/info "Started dashboard http server successfully.")
       server)))
+
+(defn -main [& args]
+  (let [config (doto (MetaConfig.) (.setZkConfig (ZkUtils$ZKConfig.)))
+        broker (MetaMorphosisBroker. config)
+        server (com.github.killme2008.metamorphosis.dashboard.Server.)]
+    (.start broker)
+    (-start server broker)))
 
 
