@@ -22,6 +22,7 @@
 
 (defn -main [& args]
   (let [config (doto (MetaConfig.) (.setZkConfig (ZkUtils$ZKConfig.)))
+        _     (.loadFromFile config "dev/server.ini")
         broker (MetaMorphosisBroker. config)
         server (com.github.killme2008.metamorphosis.dashboard.Server.)]
     (.start broker)

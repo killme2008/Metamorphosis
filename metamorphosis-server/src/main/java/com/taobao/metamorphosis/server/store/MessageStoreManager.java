@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
@@ -536,8 +537,8 @@ public class MessageStoreManager implements Service {
     }
 
 
-    private Set<String> getAllTopics() {
-        final Set<String> rt = new HashSet<String>();
+    public Set<String> getAllTopics() {
+        final Set<String> rt = new TreeSet<String>();
         rt.addAll(this.metaConfig.getTopics());
         rt.addAll(this.getMessageStores().keySet());
         return rt;

@@ -208,30 +208,36 @@ public class BrokerZooKeeper implements PropertyChangeListener {
         }
         try {
             log.info("Registering broker " + this.brokerIdPath);
-            final String hostName =
-                    this.config.getHostName() == null ? RemotingUtils.getLocalAddress() : this.config.getHostName();
-                    final Broker broker =
-                            new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
-                                this.config.getSlaveId());
+            final String hostName = this.getBrokerHostName();
+            final Broker broker =
+                    new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
+                        this.config.getSlaveId());
 
-                    ZkUtils.createEphemeralPath(this.zkClient, this.brokerIdPath, broker.getZKString());
+            ZkUtils.createEphemeralPath(this.zkClient, this.brokerIdPath, broker.getZKString());
 
-                    // 兼容老客户端，暂时加上
-                    if (!this.config.isSlave()) {
-                        ZkUtils.updateEphemeralPath(this.zkClient,
-                            this.metaZookeeper.brokerIdsPath + "/" + this.config.getBrokerId(), broker.getZKString());
-                        log.info("register for old client version " + this.metaZookeeper.brokerIdsPath + "/"
-                                + this.config.getBrokerId() + "  succeeded with " + broker);
+            // 兼容老客户端，暂时加上
+            if (!this.config.isSlave()) {
+                ZkUtils.updateEphemeralPath(this.zkClient,
+                    this.metaZookeeper.brokerIdsPath + "/" + this.config.getBrokerId(), broker.getZKString());
+                log.info("register for old client version " + this.metaZookeeper.brokerIdsPath + "/"
+                        + this.config.getBrokerId() + "  succeeded with " + broker);
 
-                    }
-                    log.info("Registering broker " + this.brokerIdPath + " succeeded with " + broker);
-                    this.registerBrokerInZkFail = false;
+            }
+            log.info("Registering broker " + this.brokerIdPath + " succeeded with " + broker);
+            this.registerBrokerInZkFail = false;
         }
         catch (final Exception e) {
             this.registerBrokerInZkFail = true;
             log.error("注册broker失败");
             throw e;
         }
+    }
+
+
+    public String getBrokerHostName() throws Exception {
+        final String hostName =
+                this.config.getHostName() == null ? RemotingUtils.getLocalAddress() : this.config.getHostName();
+                return hostName;
     }
 
 

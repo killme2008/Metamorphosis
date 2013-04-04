@@ -46,6 +46,11 @@
   </build>
   <dependencies>
 	<dependency>
+	  <groupId>org.ocpsoft.prettytime</groupId>
+	  <artifactId>prettytime</artifactId>
+	  <version>2.1.2.Final</version>
+	</dependency>
+	<dependency>
 	  <groupId>org.clojure</groupId>
 	  <artifactId>clojure</artifactId>
 	  <version>1.4.0</version>

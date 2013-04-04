@@ -124,6 +124,11 @@ public class StatsManager implements Service {
     }
 
 
+    public long getStartupTimestamp() {
+        return this.startupTimestamp;
+    }
+
+
     private boolean isStatTopic(final String topic) {
         for (final Pattern pat : this.legalTopicPatSet) {
             if (pat.matcher(topic).matches()) {
