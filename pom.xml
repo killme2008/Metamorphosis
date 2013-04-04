@@ -27,6 +27,7 @@
 	<module>metamorphosis-storm-spout</module>
 	<module>metamorphosis-client-extension</module>
 	<module>metamorphosis-server</module>
+	<module>metamorphosis-dashboard</module>
 	<module>metamorphosis-commons</module>
 	<module>metamorphosis-server-wrapper</module>
   </modules>
@@ -132,6 +133,16 @@
 	  <dependency>
 		<groupId>${pom.groupId}</groupId>
 		<artifactId>metamorphosis-server</artifactId>
+		<version>${project.version}</version>
+	  </dependency>
+	  <dependency>
+		<groupId>${pom.groupId}</groupId>
+		<artifactId>metamorphosis-dashboard</artifactId>
+		<version>${project.version}</version>
+	  </dependency>
+	  <dependency>
+		<groupId>${pom.groupId}</groupId>
+		<artifactId>metamorphosis-storm-spout</artifactId>
 		<version>${project.version}</version>
 	  </dependency>
 	  <dependency>

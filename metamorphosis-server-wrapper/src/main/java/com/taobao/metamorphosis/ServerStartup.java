@@ -46,7 +46,8 @@ public class ServerStartup {
         final CommandLine line = StartupHelp.parseCmdLine(args, new PosixParser());
         final Map<String, Properties> pluginsInfo = getPluginsInfo(line);
         tryStartLocalZookeeper(line);
-        final EnhancedBroker broker = new EnhancedBroker(getMetaConfig(line), pluginsInfo);
+        MetaConfig metaConfig = getMetaConfig(line);
+        final EnhancedBroker broker = new EnhancedBroker(metaConfig, pluginsInfo);
         broker.start();
     }
 

@@ -35,12 +35,10 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -65,6 +63,10 @@
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
+			<artifactId>metamorphosis-dashboard</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-tools</artifactId>
 		</dependency>
 		<dependency>
@@ -86,9 +88,7 @@
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-server</artifactId>
-			<version>7.4.5.v20110725</version>
-			<type>jar</type>
-			<scope>compile</scope>
+			<version>7.6.1.v20120215</version>
 		</dependency>
 		<dependency>
 			<groupId>httpunit</groupId>
