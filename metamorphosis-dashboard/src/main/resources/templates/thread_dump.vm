@@ -1,0 +1,5 @@
+<ul>
+#foreach ($thread in $threads)
+ <li>$thread </li>
+#end
+</ul>

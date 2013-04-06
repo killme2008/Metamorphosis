@@ -43,5 +43,7 @@
       (.getOpenFileDescriptorCount osm)
       "unknow")))
 
-
+(defn dump-threads []
+  (let [tmb (ManagementFactory/getThreadMXBean)]
+    (.dumpAllThreads tmb false false)))
   

@@ -3,6 +3,7 @@
   (:use [ring.velocity.core :only [render]]
         [environ.core])
   (:require [compojure.handler :as handler]
+            [clojure.java.io :as io]
             [com.github.killme2008.metamorphosis.dashboard.util :as u]
             [compojure.route :as route]))
 
@@ -54,23 +55,31 @@
   )
 
 (defn- java-properties [req]
-  )
+  (render-tpl "java_properties.vm" :props (System/getProperties)))
 
 (defn- thread-dump [req]
-  )
+  (render-tpl "thread_dump.vm" :threads (u/dump-threads)))
 
 (defn- config [req]
-  )
+  (with-open [in (io/reader (with-broker (.getMetaConfig) (.getConfigFilePath)))]
+    (render-tpl "config.vm" :config (slurp in))))
+
 (defn- topic-list [req]
   )
+
+(defn- topic-info [req]
+  (let [topic (-> req :params :topic)]
+    ))
 
 (defroutes app-routes
   (GET "/" [] index)
   (GET "/dashboard" [] dashboard)
   (GET "/logging" [] logging)
   (GET "/java-properties" [] java-properties)
+  (GET "/thread-dump" [] thread-dump)
   (GET "/config" [] config)
   (GET "/topic-list" [] topic-list)
+  (GET "/topic/:topic" [] topic-info)
   (route/resources "/")
   (route/not-found "Not Found"))
 
