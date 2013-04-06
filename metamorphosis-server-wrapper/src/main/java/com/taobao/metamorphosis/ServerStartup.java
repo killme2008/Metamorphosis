@@ -27,7 +27,6 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.log4j.Logger;
 
 import com.taobao.metamorphosis.server.assembly.EmbedZookeeperServer;
 import com.taobao.metamorphosis.server.exception.MetamorphosisServerStartupException;
@@ -44,7 +43,6 @@ public class ServerStartup {
 
 
     public static void main(final String[] args) throws IOException, InterruptedException {
-
         final CommandLine line = StartupHelp.parseCmdLine(args, new PosixParser());
         final Map<String, Properties> pluginsInfo = getPluginsInfo(line);
         tryStartLocalZookeeper(line);
