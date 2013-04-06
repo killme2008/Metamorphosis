@@ -1,0 +1,3 @@
+#foreach ($log in $logs)
+  $log <br/>
+#end

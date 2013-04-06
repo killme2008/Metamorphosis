@@ -2,6 +2,7 @@
   (:use compojure.core)
   (:use [ring.velocity.core :only [render]]
         [environ.core])
+  (:import [org.apache.log4j Logger])
   (:require [compojure.handler :as handler]
             [clojure.java.io :as io]
             [com.github.killme2008.metamorphosis.dashboard.util :as u]
@@ -52,7 +53,9 @@
               :system (u/stringfy-map-keys (system))))
 
 (defn- logging [req]
-  )
+  (let [timestamp (or (-> req :params :timetamp) 0)
+        appender (-> (Logger/getRootLogger) (.getAppender "ServerDailyRollingFile"))]
+    (render-tpl "logs.vm" :logs (.getLogs appender timestamp))))
 
 (defn- java-properties [req]
   (render-tpl "java_properties.vm" :props (System/getProperties)))
