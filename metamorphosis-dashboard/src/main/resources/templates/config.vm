@@ -1,4 +1,13 @@
-<textarea rows="40" cols="1000" readonly="true">
-$config
-</textarea>
+<div class= "container">
+  <div class="container">
+		<button>Reload config</button>		
+  </div>
+  <hr/>
+  <div class="container">
+	<textarea class= "uneditable-textarea" rows= "30" cols= "130">
+	  $config
+	</textarea>
+  </div>
+</div>
+
 

@@ -65,11 +65,11 @@
     (render-tpl "config.vm" :config (slurp in))))
 
 (defn- topic-list [req]
-  )
+  (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getStatsInfo "topics"))))
 
 (defn- topic-info [req]
   (let [topic (-> req :params :topic)]
-    ))
+    (render-tpl "topic.vm" :topic topic)))
 
 (defroutes app-routes
   (GET "/" [] index)
