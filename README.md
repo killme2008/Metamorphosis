@@ -1,11 +1,11 @@
+![Logo](http://photo.yupoo.com/killme2008/CLRQoBA9/medish.jpg)
+
 #新闻
 
 * Metaq 1.4.4 released.[Release Notes](https://github.com/killme2008/Metamorphosis/wiki/ReleaseNotes)
 * Meta-ruby 0.1 released: a ruby client for metaq. [SOURCE](https://github.com/killme2008/Metamorphosis/tree/master/contrib/ruby/meta-ruby)
 
 #介绍
-
-![Logo](http://photo.yupoo.com/killme2008/CLRQoBA9/medish.jpg)
 
 [Metamorphosis](http://metaq.taobao.org/)是淘宝开源的一个Java消息中间件，他类似[apache-kafka](http://incubator.apache.org/kafka/)，但不是一个简单的山寨拷贝，而是做了很多改进和优化，项目的主页在[淘蝌蚪](http://metaq.taobao.org/)上。
 
