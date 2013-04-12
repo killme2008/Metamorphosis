@@ -32,18 +32,14 @@ import com.taobao.metamorphosis.exception.MetaClientException;
  * @Date 2011-4-26
  * 
  */
-public class RoundRobinPartitionSelector implements PartitionSelector {
+public class RoundRobinPartitionSelector extends AbstractPartitionSelector {
 
     private final PositiveAtomicCounter sets = new PositiveAtomicCounter();
 
 
     @Override
-    public Partition getPartition(final String topic, final List<Partition> partitions, final Message message)
+    public Partition getPartition0(final String topic, final List<Partition> partitions, final Message message)
             throws MetaClientException {
-        if (partitions == null) {
-            throw new MetaClientException("There is no aviable partition for topic " + topic
-                    + ",maybe you don't publish it at first?");
-        }
         try {
             return partitions.get(this.sets.incrementAndGet() % partitions.size());
         }
