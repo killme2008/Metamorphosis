@@ -106,8 +106,7 @@ public class MonitorLog {
         // if(Thread.currentThread().getContextClassLoader() == null){
         // Thread.currentThread().setContextClassLoader(MonitorLog.class.getClassLoader());
         // }
-        String classLoader = MonitorLog.class.getClassLoader().toString();
-        classLoader = classLoader.split("@")[0];
+        String classLoader = MonitorLog.class.getClassLoader().getClass().getName();
 
         initAppLog4j(filePath, classLoader);
         initMiddlewareLog4j(filePath, classLoader);
@@ -199,6 +198,8 @@ public class MonitorLog {
         middlewareStatLog.setAdditivity(false);
     }
 
+    private static volatile boolean stopped = false;
+
 
     /**
      * 执行写入线程
@@ -217,7 +218,7 @@ public class MonitorLog {
             @Override
             public void run() {
                 // 等待waitTime秒
-                while (true) {
+                while (!stopped) {
                     timerLock.lock();
                     try {
                         condition.await(waitTime, TimeUnit.SECONDS);
@@ -232,8 +233,26 @@ public class MonitorLog {
                 }
             }
         });
+        // THe write thread is daemon thread.
+        writeThread.setDaemon(true);
         writeThread.setName(MonitorConstants.WRITETHREAD_NAME);
         writeThread.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                stopped = true;
+                if (writeThread != null && writeThread.isAlive()) {
+                    writeThread.interrupt();
+                }
+                try {
+                    writeThread.join(3000);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
     }
 
 
