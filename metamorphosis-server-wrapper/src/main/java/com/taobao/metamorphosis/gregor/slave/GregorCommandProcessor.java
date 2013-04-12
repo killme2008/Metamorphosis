@@ -70,8 +70,9 @@ public class GregorCommandProcessor extends BrokerCommandProcessor implements Sy
                 log.warn("Can not put message to partition " + request.getPartition() + " for topic="
                         + request.getTopic() + ",it was closed");
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, "Partition["
-                            + partitionString + "] has been closed", request.getOpaque()));
+                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, this.genErrorMessage(request.getTopic(),
+                        request.getPartition()) + "Detail:Partition[" + partitionString + "] has been closed", request
+                        .getOpaque()));
                 }
                 return;
             }
@@ -88,7 +89,9 @@ public class GregorCommandProcessor extends BrokerCommandProcessor implements Sy
             this.statsManager.statsPutFailed(request.getTopic(), partitionString, 1);
             log.error("Put message failed", e);
             if (cb != null) {
-                cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, e.getMessage(), request.getOpaque()));
+                cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, this.genErrorMessage(
+                    request.getTopic(), request.getPartition())
+                    + "Detail:" + e.getMessage(), request.getOpaque()));
             }
         }
     }

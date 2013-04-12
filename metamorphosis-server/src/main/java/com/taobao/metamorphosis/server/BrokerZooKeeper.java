@@ -208,10 +208,7 @@ public class BrokerZooKeeper implements PropertyChangeListener {
         }
         try {
             log.info("Registering broker " + this.brokerIdPath);
-            final String hostName = this.getBrokerHostName();
-            final Broker broker =
-                    new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
-                        this.config.getSlaveId());
+            final Broker broker = this.getBroker();
 
             ZkUtils.createEphemeralPath(this.zkClient, this.brokerIdPath, broker.getZKString());
 
@@ -230,6 +227,38 @@ public class BrokerZooKeeper implements PropertyChangeListener {
             this.registerBrokerInZkFail = true;
             log.error("×¢²ábrokerÊ§°Ü");
             throw e;
+        }
+    }
+
+    // cache it.
+    private Broker broker = null;
+
+
+    private Broker getBroker() throws Exception {
+        if (this.broker != null) {
+            return this.broker;
+        }
+        else {
+            final String hostName = this.getBrokerHostName();
+            this.broker =
+                    new Broker(this.config.getBrokerId(), hostName, this.config.getServerPort(),
+                        this.config.getSlaveId());
+            return this.broker;
+        }
+    }
+
+
+    public String getBrokerString() {
+        if (this.broker != null) {
+            return this.broker.toString();
+        }
+        else {
+            try {
+                return this.getBroker().toString();
+            }
+            catch (Exception e) {
+                return null;
+            }
         }
     }
 

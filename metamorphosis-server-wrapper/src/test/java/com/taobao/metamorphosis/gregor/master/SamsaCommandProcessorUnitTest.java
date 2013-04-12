@@ -139,7 +139,7 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-.appendComplete(Location
+                .appendComplete(Location
                     .create(offset, 1024));
                 return null;
             }
@@ -220,13 +220,17 @@ public class SamsaCommandProcessorUnitTest {
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(HttpStatus.InternalServerError, "Put message to slave failed", opaque);
+                new BooleanCommand(
+                    HttpStatus.InternalServerError,
+                    "Put message to [slave 'meta://localhost:8124'] [partition 'SamsaCommandProcessorUnitTest-1'] failed",
+                    opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectResp.equals(resp)) {
                     throw new RuntimeException();
                 }
@@ -241,7 +245,7 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-.appendComplete(Location
+                .appendComplete(Location
                     .create(offset, 1024));
                 return null;
             }
@@ -262,6 +266,7 @@ public class SamsaCommandProcessorUnitTest {
         });
         this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
+        // EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");;
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);
@@ -287,13 +292,17 @@ public class SamsaCommandProcessorUnitTest {
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(HttpStatus.InternalServerError, "Put message to master failed", opaque);
+                new BooleanCommand(
+                    HttpStatus.InternalServerError,
+                    "Put message to [master 'meta://localhost:8123'] [partition 'SamsaCommandProcessorUnitTest-1'] failed",
+                    opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectResp.equals(resp)) {
                     throw new RuntimeException();
                 }
@@ -308,7 +317,7 @@ public class SamsaCommandProcessorUnitTest {
             @Override
             public Object answer() throws Throwable {
                 ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-.appendComplete(Location
+                .appendComplete(Location
                     .create(offset, 1024));
                 return null;
             }
@@ -328,6 +337,7 @@ public class SamsaCommandProcessorUnitTest {
         });
         this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
+        EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);

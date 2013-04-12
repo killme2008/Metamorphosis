@@ -128,11 +128,16 @@ public class RemotingClientWrapper implements RemotingClient {
         if (refs != null) {
             synchronized (refs) {
                 refs.remove(ref);
-                if (refs.isEmpty()) {
+                if (refs.isEmpty() || this.isOnlyMe(refs)) {
                     this.remotingClient.close(url, allowReconnect);
                 }
             }
         }
+    }
+
+
+    private boolean isOnlyMe(final Set<Object> refs) {
+        return refs.size() == 1 && refs.contains(this);
     }
 
     /**
@@ -242,6 +247,7 @@ public class RemotingClientWrapper implements RemotingClient {
         ResponseCommand resp = this.remotingClient.invokeToGroup(group, command, time, timeUnit);
         if (resp.getResponseStatus() == ResponseStatus.ERROR_COMM) {
             BooleanCommand booleanCommand = (BooleanCommand) resp;
+            // It's ugly,but it work right now.
             if (booleanCommand.getErrorMsg().contains("无可用连接")) {
                 // try to connect it.
                 this.connectWithRef(group, this);

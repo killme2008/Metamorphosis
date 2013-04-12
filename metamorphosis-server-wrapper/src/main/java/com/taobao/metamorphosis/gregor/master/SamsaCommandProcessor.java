@@ -179,11 +179,11 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
             this.respCount++;
             // 两者都应答了，可以给producer回馈
             if (this.respCount == 2) {
-                final String resultStr =
-                        SamsaCommandProcessor.this
-                        .genPutResultString(this.partition, this.messageId, this.appendOffset);
                 // 仅在两者都成功的情况下，认为发送成功
                 if (this.masterSuccess && this.slaveSuccess) {
+                    final String resultStr =
+                            SamsaCommandProcessor.this.genPutResultString(this.partition, this.messageId,
+                                this.appendOffset);
                     if (this.cb != null) {
                         this.cb
                         .putComplete(new BooleanCommand(HttpStatus.Success, resultStr, this.request.getOpaque()));
@@ -192,14 +192,21 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                 else if (this.masterSuccess) {
                     SamsaCommandProcessor.this.statsManager.statsPutFailed(this.request.getTopic(),
                         this.partitionString, 1);
-                    this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError,
-                        "Put message to slave failed", this.request.getOpaque()));
+                    String error =
+                            String.format("Put message to [slave '%s'] [partition '%s'] failed",
+                                SamsaCommandProcessor.this.slaveUrl, this.request.getTopic() + "-" + this.partition);
+                    this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, error, this.request
+                        .getOpaque()));
                 }
                 else if (this.slaveSuccess) {
                     SamsaCommandProcessor.this.statsManager.statsPutFailed(this.request.getTopic(),
                         this.partitionString, 1);
-                    this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError,
-                        "Put message to master failed", this.request.getOpaque()));
+                    String error =
+                            String.format("Put message to [master '%s'] [partition '%s'] failed",
+                                SamsaCommandProcessor.this.brokerZooKeeper.getBrokerString(), this.request.getTopic()
+                                + "-" + this.partition);
+                    this.cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, error, this.request
+                        .getOpaque()));
                 }
             }
         }
