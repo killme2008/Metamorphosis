@@ -39,7 +39,7 @@ public class IdGenerator {
      */
     public IdGenerator() {
         try {
-            this.seed = RemotingUtils.getLocalAddress() + "-" + System.currentTimeMillis() + "-";
+            this.seed = RemotingUtils.getLocalHost() + "-" + System.currentTimeMillis() + "-";
             this.length = this.seed.length() + ("" + Long.MAX_VALUE).length();
         }
         catch (final Exception e) {

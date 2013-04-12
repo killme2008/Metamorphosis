@@ -58,7 +58,7 @@ public class BrokerZooKeeperUnitTest {
         assertFalse(ZkUtils.pathExists(this.client, path));
         this.brokerZooKeeper.registerBrokerInZk();
         assertTrue(ZkUtils.pathExists(this.client, path));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123", ZkUtils.readData(this.client, path));
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123", ZkUtils.readData(this.client, path));
         // register twice
         try {
             this.brokerZooKeeper.registerBrokerInZk();
@@ -112,7 +112,7 @@ public class BrokerZooKeeperUnitTest {
         assertFalse(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), path));
         this.slaveBrokerZooKeeper.registerBrokerInZk();
         assertTrue(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), path));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123",
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123",
             ZkUtils.readData(this.slaveBrokerZooKeeper.getZkClient(), path));
         // register twice
         try {
@@ -194,7 +194,7 @@ public class BrokerZooKeeperUnitTest {
 
         // slave注册信息还存在
         assertTrue(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), slaveBrokerPath));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123",
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123",
             ZkUtils.readData(this.slaveBrokerZooKeeper.getZkClient(), slaveBrokerPath));
         assertTrue(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), slaveTopicPath));
         assertEquals("1", ZkUtils.readData(this.slaveBrokerZooKeeper.getZkClient(), slaveTopicPath));
@@ -220,7 +220,7 @@ public class BrokerZooKeeperUnitTest {
 
         // master注册信息还存在
         assertTrue(ZkUtils.pathExists(this.brokerZooKeeper.getZkClient(), masterBrokerPath));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123",
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123",
             ZkUtils.readData(this.brokerZooKeeper.getZkClient(), masterBrokerPath));
         assertTrue(ZkUtils.pathExists(this.brokerZooKeeper.getZkClient(), masterTopicPath));
         assertEquals("1", ZkUtils.readData(this.brokerZooKeeper.getZkClient(), masterTopicPath));

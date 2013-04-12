@@ -236,7 +236,7 @@ public class BrokerZooKeeper implements PropertyChangeListener {
 
     public String getBrokerHostName() throws Exception {
         final String hostName =
-                this.config.getHostName() == null ? RemotingUtils.getLocalAddress() : this.config.getHostName();
+                this.config.getHostName() == null ? RemotingUtils.getLocalHost() : this.config.getHostName();
                 return hostName;
     }
 

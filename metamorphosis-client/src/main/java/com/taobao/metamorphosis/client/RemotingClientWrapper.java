@@ -18,6 +18,7 @@
 package com.taobao.metamorphosis.client;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.util.HashSet;
 import java.util.Map;
@@ -43,6 +44,7 @@ import com.taobao.gecko.service.SingleRequestCallBackListener;
 import com.taobao.gecko.service.config.ClientConfig;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.network.BooleanCommand;
+import com.taobao.metamorphosis.network.RemotingUtils;
 
 
 /**
@@ -133,13 +135,38 @@ public class RemotingClientWrapper implements RemotingClient {
         }
     }
 
+    /**
+     * Whether to enable loopback connection for metaq client, default is false.
+     */
+    private static final boolean ENABLE_LOOPBACK_CONNECTION = Boolean.valueOf(System.getProperty(
+        "metaq.client.loopback.connection.enable", "false"));
 
-    public void connectWithRef(final String url, final int connCount, Object ref) throws NotifyRemotingException {
+
+    public void connectWithRef(String url, final int connCount, Object ref) throws NotifyRemotingException {
+        if (ENABLE_LOOPBACK_CONNECTION) {
+            url = this.tryGetLoopbackURL(url);
+        }
         final Set<Object> refs = this.getReferences(url);
         synchronized (refs) {
             this.remotingClient.connect(url, connCount);
             refs.add(ref);
         }
+    }
+
+
+    static String tryGetLoopbackURL(String url) {
+        try {
+            URI uri = new URI(url);
+            String localHostName = RemotingUtils.getLocalHost();
+            if (uri.getHost().equals(localHostName)) {
+                // replace url with loopback connection
+                url = uri.getScheme() + "://localhost:" + uri.getPort();
+            }
+        }
+        catch (Exception e) {
+            // ignore
+        }
+        return url;
     }
 
 

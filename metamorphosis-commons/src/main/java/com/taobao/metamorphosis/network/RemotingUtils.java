@@ -20,6 +20,8 @@ package com.taobao.metamorphosis.network;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Enumeration;
 
 import org.apache.commons.logging.Log;
@@ -46,8 +48,29 @@ public class RemotingUtils {
         }
     }
 
+    private static String localHost = null;
 
-    public static String getLocalAddress() throws Exception {
+
+    /**
+     * Just for test.
+     * 
+     * @param host
+     */
+    public static void setLocalHost(String host) {
+        localHost = host;
+    }
+
+
+    public static String getLocalHost() throws Exception {
+        if (localHost != null) {
+            return localHost;
+        }
+        localHost = findLocalHost();
+        return localHost;
+    }
+
+
+    private static String findLocalHost() throws SocketException, UnknownHostException {
         // 遍历网卡，查找一个非回路ip地址并返回
         final Enumeration<NetworkInterface> enumeration = NetworkInterface.getNetworkInterfaces();
         InetAddress ipv6Address = null;

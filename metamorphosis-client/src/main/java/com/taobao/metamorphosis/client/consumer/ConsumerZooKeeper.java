@@ -267,7 +267,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         }
         else {
             consumerUUID =
-                    RemotingUtils.getLocalAddress() + "-" + System.currentTimeMillis() + "-"
+                    RemotingUtils.getLocalHost() + "-" + System.currentTimeMillis() + "-"
                             + this.counter.incrementAndGet();
         }
         return consumerUUID;
