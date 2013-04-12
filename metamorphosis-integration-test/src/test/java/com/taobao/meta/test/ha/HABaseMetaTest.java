@@ -32,7 +32,6 @@ public class HABaseMetaTest extends BaseMetaTest {
     @Override
     public void setUp() throws Exception {
         MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         super.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.log.info("before run");
     }

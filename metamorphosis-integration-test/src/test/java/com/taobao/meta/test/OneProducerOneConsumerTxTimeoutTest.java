@@ -39,7 +39,6 @@ public class OneProducerOneConsumerTxTimeoutTest extends BaseMetaTest {
     @Before
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         this.sessionFactory = new XAMetaMessageSessionFactory(metaClientConfig);
         this.startServer("server1");
         System.out.println("before run");

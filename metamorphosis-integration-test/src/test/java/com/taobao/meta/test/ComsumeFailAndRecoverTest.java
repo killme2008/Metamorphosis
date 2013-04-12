@@ -34,7 +34,6 @@ public class ComsumeFailAndRecoverTest extends BaseMetaTest {
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
         metaClientConfig.setRecoverMessageIntervalInMills(2000);// recover时间短一些
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         this.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.startServer("server1");
         System.out.println("before run");
@@ -53,7 +52,7 @@ public class ComsumeFailAndRecoverTest extends BaseMetaTest {
             int count = 2;
             this.sendMessage(count, "hello", this.topic);
 
-            this.consumer.subscribe(topic, 1024 * 1024, new MessageListener() {
+            this.consumer.subscribe(this.topic, 1024 * 1024, new MessageListener() {
 
                 public void recieveMessages(final Message messages) {
                     ComsumeFailAndRecoverTest.this.queue.add(messages);
@@ -94,8 +93,8 @@ public class ComsumeFailAndRecoverTest extends BaseMetaTest {
 
         }
         finally {
-            producer.shutdown();
-            consumer.shutdown();
+            this.producer.shutdown();
+            this.consumer.shutdown();
         }
     }
 }

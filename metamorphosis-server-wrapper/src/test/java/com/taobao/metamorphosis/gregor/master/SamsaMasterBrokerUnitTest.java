@@ -142,7 +142,6 @@ public class SamsaMasterBrokerUnitTest {
         this.mockSlaveServer();
         final MetaConfig metaConfig = new MetaConfig();
         metaConfig.setDataPath(this.getDataPath());
-        metaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         final String topic = "SamsaMasterBrokerUnitTest";
         metaConfig.getTopics().add(topic);
         metaConfig.setNumPartitions(5);

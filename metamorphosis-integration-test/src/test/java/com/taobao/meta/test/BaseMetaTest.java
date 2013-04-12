@@ -79,7 +79,6 @@ public abstract class BaseMetaTest {
     @Before
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         this.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.startServer("server1");
         System.out.println("before run");
@@ -132,7 +131,6 @@ public abstract class BaseMetaTest {
         for (final TopicConfig topicConfig : metaConfig.getTopicConfigMap().values()) {
             topicConfig.setDataPath(metaConfig.getDataPath());
         }
-        metaConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         return metaConfig;
     }
 

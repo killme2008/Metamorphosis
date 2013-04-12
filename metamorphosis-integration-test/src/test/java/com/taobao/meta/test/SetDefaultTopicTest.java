@@ -23,7 +23,6 @@ public class SetDefaultTopicTest extends BaseMetaTest {
     @Before
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         this.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.startServer("server3");
         System.out.println("before run");

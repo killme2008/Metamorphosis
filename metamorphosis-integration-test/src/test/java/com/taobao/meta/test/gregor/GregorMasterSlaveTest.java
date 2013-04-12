@@ -35,7 +35,6 @@ public class GregorMasterSlaveTest extends BaseMetaTest {
     @Override
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         super.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.log.info("before run");
     }

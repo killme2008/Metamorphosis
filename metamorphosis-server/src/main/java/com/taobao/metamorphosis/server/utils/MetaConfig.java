@@ -43,7 +43,6 @@ import org.ini4j.Profile.Section;
 import com.googlecode.aviator.AviatorEvaluator;
 import com.taobao.metamorphosis.server.exception.MetamorphosisServerStartupException;
 import com.taobao.metamorphosis.utils.Config;
-import com.taobao.metamorphosis.utils.DiamondUtils;
 import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
 
 
@@ -77,9 +76,6 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
     private int putProcessThreadCount = 10 * Runtime.getRuntime().availableProcessors();
 
     private ZKConfig zkConfig;
-
-    private String diamondZKDataId = DiamondUtils.DEFAULT_ZK_DATAID;
-    private String diamondZKGroup = "DEFAULT_GROUP";// Constants.DEFAULT_GROUP;
 
     // 文件删除策略:"策略名称,设定值列表"，默认为保存7天
     private String deletePolicy = "delete,168";
@@ -299,27 +295,6 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         this.propertyChangeSupport.removePropertyChangeListener(listener);
     }
 
-
-    public String getDiamondZKDataId() {
-        return this.diamondZKDataId;
-    }
-
-
-    public void setDiamondZKDataId(final String diamondZKDataId) {
-        this.diamondZKDataId = diamondZKDataId;
-    }
-
-
-    public String getDiamondZKGroup() {
-        return this.diamondZKGroup;
-    }
-
-
-    public void setDiamondZKGroup(final String diamondZKGroup) {
-        this.diamondZKGroup = diamondZKGroup;
-    }
-
-
     public void loadFromFile(final String path) {
         try {
             this.path = path;
@@ -507,12 +482,6 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         Set<String> validKeySet = new ZKConfig().getFieldSet();
         validKeySet.addAll(this.getFieldSet());
         this.checkConfigKeys(configKeySet, validKeySet);
-        if (StringUtils.isNotBlank(zkConf.get("diamondZKDataId"))) {
-            this.diamondZKDataId = zkConf.get("diamondZKDataId");
-        }
-        if (StringUtils.isNotBlank(zkConf.get("diamondZKGroup"))) {
-            this.diamondZKGroup = zkConf.get("diamondZKGroup");
-        }
         if (!StringUtils.isBlank(zkConf.get("zk.zkConnect"))) {
             this.newZkConfigIfNull();
             this.zkConfig.zkConnect = zkConf.get("zk.zkConnect");

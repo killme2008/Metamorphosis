@@ -31,16 +31,6 @@ public class MetaClientConfig implements Serializable {
     protected String serverUrl;
 
     /**
-     * 从diamond获取zk配置的dataId，默认为"metamorphosis.zkConfig"
-     */
-    protected String diamondZKDataId = DiamondUtils.DEFAULT_ZK_DATAID;
-
-    /**
-     * 从diamond获取zk配置的group，默认为DEFAULT_GROUP
-     */
-    protected String diamondZKGroup = "DEFAULT_GROUP";// Constants.DEFAULT_GROUP;
-
-    /**
      * 从diamond获取partitions配置的dataId，默认为"metamorphosis.partitions"
      * */
     private final String diamondPartitionsDataId = DiamondUtils.DEFAULT_PARTITIONS_DATAID;
@@ -77,30 +67,6 @@ public class MetaClientConfig implements Serializable {
 
     public void setRecoverMessageIntervalInMills(final long recoverMessageIntervalInMills) {
         this.recoverMessageIntervalInMills = recoverMessageIntervalInMills;
-    }
-
-
-    @Deprecated
-    public String getDiamondZKDataId() {
-        return this.diamondZKDataId;
-    }
-
-
-    @Deprecated
-    public void setDiamondZKDataId(final String diamondZKDataId) {
-        this.diamondZKDataId = diamondZKDataId;
-    }
-
-
-    @Deprecated
-    public String getDiamondZKGroup() {
-        return this.diamondZKGroup;
-    }
-
-
-    @Deprecated
-    public void setDiamondZKGroup(final String diamondZKGroup) {
-        this.diamondZKGroup = diamondZKGroup;
     }
 
 

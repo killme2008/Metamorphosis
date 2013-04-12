@@ -23,7 +23,6 @@ public class BigMessageTest extends BaseMetaTest {
     @Before
     public void setUp() throws Exception {
         MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         this.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.startServer("bigmessageserver");
         System.out.println("before run");

@@ -54,14 +54,13 @@ public class MetaMessageSessionFactoryUnitTest {
     @Before
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
-        messageSessionFactory = new MetaMessageSessionFactory(metaClientConfig);
+        this.messageSessionFactory = new MetaMessageSessionFactory(metaClientConfig);
     }
 
 
     @After
     public void tearDown() throws Exception {
-        messageSessionFactory.shutdown();
+        this.messageSessionFactory.shutdown();
     }
 
 
@@ -112,30 +111,30 @@ public class MetaMessageSessionFactoryUnitTest {
             });
 
             String uri = server.getConnectURI().toString();
-            messageSessionFactory.getRemotingClient().connect(uri);
-            messageSessionFactory.getRemotingClient().awaitReadyInterrupt(uri);
-            Map<InetSocketAddress, StatsResult> rt = messageSessionFactory.getStats();
+            this.messageSessionFactory.getRemotingClient().connect(uri);
+            this.messageSessionFactory.getRemotingClient().awaitReadyInterrupt(uri);
+            Map<InetSocketAddress, StatsResult> rt = this.messageSessionFactory.getStats();
             assertNotNull(rt);
             assertEquals(1, rt.size());
             InetSocketAddress sockAddr =
                     new InetSocketAddress(server.getConnectURI().getHost(), server.getConnectURI().getPort());
             StatsResult sr = rt.get(sockAddr);
-            assertStatsResult(sr);
+            this.assertStatsResult(sr);
             assertEquals("null", sr.getValue("item"));
 
-            rt = messageSessionFactory.getStats("topics");
+            rt = this.messageSessionFactory.getStats("topics");
             assertNotNull(rt);
             assertEquals(1, rt.size());
             sr = rt.get(sockAddr);
-            assertStatsResult(sr);
+            this.assertStatsResult(sr);
             assertEquals("topics", sr.getValue("item"));
 
-            sr = messageSessionFactory.getStats(sockAddr);
-            assertStatsResult(sr);
+            sr = this.messageSessionFactory.getStats(sockAddr);
+            this.assertStatsResult(sr);
             assertEquals("null", sr.getValue("item"));
 
-            sr = messageSessionFactory.getStats(sockAddr, "topics");
-            assertStatsResult(sr);
+            sr = this.messageSessionFactory.getStats(sockAddr, "topics");
+            this.assertStatsResult(sr);
             assertEquals("topics", sr.getValue("item"));
         }
         finally {
@@ -162,32 +161,32 @@ public class MetaMessageSessionFactoryUnitTest {
 
     @Test
     public void testCreateProducer() throws Exception {
-        final MessageProducer producer = messageSessionFactory.createProducer();
+        final MessageProducer producer = this.messageSessionFactory.createProducer();
         assertNotNull(producer);
         assertTrue(producer.getPartitionSelector() instanceof RoundRobinPartitionSelector);
         assertFalse(producer.isOrdered());
-        assertTrue(messageSessionFactory.getChildren().contains(producer));
+        assertTrue(this.messageSessionFactory.getChildren().contains(producer));
         producer.shutdown();
-        assertFalse(messageSessionFactory.getChildren().contains(producer));
+        assertFalse(this.messageSessionFactory.getChildren().contains(producer));
     }
 
 
     @Ignore
     public void testCreateProducerOrdered() throws Exception {
-        final MessageProducer producer = messageSessionFactory.createProducer(true);
+        final MessageProducer producer = this.messageSessionFactory.createProducer(true);
         assertNotNull(producer);
         assertTrue(producer.getPartitionSelector() instanceof RoundRobinPartitionSelector);
         assertTrue(producer.isOrdered());
-        assertTrue(messageSessionFactory.getChildren().contains(producer));
+        assertTrue(this.messageSessionFactory.getChildren().contains(producer));
         producer.shutdown();
-        assertFalse(messageSessionFactory.getChildren().contains(producer));
+        assertFalse(this.messageSessionFactory.getChildren().contains(producer));
     }
 
 
     @Test(expected = InvalidConsumerConfigException.class)
     public void testCreateConsumer_NoGroup() throws Exception {
         final ConsumerConfig consumerConfig = new ConsumerConfig();
-        final MessageConsumer messageConsumer = messageSessionFactory.createConsumer(consumerConfig);
+        final MessageConsumer messageConsumer = this.messageSessionFactory.createConsumer(consumerConfig);
     }
 
 
@@ -196,7 +195,7 @@ public class MetaMessageSessionFactoryUnitTest {
         final ConsumerConfig consumerConfig = new ConsumerConfig();
         consumerConfig.setGroup("test");
         consumerConfig.setFetchRunnerCount(0);
-        final MessageConsumer messageConsumer = messageSessionFactory.createConsumer(consumerConfig);
+        final MessageConsumer messageConsumer = this.messageSessionFactory.createConsumer(consumerConfig);
     }
 
 
@@ -205,7 +204,7 @@ public class MetaMessageSessionFactoryUnitTest {
         final ConsumerConfig consumerConfig = new ConsumerConfig();
         consumerConfig.setGroup("test");
         consumerConfig.setCommitOffsetPeriodInMills(-1);
-        final MessageConsumer messageConsumer = messageSessionFactory.createConsumer(consumerConfig);
+        final MessageConsumer messageConsumer = this.messageSessionFactory.createConsumer(consumerConfig);
     }
 
 
@@ -214,7 +213,7 @@ public class MetaMessageSessionFactoryUnitTest {
         final ConsumerConfig consumerConfig = new ConsumerConfig();
         consumerConfig.setGroup("test");
         consumerConfig.setFetchTimeoutInMills(0);
-        final MessageConsumer messageConsumer = messageSessionFactory.createConsumer(consumerConfig);
+        final MessageConsumer messageConsumer = this.messageSessionFactory.createConsumer(consumerConfig);
     }
 
 
@@ -222,11 +221,11 @@ public class MetaMessageSessionFactoryUnitTest {
     public void testCreateConsumer() throws Exception {
         final ConsumerConfig consumerConfig = new ConsumerConfig();
         consumerConfig.setGroup("test");
-        final MessageConsumer messageConsumer = messageSessionFactory.createConsumer(consumerConfig);
+        final MessageConsumer messageConsumer = this.messageSessionFactory.createConsumer(consumerConfig);
         assertNotNull(messageConsumer);
-        assertTrue(messageSessionFactory.getChildren().contains(messageConsumer));
+        assertTrue(this.messageSessionFactory.getChildren().contains(messageConsumer));
         messageConsumer.shutdown();
-        assertFalse(messageSessionFactory.getChildren().contains(messageConsumer));
+        assertFalse(this.messageSessionFactory.getChildren().contains(messageConsumer));
     }
 
 }

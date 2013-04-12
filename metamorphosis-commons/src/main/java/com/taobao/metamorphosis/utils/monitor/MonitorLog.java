@@ -223,8 +223,8 @@ public class MonitorLog {
                     try {
                         condition.await(waitTime, TimeUnit.SECONDS);
                     }
-                    catch (final Exception e) {
-                        logger.error("wait error", e);
+                    catch (final InterruptedException e) {
+                        // ignore
                     }
                     finally {
                         timerLock.unlock();

@@ -46,7 +46,6 @@ public class BrokerZooKeeperUnitTest {
     @Before
     public void setUp() {
         MetaConfig metaConfig = new MetaConfig();
-        metaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         this.brokerZooKeeper = new BrokerZooKeeper(metaConfig);
         this.client = this.brokerZooKeeper.getZkClient();
     }
@@ -263,7 +262,6 @@ public class BrokerZooKeeperUnitTest {
 
     private BrokerZooKeeper createSlaveBrokerZooKeeper() {
         MetaConfig slaveMetaConfig = new MetaConfig();
-        slaveMetaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         slaveMetaConfig.setSlaveConfig(new SlaveConfig(0));
         this.slaveBrokerZooKeeper = new BrokerZooKeeper(slaveMetaConfig);
         return this.slaveBrokerZooKeeper;

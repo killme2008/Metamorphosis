@@ -87,8 +87,6 @@ public class MetamorphosisStartupUnitTest {
         assertEquals(40000, config.getZkConfig().zkConnectionTimeoutMs);
         assertEquals(5000, config.getZkConfig().zkSyncTimeMs);
 
-        assertEquals("metamorphosis.zkConfig", config.getDiamondZKDataId());
-        assertEquals("DEFAULT_GROUP", config.getDiamondZKGroup());
         assertEquals("delete,999", config.getDeletePolicy());
 
         final TopicConfig topicConfig1 = config.getTopicConfig("test1");
