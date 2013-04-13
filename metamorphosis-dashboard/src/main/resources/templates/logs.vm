@@ -1,3 +1,5 @@
+<div class="mini-layout">
 #foreach ($log in $logs)
   $log <br/>
 #end
+</div>

@@ -46,4 +46,12 @@
 (defn dump-threads []
   (let [tmb (ManagementFactory/getThreadMXBean)]
     (.dumpAllThreads tmb false false)))
-  
+
+(defonce ^:private units ["B" "KB" "MB" "GB" "TB"])
+(defn readable-size [size]
+  (if (<= size 0)
+    "0"
+    (let [digit-groups (int (/ (Math/log10 size) (Math/log10 1024)))]
+      (str (-> (java.text.DecimalFormat. "#,##0.#") (.format (/ size (Math/pow 1024 digit-groups))))
+           " "
+           (nth units digit-groups)))))

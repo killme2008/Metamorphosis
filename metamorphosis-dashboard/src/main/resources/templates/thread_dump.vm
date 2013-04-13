@@ -1,5 +1,9 @@
-<ul>
-#foreach ($thread in $threads)
- <li>$thread </li>
-#end
-</ul>
+
+<table class= "table table-bordered table-hover">
+  #foreach ($thread in $threads)
+  <tr>
+	<td>$thread </td>
+  </tr>
+  #end
+</table>
+

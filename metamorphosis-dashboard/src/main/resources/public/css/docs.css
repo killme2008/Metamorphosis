@@ -356,7 +356,10 @@ only screen and (     -o-min-device-pixel-ratio: 2/1) {
   background-color: #999;
 }
 
-
+.table {
+  word-wrap: break-word;
+  table-layout: fixed;
+}
 
 /* Mini layout previews
 -------------------------------------------------- */
@@ -372,7 +375,7 @@ only screen and (     -o-min-device-pixel-ratio: 2/1) {
 .mini-layout,
 .mini-layout .mini-layout-body,
 .mini-layout.fluid .mini-layout-sidebar {
-  height: 300px;
+  height: auto;
 }
 .mini-layout {
   margin-bottom: 20px;

@@ -4,16 +4,17 @@
 	<meta charset="utf-8">
 	<link href="css/bootstrap.css" rel="stylesheet">
 	<link href="css/docs.css" rel="stylesheet">
-	<link rel="shortcut icon" href="images/metaq-32.ico">
-	<script type="text/javascript" src="script/jquery-1.9.1.min.js"></script>
-	<script type="text/javascript" src="script/jquery.ba-bbq.min.js"></script>
-	<script type="text/javascript" src="script/metaq.js"></script>
+	<link rel="shortcut icon" href="img/metaq-32.ico">
+	<script type="text/javascript" src="js/jquery-1.9.1.min.js"></script>
+	<script type="text/javascript" src="js/jquery.ba-bbq.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap.js"></script>
+	<script type="text/javascript" src="js/metaq.js"></script>
 </script>
 <title>Metamorphosis admin 1.4.5</title>
 </head>
 <body>
   <div class="container-fluid">
-	<div><img src="images/metaq-logo.png"/></div>
+	<div><img src="img/metaq-logo.png"/></div>
 	<div class="row-fluid">
 	  <div class="span3 bs-docs-sidebar">
 		<ul class="nav nav-list bs-docs-sidenav">
@@ -30,7 +31,7 @@
 		  </ul>
         </ul>
 	  </div>
-	  <div class="span9 mini-layout" id="main-content">
+	  <div class="span9" id="main-content">
 		
 		<!--Body content-->
 	  </div>

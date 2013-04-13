@@ -31,19 +31,24 @@
 
 (defn- jvm []
   {:runtime (System/getProperty "java.vm.name")
-   :Processors (-> (Runtime/getRuntime) (.availableProcessors))
+   :processors (-> (Runtime/getRuntime) (.availableProcessors))
    :args (u/vm-args)})
 
 (defn- system []
-  {:sys_memory (u/sys-memory)
-   :sys_memory_used (u/sys-memory-used)
-   :swap_space (u/swap-space)
-   :ss_used  (u/swap-space-used)
-   :fdc (u/file-descriptors)
-   :fdc_used (u/file-descriptors-used)
-   :jvm_memory_max (-> (Runtime/getRuntime) (.maxMemory))
-   :jvm_memory_total (-> (Runtime/getRuntime) (.totalMemory))
-   :jvm_memory_used (- (-> (Runtime/getRuntime) (.totalMemory)) (-> (Runtime/getRuntime) (.freeMemory)))})
+  (into {}
+        (map (fn [[k v]]
+               (if-not (contains? #{:fdc :fdc_used} k)
+                 [k (u/readable-size v)]
+                 [k v]))
+             {:sys_memory (u/sys-memory)
+              :sys_memory_used (u/sys-memory-used)
+              :swap_space (u/swap-space)
+              :ss_used  (u/swap-space-used)
+              :fdc (u/file-descriptors)
+              :fdc_used (u/file-descriptors-used)
+              :jvm_memory_max (-> (Runtime/getRuntime) (.maxMemory))
+              :jvm_memory_total (-> (Runtime/getRuntime) (.totalMemory))
+              :jvm_memory_used (- (-> (Runtime/getRuntime) (.totalMemory)) (-> (Runtime/getRuntime) (.freeMemory)))})))
 
 (defn- dashboard [req]
   (render-tpl "dashboard.vm"
@@ -65,7 +70,9 @@
 
 (defn- config [req]
   (with-open [in (io/reader (with-broker (.getMetaConfig) (.getConfigFilePath)))]
-    (render-tpl "config.vm" :config (slurp in))))
+    (render-tpl "config.vm"
+                :config (slurp in)
+                :lastLoaded (u/pretty-time (with-broker (.getMetaConfig) (.getLastModified))))))
 
 (defn- topic-list [req]
   (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getStatsInfo "topics"))))
@@ -74,6 +81,13 @@
   (let [topic (-> req :params :topic)]
     (render-tpl "topic.vm" :topic topic)))
 
+(defn- reload-config [req]
+  (try
+    (with-broker (.getMetaConfig) (.reload))
+    "Reload config successfully."
+    (catch Exception e
+      (.getMessage e))))
+
 (defroutes app-routes
   (GET "/" [] index)
   (GET "/dashboard" [] dashboard)
@@ -81,6 +95,7 @@
   (GET "/java-properties" [] java-properties)
   (GET "/thread-dump" [] thread-dump)
   (GET "/config" [] config)
+  (POST "/reload-config" [] reload-config)
   (GET "/topic-list" [] topic-list)
   (GET "/topic/:topic" [] topic-info)
   (route/resources "/")
