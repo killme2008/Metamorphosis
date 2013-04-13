@@ -183,7 +183,7 @@ function do_stats() {
 function help() {
     echo "Usage: metaServer.sh {start|status|stop|restart|reload|stats|open-partitions|close-partitions|move-partitions|delete-partitions|query}" >&2
     echo "       start [type]:             start the broker server"
-    echo "             local               Start the broker in local mode,it will start a zookeeper embed,just for development or test."
+    echo "             local               Start the broker in local mode,it will start a embed zookeeper,just for development or test."
     echo "             slave               start the broker as an asynchronous replication slave."
     echo "             gregor              start the broker as an synchronous replication slave."
     echo "             samsa               start the broker as an synchronous replication master."
