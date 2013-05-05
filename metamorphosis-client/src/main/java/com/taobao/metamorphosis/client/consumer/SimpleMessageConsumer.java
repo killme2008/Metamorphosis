@@ -333,7 +333,8 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
                     fetchRequest.setOffset(Long.parseLong(booleanCmd.getErrorMsg()), -1, true);
                     return null;
                 default:
-                    throw new MetaClientException(((BooleanCommand) response).getErrorMsg());
+                    throw new MetaClientException("Status:" + booleanCmd.getCode() + ",Error message:"
+                            + ((BooleanCommand) response).getErrorMsg());
                 }
             }
 
@@ -388,10 +389,12 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         return this.fetch(new FetchRequest(broker, 0, topicPartitionRegInfo, maxSize), timeout, timeUnit);
     }
 
+    @Override
     public RejectConsumptionHandler getRejectConsumptionHandler() {
-        return rejectConsumptionHandler;
+        return this.rejectConsumptionHandler;
     }
 
+    @Override
     public void setRejectConsumptionHandler(RejectConsumptionHandler rejectConsumptionHandler) {
         if (rejectConsumptionHandler == null) {
             throw new NullPointerException("Null rejectConsumptionHandler");
@@ -431,7 +434,7 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
      * Time: ÉÏÎç11:25
      */
     public static class LocalRecoverPolicy implements RejectConsumptionHandler {
-        private RecoverManager recoverManager;
+        private final RecoverManager recoverManager;
         static final Log log = LogFactory.getLog(LocalRecoverPolicy.class);
 
         public LocalRecoverPolicy(RecoverManager recoverManager) {
