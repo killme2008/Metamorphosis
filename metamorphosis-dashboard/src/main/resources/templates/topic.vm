@@ -1,1 +1,112 @@
-$topic
+<div id="query-pending-msgs" class="form-search" action="#topic/$topic.topic">
+	<legend>Query pending messages for topic <strong>$topic.topic</strong> by consumer group:</legend>
+	<input placeholder="Consumer group" type="text" name= "group" class="input-medium search-query">
+	<button class="btn">Query</button>
+</div>
+<br />
+<div>
+  #if($pending-stats.error)
+<div class="alert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Warning!</strong> $pending-stats.error
+</div>
+  #else
+    #if ($pending-stats)
+      <table class= "table table-bordered">
+	  <thead>
+		<tr>
+		  <th>Parition</th>
+		  <th>Partition owner</th>
+		  <th>Pending messages (estimated) </th>
+		  <th>Pending message bytes</th>
+		</tr>
+	  </thead>
+	  <tbody>
+      #foreach ($stats in $pending-stats)
+        <tr>
+		  <td>$!stats.partition</td>
+		  <td>$!stats.owner</td>
+		  <td>$!stats.pending-messages</td>
+		  <td>$!stats.pending-bytes</td>
+		</tr>
+      #end
+      </tbody>
+	  </table>
+    #end
+  #end
+</div>
+<div class= "mini-layout">
+  <h3>$topic.topic</h3>
+  <table class="table ">
+	<tr>
+	  <td>Partitions</td>
+	  <td>$topic.partitions</td>
+	</tr>
+	<tr>
+	  <td>Accept Pub</td>
+	  <td>$topic.topicConfig.acceptPublish</td>
+	</tr>
+	<tr>
+	  <td>Accept Sub</td>
+	  <td>$topic.topicConfig.acceptSubscribe</td>
+	</tr>
+	<tr>
+	  <td>Unflush Threshold</td>
+	  <td>$topic.topicConfig.unflushThreshold</td>
+	</tr>
+	<tr>
+	  <td>Unflush Interval</td>
+	  <td>$topic.topicConfig.unflushInterval</td>
+	</tr>
+	<tr>
+	  <td>Data Path</td>
+	  <td>$topic.topicConfig.dataPath</td>
+	</tr>
+	<tr>
+	  <td>Delete Policy</td>
+	  <td>$topic.topicConfig.deletePolicy</td>
+	</tr>
+	<tr>
+	  <td>Delete When</td>
+	  <td>$topic.topicConfig.deleteWhen</td>
+	</tr>
+	<tr>
+	  <td>Messages</td>
+	  <td>$topic.messageCount</td>
+	</tr>
+	<tr>
+	  <td>Messages Bytes</td>
+	  <td>$topic.messageBytes</td>
+	</tr>
+	<tr>
+	  <td>Realtime statistics</td>
+	  <td>
+		<table class="table">
+		  <tr>
+			<td>Put</td>
+			<td>$topic.puts</td>
+		  </tr>
+		  <tr>
+			<td>Put Failed</td>
+			<td>$topic.putFailed</td>
+		  </tr>
+		  <tr>
+			<td>Get</td>
+			<td>$topic.gets</td>
+		  </tr>
+		  <tr>
+			<td>Get Missed</td>
+			<td>$topic.getMissed</td>
+		  </tr>
+		</table>
+	  </td>
+	</tr>
+  </table>
+</div>
+<script type="text/javascript">
+  	$("#query-pending-msgs button").on("click", function(e) {
+		var group = $("#query-pending-msgs input").val();
+	    var url = "#topic/$topic.topic?group=" + group
+	    window.location.href = url;
+    });
+</script>

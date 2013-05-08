@@ -234,7 +234,7 @@ public class BrokerZooKeeper implements PropertyChangeListener {
     private Broker broker = null;
 
 
-    private Broker getBroker() throws Exception {
+    public Broker getBroker() throws Exception {
         if (this.broker != null) {
             return this.broker;
         }

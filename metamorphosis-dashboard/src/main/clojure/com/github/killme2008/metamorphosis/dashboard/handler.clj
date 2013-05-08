@@ -2,7 +2,11 @@
   (:use compojure.core)
   (:use [ring.velocity.core :only [render]]
         [environ.core])
-  (:import [org.apache.log4j Logger])
+  (:import [org.apache.log4j Logger]
+           [org.I0Itec.zkclient ZkClient]
+           [com.taobao.metamorphosis.utils ZkUtils]
+           [com.taobao.metamorphosis.server.store MessageStoreManager MessageStore]
+           [com.taobao.metamorphosis.utils MetaZookeeper MetaZookeeper$ZKGroupTopicDirs])
   (:require [compojure.handler :as handler]
             [clojure.java.io :as io]
             [com.github.killme2008.metamorphosis.dashboard.util :as u]
@@ -27,7 +31,8 @@
    :cwd (System/getProperty "user.dir")})
 
 (defn- version []
-  {:metaq (with-broker (.getStatsManager) (.getVersion))})
+  {:metaq (with-broker (.getStatsManager) (.getVersion))
+   :id (with-broker (.getMetaConfig) (.getBrokerId))})
 
 (defn- jvm []
   {:runtime (System/getProperty "java.vm.name")
@@ -77,9 +82,51 @@
 (defn- topic-list [req]
   (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getTopicsStats))))
 
+(defn- query-pending-messages [topic-stats group]
+  (let [^String topic (.getTopic topic-stats)
+        avg-msg-size (if (> (.getMessageCount topic-stats) 0)
+                       (/ (.getMessageBytes topic-stats) (.getMessageCount topic-stats))
+                       "N/A")
+        ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
+        ^ZkClient zc (.getZkClient mz)
+        broker-id (with-broker (.getMetaConfig) (.getBrokerId))
+        ^MetaZookeeper$ZKGroupTopicDirs topicDirs (MetaZookeeper$ZKGroupTopicDirs. mz topic group)
+        ^MessageStoreManager msm (with-broker (.getStoreManager))]
+    (if (ZkUtils/pathExists zc (.consumerGroupDir topicDirs))
+      (vec (map (fn [partition]
+                  (merge {"partition" partition}
+                         (let [part-str (str broker-id "-" partition)
+                               offset-znode (str (.consumerOffsetDir topicDirs) "/" part-str)
+                               owner-znode (str (.consumerOwnerDir topicDirs) "/" part-str)
+                               offset-str (ZkUtils/readDataMaybeNull zc offset-znode)]
+                           (when offset-str
+                             (let [consumer-offset (Integer/valueOf
+                                                    (if (.contains offset-str "-")
+                                                      (second (.split offset-str "-"))
+                                                      offset-str))
+                                   broker-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
+                                   pending-bytes (- broker-offset consumer-offset)
+                                   pending-messages (if-not (= avg-msg-size "N/A")
+                                                      (long (quot pending-bytes  avg-msg-size)) 
+                                                      "N/A")]
+                               {"pending-bytes" pending-bytes
+                                "pending-messages" pending-messages
+                                "owner" (ZkUtils/readDataMaybeNull zc owner-znode)}
+                               )))))
+                (range 0 (.getPartitions topic-stats))))  
+      {"error" (format "The consumer group <strong>'%s'</strong>is not exists." group)})))
+
 (defn- topic-info [req]
-  (let [topic (-> req :params :topic)]
-    (render-tpl "topic.vm" :topic topic)))
+  (let [topic (-> req :params :topic)
+        topic-stats (with-broker (.getStatsManager) (.getTopicStats topic))
+        group (-> req :params :group)]
+    (try
+      (if-not (empty? group)
+        (render-tpl "topic.vm" :topic topic-stats
+                    :pending-stats (query-pending-messages topic-stats group))
+        (render-tpl "topic.vm" :topic topic-stats))
+      (catch Exception e
+        (.printStackTrace e)))))
 
 (defn- reload-config [req]
   (try
@@ -89,7 +136,31 @@
       (.getMessage e))))
 
 (defn- cluster [req]
-  (render-tpl "cluster.vm"))
+  (try
+    (let [ ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
+          port (with-broker (.getMetaConfig) (.getDashboardHttpPort))
+          cluster (.getCluster mz)
+          current-broker (with-broker (.getBrokerZooKeeper) (.getBroker))
+          all-brokers (.getBrokers cluster)]
+      (render-tpl "cluster.vm" :current current-broker
+                  :nodes
+                  (vec
+                   (map (fn [[id brokers]]
+                          {"id" id
+                           "brokers"
+                           (map
+                            (fn [broker]
+                              (when-let [broker-str (str broker)]
+                                (let [uri (java.net.URI. broker-str)
+                                      host (.getHost uri)]
+                                  {"dashboard-uri" (str "http://" host ":" port)
+                                   "slave" (.isSlave broker)
+                                   "broker" broker
+                                   "broker-uri" broker-str})))
+                            brokers)})
+                        all-brokers))))
+    (catch Exception e
+      (.printStackTrace e))))
 
 (defroutes app-routes
   (GET "/" [] index)

@@ -86,8 +86,12 @@
 	  </table>
 	</div>
 	<div class= "span6 mini-layout">
-	  <h5>Versions</h5>
+	  <h5>Broker</h5>
 	  <table class="table ">
+		<tr>
+		  <td>Broker Id</td>
+		  <td>$version.id</td>
+		</tr>
 		<tr>
 		  <td>MetaQ</td>
 		  <td>$version.metaq</td>

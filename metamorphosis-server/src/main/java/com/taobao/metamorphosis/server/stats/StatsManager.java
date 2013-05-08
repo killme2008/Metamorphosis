@@ -274,10 +274,18 @@ public class StatsManager implements Service {
             this.topicConfig = topicConfig;
             this.messageCount = messageCount;
             this.messageBytes = messageBytes;
-            this.puts = realTimePut;
-            this.gets = realTimeGet;
-            this.getMissed = realTimeGetMissed;
-            this.putFailed = realTimePutFailed;
+            if (realTimePut != null) {
+                this.puts = realTimePut;
+            }
+            if (realTimeGet != null) {
+                this.gets = realTimeGet;
+            }
+            if (realTimeGetMissed != null) {
+                this.getMissed = realTimeGetMissed;
+            }
+            if (realTimePutFailed != null) {
+                this.putFailed = realTimePutFailed;
+            }
         }
 
 
@@ -303,6 +311,16 @@ public class StatsManager implements Service {
 
         public long getMessageCount() {
             return this.messageCount;
+        }
+
+
+        public String getAvgMsgSize() {
+            if (this.messageCount == 0) {
+                return "N/A";
+            }
+            else {
+                return String.valueOf(Math.round((double) this.getMessageBytes() / this.getMessageCount()));
+            }
         }
 
 
@@ -359,6 +377,37 @@ public class StatsManager implements Service {
                     + this.partitions + "]";
         }
 
+    }
+
+
+    public TopicStats getTopicStats(String topic) {
+        final ConcurrentHashMap<Integer/* partition */, MessageStore> subMap =
+                this.messageStoreManager.getMessageStores().get(topic);
+        if (subMap != null) {
+            long sum = 0;
+            long bytes = 0;
+            int partitionCount = 0;
+            if (subMap != null) {
+                partitionCount = subMap.size();
+                for (final MessageStore msgStore : subMap.values()) {
+                    if (msgStore != null) {
+                        sum += msgStore.getMessageCount();
+                        bytes += msgStore.getSizeInBytes();
+                    }
+                }
+            }
+            TopicConfig topicConfig = this.metaConfig.getTopicConfig(topic);
+            TopicStats stats =
+                    new TopicStats(topic, partitionCount, topicConfig, sum, bytes,
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.CMD_PUT, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.CMD_GET, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.GET_MISS, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.PUT_FAILED, topic));
+            return stats;
+        }
+        else {
+            return null;
+        }
     }
 
 
