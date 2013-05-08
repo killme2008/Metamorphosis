@@ -93,7 +93,11 @@
 		  <td>$version.id</td>
 		</tr>
 		<tr>
-		  <td>MetaQ</td>
+		  <td>Broker URI</td>
+		  <td>$version.uri</td>
+		</tr>
+		<tr>
+		  <td>Version</td>
 		  <td>$version.metaq</td>
 		</tr>
 	  </table>

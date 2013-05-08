@@ -32,7 +32,8 @@
 
 (defn- version []
   {:metaq (with-broker (.getStatsManager) (.getVersion))
-   :id (with-broker (.getMetaConfig) (.getBrokerId))})
+   :id (with-broker (.getMetaConfig) (.getBrokerId))
+   :uri (with-broker (.getBrokerZooKeeper) (.getBroker))})
 
 (defn- jvm []
   {:runtime (System/getProperty "java.vm.name")
