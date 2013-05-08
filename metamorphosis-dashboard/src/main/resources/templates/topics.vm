@@ -1,1 +1,34 @@
-$topics
+<table class= "table table-bordered">
+  <caption><h3>Topics</h3></caption>
+  <thead>
+	<tr>
+	  <th>Topic</th>
+	  <th>Partitions</th>
+	  <th>Messages Total Number</th>
+	  <th>Messages Total Bytes</th>
+	  <th>Accept Pub</th>
+	  <th>Accept Sub</th>
+	  <th>Realtime put</th>
+	  <th>Realtime put failed</th>
+	  <th>Realtime get</th>
+	  <th>Realtime get missed</th>
+	</tr>
+  </thead>
+  <tbody>
+	#foreach ($stats in $topics)
+	<tr>
+	  <td>$stats.topic</td>
+	  <td>$stats.partitions</td>
+	  <td>$stats.messageCount</td>
+	  <td>$stats.messageBytes</td>
+	  <td>$stats.topicConfig.acceptPublish</td>
+	  <td>$stats.topicConfig.acceptSubscribe</td>
+	  <td>$!stats.puts</td>
+	  <td>$!stats.putFailed</td>
+	  <td>$!stats.gets</td>
+	  <td>$!stats.getMissed</td>
+	</tr>
+	#end
+  </tbody>
+</table>
+

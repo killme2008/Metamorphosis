@@ -1,0 +1,10 @@
+<div id="content">
+  <div id = "cloud" class= "clearfix">
+	<div id="graph-content" class= "content clearfix" style= "display: block;">
+	  <div id="canvas">
+		<svg width="1044" height="40"><g transform="translate(100, 0)"><path class="link lvl-1" d="M0,20C107.33333333333333,20 107.33333333333333,20 214.66666666666666,20"></path><path class="link lvl-2" d="M214.66666666666666,20C322,20 322,6.666666666666666 429.3333333333333,6.666666666666666"></path><path class="link lvl-2" d="M214.66666666666666,20C322,20 322,33.333333333333336 429.3333333333333,33.333333333333336"></path><path class="link lvl-3 leader active" d="M429.3333333333333,6.666666666666666C536.6666666666666,6.666666666666666 536.6666666666666,6.666666666666666 644,6.666666666666666"></path><path class="link lvl-3 leader active" d="M429.3333333333333,33.333333333333336C536.6666666666666,33.333333333333336 536.6666666666666,33.333333333333336 644,33.333333333333336"></path><g class="node lvl-0" transform="translate(0,20)"><circle r="4.5"></circle><text dx="-8" dy="5" text-anchor="end"></text></g><g class="node lvl-1" transform="translate(214.66666666666666,20)"><circle r="4.5"></circle><text dx="8" dy="5" text-anchor="start" data-href="collection1">collection1</text></g><g class="node lvl-2" transform="translate(429.3333333333333,6.666666666666666)"><circle r="4.5"></circle><text dx="8" dy="5" text-anchor="start" data-href="shard1">shard1</text></g><g class="node lvl-3 leader active" transform="translate(644,6.666666666666666)"><circle r="4.5"></circle><text dx="8" dy="5" text-anchor="start" data-href="http://dennis-mc700.local:8983/solr">dennis-mc700.local:8983</text></g><g class="node lvl-2" transform="translate(429.3333333333333,33.333333333333336)"><circle r="4.5"></circle><text dx="8" dy="5" text-anchor="start" data-href="shard2">shard2</text></g><g class="node lvl-3 leader active" transform="translate(644,33.333333333333336)"><circle r="4.5"></circle><text dx="8" dy="5" text-anchor="start" data-href="http://dennis-mc700.local:7574/solr">dennis-mc700.local:7574</text></g></g></svg>
+	  </div>
+	</div>
+  </div>
+  
+</div>

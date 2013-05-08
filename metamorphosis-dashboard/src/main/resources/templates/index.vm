@@ -3,6 +3,7 @@
   <head>
 	<meta charset="utf-8">
 	<link href="css/bootstrap.css" rel="stylesheet">
+	<link href="css/cluster.css" rel="stylesheet">
 	<link href="css/docs.css" rel="stylesheet">
 	<link rel="shortcut icon" href="img/metaq-32.ico">
 	<script type="text/javascript" src="js/jquery-1.9.1.min.js"></script>
@@ -20,19 +21,15 @@
 		<ul class="nav nav-list bs-docs-sidenav">
 		  <li><a href="#dashboard"><i class="icon-chevron-right"></i>Dashboard</a></li>
 		  <li><a href="#logging"><i class="icon-chevron-right"></i>Logging</a></li>
+		  <li><a href="#cluster"><i class="icon-chevron-right"></i>Cluster</a></li>
 		  <li><a href="#java-properties"><i class="icon-chevron-right"></i>Java properties</a></li>
 		  <li><a href="#thread-dump"><i class="icon-chevron-right"></i>Thread Dump</a></li>
 		  <li><a href="#config"><i class="icon-chevron-right"></i>Broker config</a></li>
-		  <li class= "nav-header"><a href="#topic-list"><i class="icon-chevron-right"></i>Topic list</a> 		  </li>
-		  <ul class="nav nav-list">
-			#foreach ($topic in $topics)
-			<li><a href="#topic/$topic"><i class="icon-chevron-right"></i>$topic</a></li>
-            #end
-		  </ul>
+		  <li><a href="#topic-list"><i class="icon-chevron-right"></i>Topics</a></li>
+		  <li><a href="#query"><i class="icon-chevron-right"></i>Query</a></li>
         </ul>
 	  </div>
-	  <div class="span9" id="main-content">
-		
+	  <div class="span8" id="main-content">
 		<!--Body content-->
 	  </div>
 	</div>

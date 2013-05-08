@@ -45,11 +45,11 @@
 		  <td>$system.ss_used</td>
 		</tr>
 		<tr>
-		  <td>Process file descriptors</td>
+		  <td>Maximum file descriptors</td>
 		  <td>$system.fdc</td>
 		</tr>
 		<tr>
-		  <td>Maximum file descriptors</td>
+		  <td>Opened file descriptors</td>
 		  <td>$system.fdc_used</td>
 		</tr>
 		<tr>

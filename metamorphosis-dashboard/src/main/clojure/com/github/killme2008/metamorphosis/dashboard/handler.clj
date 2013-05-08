@@ -75,7 +75,7 @@
                 :lastLoaded (u/pretty-time (with-broker (.getMetaConfig) (.getLastModified))))))
 
 (defn- topic-list [req]
-  (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getStatsInfo "topics"))))
+  (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getTopicsStats))))
 
 (defn- topic-info [req]
   (let [topic (-> req :params :topic)]
@@ -88,10 +88,14 @@
     (catch Exception e
       (.getMessage e))))
 
+(defn- cluster [req]
+  (render-tpl "cluster.vm"))
+
 (defroutes app-routes
   (GET "/" [] index)
   (GET "/dashboard" [] dashboard)
   (GET "/logging" [] logging)
+  (GET "/cluster" [] cluster)
   (GET "/java-properties" [] java-properties)
   (GET "/thread-dump" [] thread-dump)
   (GET "/config" [] config)
