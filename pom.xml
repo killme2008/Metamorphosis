@@ -20,7 +20,12 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-
+  <repositories>
+	<repository>
+	  <id>clojars.org</id>
+	  <url>http://clojars.org/repo</url>
+	</repository>
+  </repositories>
   <modules>
 	<module>metamorphosis-client</module>
 	<module>metamorphosis-tools</module>
@@ -31,7 +36,6 @@
 	<module>metamorphosis-commons</module>
 	<module>metamorphosis-server-wrapper</module>
   </modules>
-
   <build>
 	<plugins>
 	  <plugin>
@@ -219,8 +223,8 @@
 		<version>0.1</version>
 		<exclusions>
 		  <exclusion>
-			  <groupId>org.apache.zookeeper</groupId>
-			  <artifactId>zookeeper</artifactId>
+			<groupId>org.apache.zookeeper</groupId>
+			<artifactId>zookeeper</artifactId>
 		  </exclusion>
 		</exclusions>
 	  </dependency>
