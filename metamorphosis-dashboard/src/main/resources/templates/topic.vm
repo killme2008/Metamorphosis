@@ -1,4 +1,4 @@
-<div id="query-pending-msgs" class="form-search" action="#topic/$topic.topic">
+<div id="query-pending-msgs" class="form-search">
 	<legend>Query pending messages for topic <strong>$topic.topic</strong> by consumer group:</legend>
 	<input placeholder="Consumer group" type="text" name= "group" class="input-medium search-query">
 	<button class="btn">Query</button>
@@ -6,12 +6,13 @@
 <br />
 <div>
   #if($pending-stats.error)
-<div class="alert">
+<div class="alert alert-error">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <strong>Warning!</strong> $pending-stats.error
 </div>
   #else
     #if ($pending-stats)
+      <div class="alert alert-info">Consumer Group: $group</div>
       <table class= "table table-bordered">
 	  <thead>
 		<tr>

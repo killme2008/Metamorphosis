@@ -9,6 +9,8 @@
            [com.taobao.metamorphosis.utils MetaZookeeper MetaZookeeper$ZKGroupTopicDirs])
   (:require [compojure.handler :as handler]
             [clojure.java.io :as io]
+            [clojure.tools.logging :as log]
+            [com.github.killme2008.metamorphosis.dashboard.stats :as stats]
             [com.github.killme2008.metamorphosis.dashboard.util :as u]
             [compojure.route :as route]))
 
@@ -115,31 +117,33 @@
                                 "owner" (ZkUtils/readDataMaybeNull zc owner-znode)}
                                )))))
                 (range 0 (.getPartitions topic-stats))))  
-      {"error" (format "The consumer group <strong>'%s'</strong>is not exists." group)})))
+      {"error" (format "The consumer group <strong>'%s'</strong> is not exists." group)})))
 
 (defn- topic-info [req]
   (let [topic (-> req :params :topic)
         topic-stats (with-broker (.getStatsManager) (.getTopicStats topic))
         group (-> req :params :group)]
-    (try
-      (if-not (empty? group)
-        (render-tpl "topic.vm" :topic topic-stats
-                    :pending-stats (query-pending-messages topic-stats group))
-        (render-tpl "topic.vm" :topic topic-stats))
-      (catch Exception e
-        (.printStackTrace e)))))
+    (if-not (empty? group)
+      (render-tpl "topic.vm" :topic topic-stats :group group
+                  :pending-stats (query-pending-messages topic-stats group))
+      (render-tpl "topic.vm" :topic topic-stats))))
 
 (defn- reload-config [req]
   (try
     (with-broker (.getMetaConfig) (.reload))
     "Reload config successfully."
     (catch Exception e
+      (log/error "Reload config failed" e)
       (.getMessage e))))
 
+(defn- stats [req]
+  (let [item (-> req :params :item)]
+    (render-tpl "stats.vm"
+                :result
+                (with-broker (.getStatsManager) (.getStatsInfo item)))))
+
 (defn- cluster [req]
-  (try
-    (let [ ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
-          port (with-broker (.getMetaConfig) (.getDashboardHttpPort))
+      (let [ ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
           cluster (.getCluster mz)
           current-broker (with-broker (.getBrokerZooKeeper) (.getBroker))
           all-brokers (.getBrokers cluster)]
@@ -153,15 +157,18 @@
                             (fn [broker]
                               (when-let [broker-str (str broker)]
                                 (let [uri (java.net.URI. broker-str)
-                                      host (.getHost uri)]
-                                  {"dashboard-uri" (str "http://" host ":" port)
+                                      host (.getHost uri)
+                                      broker-port (.getPort uri)]
+                                  {"dashboard-uri" (str "http://" host ":" (-> (stats/get-meta-config host broker-port) (.getDashboardHttpPort)))
                                    "slave" (.isSlave broker)
                                    "broker" broker
                                    "broker-uri" broker-str})))
                             brokers)})
-                        all-brokers))))
-    (catch Exception e
-      (.printStackTrace e))))
+                        all-brokers)))))
+
+(defn not-found []
+  {:status 200
+   :body (render-tpl "not_found.vm")})
 
 (defroutes app-routes
   (GET "/" [] index)
@@ -174,8 +181,18 @@
   (POST "/reload-config" [] reload-config)
   (GET "/topic-list" [] topic-list)
   (GET "/topic/:topic" [] topic-info)
-  (route/resources "/")
-  (route/not-found "Not Found"))
+  (GET "/stats" [] stats)
+  (GET "/stats/:item" [] stats)
+  (route/resources "/"))
+
+(defn wrap-error-handler [handler]
+  (fn [req]
+    (try
+      (or (handler req) (not-found))
+      (catch Exception e
+        (log/error "Process request failed" e)
+        {:status 200
+         :body (render-tpl "error.vm" :error (or (.getMessage e) e))}))))
 
 (def app
-  (handler/site app-routes))
+  (handler/site (-> app-routes wrap-error-handler)))

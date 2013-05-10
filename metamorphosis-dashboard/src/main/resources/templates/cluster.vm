@@ -1,4 +1,4 @@
-<div class="mini-layout">
+<div>
   #foreach ($node in $nodes)
   <table class= "table table-bordered">
 	<caption><h3>Broker $node.id</h3></caption>

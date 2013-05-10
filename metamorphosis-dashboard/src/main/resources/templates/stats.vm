@@ -1,0 +1,18 @@
+<div id="stats-form" class="form-search">
+	<legend>Run stats commands.Type "help" to get all valid stats commands.</legend>
+	<input placeholder="Command" type="text" name= "item" class="input-medium search-query">
+	<button class="btn">GO</button>
+</div>
+<br />
+<textarea class="uneditable-textarea" rows= "23" cols= "140">$result</textarea>
+<script type="text/javascript">
+  	$("#stats-form button").on("click", function(e) {
+		var item = $("#stats-form input").val();
+	    var url = "#stats";
+	    if (item!= '')
+	      url = url+ "/" + item;
+	    window.location.href = url;
+    });
+</script>
+
+

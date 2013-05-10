@@ -11,7 +11,7 @@
 	<script type="text/javascript" src="js/bootstrap.js"></script>
 	<script type="text/javascript" src="js/metaq.js"></script>
 </script>
-<title>Metamorphosis admin 1.4.5</title>
+<title>MetaQ admin 1.4.5</title>
 </head>
 <body>
   <div class="container-fluid">
@@ -26,6 +26,7 @@
 		  <li><a href="#thread-dump"><i class="icon-chevron-right"></i>Thread Dump</a></li>
 		  <li><a href="#config"><i class="icon-chevron-right"></i>Broker config</a></li>
 		  <li><a href="#topic-list"><i class="icon-chevron-right"></i>Topics</a></li>
+		  <li><a href="#stats"><i class="icon-chevron-right"></i>Statstics</a></li>
         </ul>
 	  </div>
 	  <div class="span8" id="main-content">
@@ -33,5 +34,18 @@
 	  </div>
 	</div>
   </div>
+   <!-- Footer
+    ================================================== -->
+    <footer class="footer">
+      <div class="container">
+		<p>Powered by <a href= "http://clojure.org">clojure</a>. </p<>
+		<p>Authors: <a href= "http://fnil.net"> Dennis Zhuang</a>. </p>
+        <ul class="footer-links">
+          <li><a href="https://github.com/killme2008/Metamorphosis">Project</a></li>
+          <li class="muted">&middot;</li>
+          <li><a href="https://github.com/killme2008/Metamorphosis/wiki">Documents</a></li>
+        </ul>
+      </div>
+    </footer>
 </body>
 </html>

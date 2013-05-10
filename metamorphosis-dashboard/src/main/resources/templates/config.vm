@@ -1,9 +1,7 @@
 <div class= "container">
   <div>
 	<span>Last modified:&nbsp;$lastLoaded</span>
-	<textarea class="uneditable-textarea" rows= "23" cols= "140">
-	  $config
-	</textarea>
+	<textarea class="uneditable-textarea" rows= "23" cols= "140">$config</textarea>
   </div>
   <div>
 	<div class="alert">
