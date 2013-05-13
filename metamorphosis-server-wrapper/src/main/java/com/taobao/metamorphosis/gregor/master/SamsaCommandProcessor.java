@@ -73,10 +73,15 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
 
     private int slaveContinuousFailureThreshold = 100;
 
+    private volatile Thread healThread;
+
 
     private void removeMasterTemporaryAndTryToHeal() {
+        if (this.healThread != null) {
+            return;
+        }
         this.brokerZooKeeper.unregisterEveryThing();
-        Thread healThread = new Thread() {
+        this.healThread = new Thread() {
             @Override
             public void run() {
                 boolean slaveOk = false;
@@ -112,8 +117,10 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                     }
                 }
                 if (slaveOk) {
+                    SamsaCommandProcessor.this.slaveContinuousFailures.set(0);
                     try {
                         SamsaCommandProcessor.this.brokerZooKeeper.reRegisterEveryThing();
+                        SamsaCommandProcessor.this.healThread = null;
                     }
                     catch (Exception e) {
                         log.error("Could not register master to zookeeper,please try to restart it.", e);
@@ -125,8 +132,8 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
 
             }
         };
-        healThread.setDaemon(true);
-        healThread.start();
+        this.healThread.setDaemon(true);
+        this.healThread.start();
     }
 
     /**
