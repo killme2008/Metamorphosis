@@ -101,6 +101,7 @@ public abstract class BaseMetaTest {
     protected MetaMorphosisBroker startServer(final String name, final boolean isClearConsumerInfo,
             final boolean isCleanData) throws Exception {
         final MetaConfig metaConfig = this.metaConfig(name);
+        metaConfig.setDashboardHttpPort(metaConfig.getServerPort() - 20);
         if (isCleanData) {
             Utils.clearDataDir(metaConfig);
         }

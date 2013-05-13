@@ -40,6 +40,7 @@ public class HABaseMetaTest extends BaseMetaTest {
     protected EnhancedBroker startSlaveServers(String name, boolean isClearConsumerInfo, boolean isClearMsg)
             throws Exception {
         MetaConfig metaConfig = this.metaConfig(name);
+        metaConfig.setDashboardHttpPort(metaConfig.getServerPort() - 20);
         Map<String, Properties> pluginsInfo = this.getSlaveProperties(name);
         if (isClearMsg) {
             Utils.clearDataDir(metaConfig);

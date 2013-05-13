@@ -119,6 +119,7 @@ public class GregorMasterSlaveTest extends BaseMetaTest {
     protected EnhancedBroker startEnhanceBroker(final String name, final boolean isClearConsumerInfo,
             final boolean isClearMsg, final Map<String, Properties> pluginsInfo) throws Exception {
         final MetaConfig metaConfig = this.metaConfig(name);
+        metaConfig.setDashboardHttpPort(metaConfig.getServerPort() - 80);
         if (isClearMsg) {
             Utils.clearDataDir(metaConfig);
         }

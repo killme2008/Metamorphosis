@@ -295,6 +295,7 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         this.propertyChangeSupport.removePropertyChangeListener(listener);
     }
 
+
     public void loadFromFile(final String path) {
         try {
             this.path = path;
@@ -473,6 +474,14 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         }
 
         this.propertyChangeSupport.firePropertyChange("unflushInterval", null, null);
+    }
+
+
+    public void addTopic(String topic, TopicConfig topicConfig) {
+        this.topics.add(topic);
+        this.topicConfigMap.put(topic, topicConfig);
+        this.propertyChangeSupport.firePropertyChange("topics", null, null);
+        this.propertyChangeSupport.firePropertyChange("topicConfigMap", null, null);
     }
 
 

@@ -20,6 +20,7 @@ package com.taobao.metamorphosis.gregor.master;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,6 +33,8 @@ import com.taobao.gecko.service.RemotingClient;
 import com.taobao.gecko.service.RemotingServer;
 import com.taobao.gecko.service.SingleRequestCallBackListener;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
+import com.taobao.metamorphosis.Message;
+import com.taobao.metamorphosis.gregor.Constants;
 import com.taobao.metamorphosis.network.BooleanCommand;
 import com.taobao.metamorphosis.network.HttpStatus;
 import com.taobao.metamorphosis.network.MetamorphosisWireFormatType;
@@ -48,7 +51,9 @@ import com.taobao.metamorphosis.server.store.Location;
 import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.IdWorker;
+import com.taobao.metamorphosis.utils.MessageUtils;
 
 
 /**
@@ -59,6 +64,70 @@ import com.taobao.metamorphosis.utils.IdWorker;
  * 
  */
 public class SamsaCommandProcessor extends BrokerCommandProcessor {
+
+    private final AtomicInteger slaveContinuousFailures = new AtomicInteger(0);
+
+    private long sendToSlaveTimeoutInMills = 2000;
+
+    private long checkSlaveIntervalInMills = 100;
+
+    private int slaveContinuousFailureThreshold = 100;
+
+
+    private void removeMasterTemporaryAndTryToHeal() {
+        this.brokerZooKeeper.unregisterEveryThing();
+        Thread healThread = new Thread() {
+            @Override
+            public void run() {
+                boolean slaveOk = false;
+                while (!slaveOk && !Thread.currentThread().isInterrupted()) {
+                    try {
+                        final String testTopic = Constants.TEST_SLAVE_TOPIC;
+                        Message msg = new Message(testTopic, "test".getBytes());
+                        // 发往slave
+                        byte[] encodePayload = MessageUtils.encodePayload(msg);
+                        int flag = 0;
+                        int partition = 0;
+                        ResponseCommand resp =
+                                SamsaCommandProcessor.this.remotingClient.invokeToGroup(
+                                    SamsaCommandProcessor.this.slaveUrl,
+                                    new SyncCommand(testTopic, partition, encodePayload, flag,
+                                        SamsaCommandProcessor.this.idWorker.nextId(), CheckSum.crc32(encodePayload),
+                                        OpaqueGenerator.getNextOpaque()),
+                                        SamsaCommandProcessor.this.sendToSlaveTimeoutInMills, TimeUnit.MILLISECONDS);
+                        // Slave was back.
+                        if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
+                            slaveOk = true;
+                        }
+                        else {
+                            // Wait some time to re-check it.
+                            Thread.sleep(SamsaCommandProcessor.this.checkSlaveIntervalInMills);
+                        }
+                    }
+                    catch (InterruptedException e) {
+                        // ignore
+                    }
+                    catch (Exception e) {
+                        log.error("Try send test message to slave failed", e);
+                    }
+                }
+                if (slaveOk) {
+                    try {
+                        SamsaCommandProcessor.this.brokerZooKeeper.reRegisterEveryThing();
+                    }
+                    catch (Exception e) {
+                        log.error("Could not register master to zookeeper,please try to restart it.", e);
+                    }
+                }
+                else {
+                    log.warn("Check slave status was terminated,and the master would not be re-registered to zookeeper,please check your master/slave and try to restart them properly.");
+                }
+
+            }
+        };
+        healThread.setDaemon(true);
+        healThread.start();
+    }
 
     /**
      * append到message store的callback
@@ -216,8 +285,15 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
         public void onResponse(final ResponseCommand responseCommand, final Connection conn) {
             // Slave响应成功
             if (responseCommand.getResponseStatus() == ResponseStatus.NO_ERROR) {
+                SamsaCommandProcessor.this.slaveContinuousFailures.set(0);
                 synchronized (this) {
                     this.slaveSuccess = true;
+                }
+            }
+            else {
+                if (SamsaCommandProcessor.this.slaveContinuousFailures.incrementAndGet() >= SamsaCommandProcessor.this.slaveContinuousFailureThreshold) {
+                    SamsaCommandProcessor.this.slaveContinuousFailures.set(0);
+                    SamsaCommandProcessor.this.removeMasterTemporaryAndTryToHeal();
                 }
             }
             this.tryComplete();
@@ -281,10 +357,15 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
     public SamsaCommandProcessor(final MessageStoreManager storeManager, final ExecutorsManager executorsManager,
             final StatsManager statsManager, final RemotingServer remotingServer, final MetaConfig metaConfig,
             final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper, final RemotingClient remotingClient,
-            final String slave, final int callbackThreadCount) throws NotifyRemotingException, InterruptedException {
+            final String slave, final int callbackThreadCount, long sendToSlaveTimeoutInMills,
+            long checkSlaveIntervalInMills, int slaveContinuousFailureThreshold) throws NotifyRemotingException,
+            InterruptedException {
         super(storeManager, executorsManager, statsManager, remotingServer, metaConfig, idWorker, brokerZooKeeper);
         this.slaveUrl = MetamorphosisWireFormatType.SCHEME + "://" + slave;
         this.remotingClient = remotingClient;
+        this.sendToSlaveTimeoutInMills = sendToSlaveTimeoutInMills;
+        this.checkSlaveIntervalInMills = checkSlaveIntervalInMills;
+        this.slaveContinuousFailureThreshold = slaveContinuousFailureThreshold;
         this.callBackExecutor =
                 new ThreadPoolExecutor(callbackThreadCount, callbackThreadCount, 60, TimeUnit.SECONDS,
                     new ArrayBlockingQueue<Runnable>(10000), new ThreadPoolExecutor.CallerRunsPolicy());
