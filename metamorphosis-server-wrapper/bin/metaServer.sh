@@ -29,6 +29,10 @@ LOG_FILE="$LOG_DIR/metaServer.log"
 PID_DIR="$BASE_DIR/logs"
 PID_FILE="$PID_DIR/.run.pid"
 
+if $enableHttp ; then
+	config_files="-FjettyBroker=$BASE_DIR/conf/jettyBroker.properties"
+fi
+
 function running(){
 	if [ -f "$PID_FILE" ]; then
 		pid=$(cat "$PID_FILE")
@@ -55,7 +59,7 @@ function start_server() {
     chown -R $AS_USER $PID_DIR
     chown -R $AS_USER $LOG_DIR
     
-    config_files="-f $BASE_DIR/conf/server.ini"
+    config_files="$config_files -f $BASE_DIR/conf/server.ini"
     
     case $1 in
     	slave)
