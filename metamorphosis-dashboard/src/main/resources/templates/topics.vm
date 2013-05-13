@@ -2,7 +2,7 @@
   <caption><h3>Topics</h3></caption>
   <thead>
 	<tr>
-	  <th>Topic</th>
+	  <th>Topic (Click for detail) </th>
 	  <th>Partitions</th>
 	  <th>Messages Number</th>
 	  <th>Messages Bytes</th>

@@ -107,13 +107,20 @@
                                                     (if (.contains offset-str "-")
                                                       (second (.split offset-str "-"))
                                                       offset-str))
-                                   broker-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
-                                   pending-bytes (- broker-offset consumer-offset)
+                                   max-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
+                                   min-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
+                                   pending-bytes (- max-offset consumer-offset)
+                                   consumed-bytes (- consumer-offset min-offset)
                                    pending-messages (if-not (= avg-msg-size "N/A")
-                                                      (long (quot pending-bytes  avg-msg-size)) 
+                                                      (long (quot pending-bytes  avg-msg-size))
+                                                      "N/A")
+                                   consumed-messages (if-not (= avg-msg-size "N/A")
+                                                      (long (quot consumed-bytes  avg-msg-size))
                                                       "N/A")]
                                {"pending-bytes" pending-bytes
                                 "pending-messages" pending-messages
+                                "consumed-bytes" consumed-bytes
+                                "consumed-messages" consumed-messages
                                 "owner" (ZkUtils/readDataMaybeNull zc owner-znode)}
                                )))))
                 (range 0 (.getPartitions topic-stats))))  
@@ -143,28 +150,28 @@
                 (with-broker (.getStatsManager) (.getStatsInfo item)))))
 
 (defn- cluster [req]
-      (let [ ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
-          cluster (.getCluster mz)
-          current-broker (with-broker (.getBrokerZooKeeper) (.getBroker))
-          all-brokers (.getBrokers cluster)]
-      (render-tpl "cluster.vm" :current current-broker
-                  :nodes
-                  (vec
-                   (map (fn [[id brokers]]
-                          {"id" id
-                           "brokers"
-                           (map
-                            (fn [broker]
-                              (when-let [broker-str (str broker)]
-                                (let [uri (java.net.URI. broker-str)
-                                      host (.getHost uri)
-                                      broker-port (.getPort uri)]
-                                  {"dashboard-uri" (str "http://" host ":" (-> (stats/get-meta-config host broker-port) (.getDashboardHttpPort)))
-                                   "slave" (.isSlave broker)
-                                   "broker" broker
-                                   "broker-uri" broker-str})))
-                            brokers)})
-                        all-brokers)))))
+  (let [ ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
+        cluster (.getCluster mz)
+        current-broker (with-broker (.getBrokerZooKeeper) (.getBroker))
+        all-brokers (.getBrokers cluster)]
+    (render-tpl "cluster.vm" :current current-broker
+                :nodes
+                (vec
+                 (map (fn [[id brokers]]
+                        {"id" id
+                         "brokers"
+                         (map
+                          (fn [broker]
+                            (when-let [broker-str (str broker)]
+                              (let [uri (java.net.URI. broker-str)
+                                    host (.getHost uri)
+                                    broker-port (.getPort uri)]
+                                {"dashboard-uri" (str "http://" host ":" (-> (stats/get-meta-config host broker-port) (.getDashboardHttpPort)))
+                                 "slave" (.isSlave broker)
+                                 "broker" broker
+                                 "broker-uri" broker-str})))
+                          brokers)})
+                      all-brokers)))))
 
 (defn not-found []
   {:status 200
