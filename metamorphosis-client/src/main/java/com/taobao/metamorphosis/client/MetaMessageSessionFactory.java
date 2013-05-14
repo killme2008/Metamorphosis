@@ -632,6 +632,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
     }
 
 
+    @Override
     public TopicBrowser createTopicBrowser(String topic) {
         return this.createTopicBrowser(topic, 1024 * 1024, 5, TimeUnit.SECONDS);
     }
@@ -639,7 +640,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
 
     @Override
     public TopicBrowser createTopicBrowser(String topic, int maxSize, long timeout, TimeUnit timeUnit) {
-        MessageConsumer consumer = this.createConsumer(new ConsumerConfig());
+        MessageConsumer consumer = this.createConsumer(new ConsumerConfig("just for topic browser"));
         return new MetaTopicBrowser(topic, maxSize, TimeUnit.MILLISECONDS.convert(timeout, timeUnit), consumer,
             this.getPartitionsForTopic(topic));
     }

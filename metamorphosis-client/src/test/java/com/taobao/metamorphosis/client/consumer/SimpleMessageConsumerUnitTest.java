@@ -47,16 +47,16 @@ import com.taobao.metamorphosis.network.OffsetCommand;
 
 public class SimpleMessageConsumerUnitTest {
 
-    private SimpleMessageConsumer consumer;
-    private ConsumerZooKeeper consumerZooKeeper;
-    private ProducerZooKeeper producerZooKeeper;
-    private OffsetStorage offsetStorage;
-    private IMocksControl mocksControl;
-    private ConsumerConfig consumerConfig;
-    private SubscribeInfoManager subscribeInfoManager;
-    private RecoverStorageManager recoverStorageManager;
-    private RemotingClientWrapper remotingClient;
-    private LoadBalanceStrategy loadBalanceStrategy;
+    protected SimpleMessageConsumer consumer;
+    protected ConsumerZooKeeper consumerZooKeeper;
+    protected ProducerZooKeeper producerZooKeeper;
+    protected OffsetStorage offsetStorage;
+    protected IMocksControl mocksControl;
+    protected ConsumerConfig consumerConfig;
+    protected SubscribeInfoManager subscribeInfoManager;
+    protected RecoverStorageManager recoverStorageManager;
+    protected RemotingClientWrapper remotingClient;
+    protected LoadBalanceStrategy loadBalanceStrategy;
 
 
     @Before

@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.cluster.Partition;
-import com.taobao.metamorphosis.exception.MetaClientException;
 
 
 /**
@@ -18,7 +17,7 @@ import com.taobao.metamorphosis.exception.MetaClientException;
  * @since 1.4.5
  * 
  */
-public interface TopicBrowser {
+public interface TopicBrowser extends Shutdownable {
 
     /**
      * Returns an iterator to iterate all messages under this topic from all
@@ -29,14 +28,6 @@ public interface TopicBrowser {
      * @return
      */
     public Iterator<Message> iterator();
-
-
-    /**
-     * Close the topic browser.
-     * 
-     * @throws MetaClientException
-     */
-    public void close() throws MetaClientException;
 
 
     /**

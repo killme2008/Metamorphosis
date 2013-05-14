@@ -128,6 +128,11 @@ public class MetaTopicBrowser implements TopicBrowser {
     }
 
 
+    public MessageConsumer getConsumer() {
+        return this.consumer;
+    }
+
+
     public MetaTopicBrowser(String topic, int maxSize, long timeoutInMills, MessageConsumer consumer,
             List<Partition> partitions) {
         super();
@@ -161,7 +166,7 @@ public class MetaTopicBrowser implements TopicBrowser {
 
 
     @Override
-    public void close() throws MetaClientException {
+    public void shutdown() throws MetaClientException {
         this.consumer.shutdown();
     }
 

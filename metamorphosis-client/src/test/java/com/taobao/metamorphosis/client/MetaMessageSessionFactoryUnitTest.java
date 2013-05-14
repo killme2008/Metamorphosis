@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
@@ -182,6 +183,34 @@ public class MetaMessageSessionFactoryUnitTest {
         assertFalse(this.messageSessionFactory.getChildren().contains(producer));
     }
 
+
+    @Test
+    public void testCreateTopicBrowser() throws Exception {
+        final TopicBrowser browser = this.messageSessionFactory.createTopicBrowser("test");
+        assertNotNull(browser);
+        MetaTopicBrowser metaTopicBrowser = (MetaTopicBrowser) browser;
+        assertTrue(this.messageSessionFactory.getChildren().contains(metaTopicBrowser.getConsumer()));
+        browser.shutdown();
+        assertFalse(this.messageSessionFactory.getChildren().contains(metaTopicBrowser.getConsumer()));
+    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateTopicBrowserBlankTopic() throws Exception {
+        this.messageSessionFactory.createTopicBrowser("");
+    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateTopicBrowserInvalidMaxSize() throws Exception {
+        this.messageSessionFactory.createTopicBrowser("test", -1, 1000, TimeUnit.MILLISECONDS);
+    }
+
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateTopicBrowserInvalidTimeout() throws Exception {
+        this.messageSessionFactory.createTopicBrowser("test", 1024, 0, TimeUnit.MILLISECONDS);
+    }
 
     @Test(expected = InvalidConsumerConfigException.class)
     public void testCreateConsumer_NoGroup() throws Exception {
