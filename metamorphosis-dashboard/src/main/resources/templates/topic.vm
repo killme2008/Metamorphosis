@@ -29,6 +29,8 @@
         <tr>
 		  <td>$!stats.partition</td>
 		  <td>$!stats.owner</td>
+		  <td>$!stats.pending-messages</td>
+		  <td>$!stats.pending-bytes</td>
 		  <td>$!stats.consumed-messages</td>
 		  <td>$!stats.consumed-bytes</td>
 		</tr>

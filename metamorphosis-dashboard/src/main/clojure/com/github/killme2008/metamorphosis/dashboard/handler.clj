@@ -108,7 +108,7 @@
                                                       (second (.split offset-str "-"))
                                                       offset-str))
                                    max-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
-                                   min-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
+                                   min-offset (-> msm (.getMessageStore topic partition) (.getMinOffset))
                                    pending-bytes (- max-offset consumer-offset)
                                    consumed-bytes (- consumer-offset min-offset)
                                    pending-messages (if-not (= avg-msg-size "N/A")
