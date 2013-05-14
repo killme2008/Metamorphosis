@@ -631,4 +631,17 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         }
     }
 
+
+    public TopicBrowser createTopicBrowser(String topic) {
+        return this.createTopicBrowser(topic, 1024 * 1024, 5, TimeUnit.SECONDS);
+    }
+
+
+    @Override
+    public TopicBrowser createTopicBrowser(String topic, int maxSize, long timeout, TimeUnit timeUnit) {
+        MessageConsumer consumer = this.createConsumer(new ConsumerConfig());
+        return new MetaTopicBrowser(topic, maxSize, TimeUnit.MILLISECONDS.convert(timeout, timeUnit), consumer,
+            this.getPartitionsForTopic(topic));
+    }
+
 }

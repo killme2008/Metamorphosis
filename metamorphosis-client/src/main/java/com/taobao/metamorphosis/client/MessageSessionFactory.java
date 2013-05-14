@@ -20,6 +20,7 @@ package com.taobao.metamorphosis.client;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.taobao.metamorphosis.client.consumer.ConsumerConfig;
 import com.taobao.metamorphosis.client.consumer.MessageConsumer;
@@ -167,5 +168,36 @@ public interface MessageSessionFactory extends Shutdownable {
      * @return partitions list
      */
     public List<Partition> getPartitionsForTopic(String topic);
+
+
+    /**
+     * Returns a topic browser to iterate all messages under the topic from all
+     * alive brokers.
+     * 
+     * @param topic
+     *            the topic
+     * @param maxSize
+     *            fetch batch size in bytes.
+     * @param timeout
+     *            timeout value to fetch messages.
+     * @param timeUnit
+     *            timeout value unit.
+     * @since 1.4.5
+     * @return topic browser
+     */
+    public TopicBrowser createTopicBrowser(String topic, int maxSize, long timeout, TimeUnit timeUnit);
+
+
+    /**
+     * Returns a topic browser to iterate all messages under the topic from all
+     * alive brokers.
+     * 
+     * @param topic
+     *            the topic
+     * @since 1.4.5
+     * @return topic browser
+     * @see #createTopicBrowser(String, int, long, TimeUnit)
+     */
+    public TopicBrowser createTopicBrowser(String topic);
 
 }
