@@ -112,11 +112,11 @@
                                    pending-bytes (- max-offset consumer-offset)
                                    consumed-bytes (- consumer-offset min-offset)
                                    pending-messages (if-not (= avg-msg-size "N/A")
-                                                      (long (quot pending-bytes  avg-msg-size))
+                                                      (long (Math/round (/ (double pending-bytes) avg-msg-size)))
                                                       "N/A")
                                    consumed-messages (if-not (= avg-msg-size "N/A")
-                                                      (long (quot consumed-bytes  avg-msg-size))
-                                                      "N/A")]
+                                                       (long (Math/round (/ (double consumed-bytes) avg-msg-size)))
+                                                       "N/A")]
                                {"pending-bytes" pending-bytes
                                 "pending-messages" pending-messages
                                 "consumed-bytes" consumed-bytes
