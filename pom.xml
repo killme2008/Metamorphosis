@@ -68,6 +68,7 @@
 		<artifactId>maven-eclipse-plugin</artifactId>
 		<version>2.5.1</version>
 		<configuration>
+		  <encoding>GBK</encoding>
 		  <downloadSources>true</downloadSources>
 		  <downloadJavadocs>false</downloadJavadocs>
 		</configuration>
@@ -267,10 +268,11 @@
 	  <plugin>
 		<groupId>org.apache.maven.plugins</groupId>
 		<artifactId>maven-javadoc-plugin</artifactId>
-		<version>2.5</version>
+		<version>2.9</version>
 		<configuration>
-		  <encoding>GBK</encoding>
 		  <charset>GBK</charset>
+		  <docencoding>GBK></docencoding>
+		  <encoding>GBK</encoding>
 		  <aggregate>true</aggregate>
 		</configuration>
 		<reportSets>
