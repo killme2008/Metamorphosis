@@ -85,7 +85,7 @@
 (defn- topic-list [req]
   (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getTopicsStats))))
 
-(defn- query-pending-messages [topic-stats group]
+(defn- query-pending-messages [topic-stats topic-config group]
   (let [^String topic (.getTopic topic-stats)
         avg-msg-size (if (> (.getMessageCount topic-stats) 0)
                        (/ (.getMessageBytes topic-stats) (.getMessageCount topic-stats))
@@ -123,16 +123,18 @@
                                 "consumed-messages" consumed-messages
                                 "owner" (ZkUtils/readDataMaybeNull zc owner-znode)}
                                )))))
-                (range 0 (.getPartitions topic-stats))))  
+                (range 0 (.getNumPartitions topic-config))))
       {"error" (format "The consumer group <strong>'%s'</strong> is not exists." group)})))
 
 (defn- topic-info [req]
   (let [topic (-> req :params :topic)
+        topic-config (with-broker (.getMetaConfig) (.getTopicConfig topic))
         topic-stats (with-broker (.getStatsManager) (.getTopicStats topic))
         group (-> req :params :group)]
+    (println topic-config)
     (if-not (empty? group)
       (render-tpl "topic.vm" :topic topic-stats :group group
-                  :pending-stats (query-pending-messages topic-stats group))
+                  :pending-stats (query-pending-messages topic-stats topic-config group))
       (render-tpl "topic.vm" :topic topic-stats))))
 
 (defn- reload-config [req]
