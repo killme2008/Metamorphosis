@@ -209,7 +209,10 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     loadBalanceListener.topicRegistry.put(topic, topicPartRegInfoMap);
                 }
                 final Partition partition = new Partition(loadBalanceListener.consumerConfig.getPartition());
-                final long offset = loadBalanceListener.consumerConfig.getOffset();
+                long offset = loadBalanceListener.consumerConfig.getOffset();
+                if (loadBalanceListener.consumerConfig.isAlwaysConsumeFromMaxOffset()) {
+                    offset = Long.MAX_VALUE;
+                }
                 final TopicPartitionRegInfo regInfo = new TopicPartitionRegInfo(topic, partition, offset);
                 topicPartRegInfoMap.put(partition, regInfo);
                 loadBalanceListener.fetchManager.addFetchRequest(new FetchRequest(new Broker(0,
@@ -742,6 +745,11 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 existsTopicPartitionRegInfo =
                         this.initTopicPartitionRegInfo(topic, consumerThreadId, partition,
                             this.consumerConfig.getOffset());// Long.MAX_VALUE
+            }
+            // If alwaysConsumeFromMaxOffset is set to be true,we always set
+            // offset to be Long.MAX_VALUE
+            if (this.consumerConfig.isAlwaysConsumeFromMaxOffset()) {
+                existsTopicPartitionRegInfo.getOffset().set(Long.MAX_VALUE);
             }
             partitionTopicInfo.put(partition, existsTopicPartitionRegInfo);
         }

@@ -55,6 +55,7 @@ public class ConsumerConfig extends MetaClientConfig {
     private String group;
     private long commitOffsetPeriodInMills = 5000L;
     private int maxFetchRetries = 5;
+    private boolean alwaysConsumeFromMaxOffset = false;
     private LoadBalanceStrategy.Type loadBalanceStrategyType = LoadBalanceStrategy.Type.DEFAULT;
 
     // 把消息处理失败重试跟拉取数据不足重试分开,
@@ -65,6 +66,11 @@ public class ConsumerConfig extends MetaClientConfig {
 
     public int getMaxFetchRetries() {
         return this.maxFetchRetries;
+    }
+
+
+    public boolean isAlwaysConsumeFromMaxOffset() {
+        return this.alwaysConsumeFromMaxOffset;
     }
 
 
@@ -153,11 +159,24 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * 设置首次订阅消息从实际最大的偏移量开始读取
+     * 设置首次订阅是否从最新位置开始消费。
      * 
      * @param offset
      */
     public void setConsumeFromMaxOffset() {
+        this.setConsumeFromMaxOffset(false);
+    }
+
+
+    /**
+     * 设置每次订阅是否从最新位置开始消费。
+     * 
+     * @since 1.4.5
+     * @param always
+     *            如果为true，表示每次启动都从最新位置开始消费。通常在测试的时候可以设置为true。
+     */
+    public void setConsumeFromMaxOffset(boolean always) {
+        this.alwaysConsumeFromMaxOffset = always;
         this.setOffset(Long.MAX_VALUE);
     }
 
