@@ -126,12 +126,30 @@
                 (range 0 (.getNumPartitions topic-config))))
       {"error" (format "The consumer group <strong>'%s'</strong> is not exists." group)})))
 
+(defn- skip-pending-msgs [req]
+  (let [{:keys [topic group partition]} (-> req :params)
+        partition (Integer/valueOf partition)
+        ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
+        ^ZkClient zc (.getZkClient mz)
+        broker-id (with-broker (.getMetaConfig) (.getBrokerId))
+        ^MetaZookeeper$ZKGroupTopicDirs topicDirs (MetaZookeeper$ZKGroupTopicDirs. mz topic group)
+        ^MessageStoreManager msm (with-broker (.getStoreManager))
+        part-str (str broker-id "-" partition)
+        offset-znode (str (.consumerOffsetDir topicDirs) "/" part-str)
+        owner-znode (str (.consumerOwnerDir topicDirs) "/" part-str)
+        offset-str (ZkUtils/readDataMaybeNull zc offset-znode)
+        max-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
+        owner (ZkUtils/readDataMaybeNull zc owner-znode)]
+    (if (seq  owner)
+      (format "Could not skip pending messages,because the parition was owned by %s,maybe you have to stop the consumers at first." owner)
+      (do (ZkUtils/updatePersistentPath zc offset-znode (str "0-" max-offset))
+          "success"))))
+
 (defn- topic-info [req]
   (let [topic (-> req :params :topic)
         topic-config (with-broker (.getMetaConfig) (.getTopicConfig topic))
         topic-stats (with-broker (.getStatsManager) (.getTopicStats topic))
         group (-> req :params :group)]
-    (println topic-config)
     (if-not (empty? group)
       (render-tpl "topic.vm" :topic topic-stats :group group
                   :pending-stats (query-pending-messages topic-stats topic-config group))
@@ -190,6 +208,7 @@
   (POST "/reload-config" [] reload-config)
   (GET "/topic-list" [] topic-list)
   (GET "/topic/:topic" [] topic-info)
+  (POST "/topics/:topic/groups/:group/partitions/:partition/skip" [] skip-pending-msgs)
   (GET "/stats" [] stats)
   (GET "/stats/:item" [] stats)
   (route/resources "/"))
