@@ -176,7 +176,7 @@
         all-brokers (.getBrokers cluster)]
     (render-tpl "cluster.vm" :current current-broker
                 :nodes
-                (vec
+                (sort-by #(get % "id")
                  (map (fn [[id brokers]]
                         {"id" id
                          "brokers"
