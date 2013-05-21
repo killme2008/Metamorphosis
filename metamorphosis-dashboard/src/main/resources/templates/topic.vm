@@ -122,14 +122,16 @@
 	    var partition = $(e.target).attr ("partition");
 	    var group = $("#consumer_group").val ();
         var topic = $("#consumer_topic").val ();
-        var url = "/topics/" + topic + "/groups/" + group + "/partitions/" + partition + "/skip";
-	    $.post (url, {} ,function (resp){
-          if (resp == "success")
-	          window.location.reload();
-          else {
-	         $("#alert").attr("class", "alert alert-error");
-	         $("#alert").html("<strong>Warning!</strong>"+resp);
-          }
-	    });
+	    if (confirm ("Are u sure want to skip all pending messages in topic " + topic + " for group " + group + " and partition " + partition + "?")) {
+            var url = "/topics/" + topic + "/groups/" + group + "/partitions/" + partition + "/skip";
+	        $.post (url, {} ,function (resp){
+              if (resp == "success")
+	              window.location.reload();
+              else {
+	             $("#alert").attr("class", "alert alert-error");
+	             $("#alert").html("<strong>Warning!</strong>"+resp);
+              }
+	        });
+       }
     });
 </script>
