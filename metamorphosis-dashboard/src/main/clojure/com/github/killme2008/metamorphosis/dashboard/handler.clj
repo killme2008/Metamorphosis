@@ -101,14 +101,17 @@
                          (let [part-str (str broker-id "-" partition)
                                offset-znode (str (.consumerOffsetDir topicDirs) "/" part-str)
                                owner-znode (str (.consumerOwnerDir topicDirs) "/" part-str)
+                               msg-store (-> msm (.getMessageStore topic partition))
                                offset-str (ZkUtils/readDataMaybeNull zc offset-znode)]
-                           (when offset-str
-                             (let [consumer-offset (Integer/valueOf
-                                                    (if (.contains offset-str "-")
-                                                      (second (.split offset-str "-"))
-                                                      offset-str))
-                                   max-offset (-> msm (.getMessageStore topic partition) (.getMaxOffset))
-                                   min-offset (-> msm (.getMessageStore topic partition) (.getMinOffset))
+                           (when msg-store
+                             (let [consumer-offset (if (seq offset-str)
+                                                     (Integer/valueOf
+                                                      (if (.contains offset-str "-")
+                                                        (second (.split offset-str "-"))
+                                                        offset-str))
+                                                     0)
+                                   max-offset (-> msg-store (.getMaxOffset))
+                                   min-offset (-> msg-store (.getMinOffset))
                                    pending-bytes (- max-offset consumer-offset)
                                    consumed-bytes (- consumer-offset min-offset)
                                    pending-messages (if-not (= avg-msg-size "N/A")
@@ -177,21 +180,21 @@
     (render-tpl "cluster.vm" :current current-broker
                 :nodes
                 (sort-by #(get % "id")
-                 (map (fn [[id brokers]]
-                        {"id" id
-                         "brokers"
-                         (map
-                          (fn [broker]
-                            (when-let [broker-str (str broker)]
-                              (let [uri (java.net.URI. broker-str)
-                                    host (.getHost uri)
-                                    broker-port (.getPort uri)]
-                                {"dashboard-uri" (str "http://" host ":" (-> (stats/get-meta-config host broker-port) (.getDashboardHttpPort)))
-                                 "slave" (.isSlave broker)
-                                 "broker" broker
-                                 "broker-uri" broker-str})))
-                          brokers)})
-                      all-brokers)))))
+                         (map (fn [[id brokers]]
+                                {"id" id
+                                 "brokers"
+                                 (map
+                                  (fn [broker]
+                                    (when-let [broker-str (str broker)]
+                                      (let [uri (java.net.URI. broker-str)
+                                            host (.getHost uri)
+                                            broker-port (.getPort uri)]
+                                        {"dashboard-uri" (str "http://" host ":" (-> (stats/get-meta-config host broker-port) (.getDashboardHttpPort)))
+                                         "slave" (.isSlave broker)
+                                         "broker" broker
+                                         "broker-uri" broker-str})))
+                                  brokers)})
+                              all-brokers)))))
 
 (defn not-found []
   {:status 200
