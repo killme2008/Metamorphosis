@@ -107,7 +107,7 @@ public class MessageBuilder {
         byte[] payload = this.payload;
         if (payload == null && converter != null) {
             try {
-                payload = converter.convertBody((T) this.body);
+                payload = converter.toByteArray((T) this.body);
             }
             catch (MetaClientException e) {
                 throw new IllegalStateException("Convert message body failed.", e);

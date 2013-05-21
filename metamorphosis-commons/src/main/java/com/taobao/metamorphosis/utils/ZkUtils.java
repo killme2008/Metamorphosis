@@ -313,6 +313,64 @@ public class ZkUtils {
         }
 
 
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + (this.zkConnect == null ? 0 : this.zkConnect.hashCode());
+            result = prime * result + this.zkConnectionTimeoutMs;
+            result = prime * result + (this.zkEnable ? 1231 : 1237);
+            result = prime * result + (this.zkRoot == null ? 0 : this.zkRoot.hashCode());
+            result = prime * result + this.zkSessionTimeoutMs;
+            result = prime * result + this.zkSyncTimeMs;
+            return result;
+        }
+
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (this.getClass() != obj.getClass()) {
+                return false;
+            }
+            ZKConfig other = (ZKConfig) obj;
+            if (this.zkConnect == null) {
+                if (other.zkConnect != null) {
+                    return false;
+                }
+            }
+            else if (!this.zkConnect.equals(other.zkConnect)) {
+                return false;
+            }
+            if (this.zkConnectionTimeoutMs != other.zkConnectionTimeoutMs) {
+                return false;
+            }
+            if (this.zkEnable != other.zkEnable) {
+                return false;
+            }
+            if (this.zkRoot == null) {
+                if (other.zkRoot != null) {
+                    return false;
+                }
+            }
+            else if (!this.zkRoot.equals(other.zkRoot)) {
+                return false;
+            }
+            if (this.zkSessionTimeoutMs != other.zkSessionTimeoutMs) {
+                return false;
+            }
+            if (this.zkSyncTimeMs != other.zkSyncTimeMs) {
+                return false;
+            }
+            return true;
+        }
+
+
         public ZKConfig(final String zkRoot, final String zkConnect, final int zkSessionTimeoutMs,
                 final int zkConnectionTimeoutMs, final int zkSyncTimeMs, final boolean zkEnable) {
             super();

@@ -127,4 +127,82 @@ public class MetaClientConfig implements Serializable {
         return this.partitionsInfo;
     }
 
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (this.diamondPartitionsDataId == null ? 0 : this.diamondPartitionsDataId.hashCode());
+        result = prime * result + (this.diamondPartitionsGroup == null ? 0 : this.diamondPartitionsGroup.hashCode());
+        result = prime * result + (this.partitionsInfo == null ? 0 : this.partitionsInfo.hashCode());
+        result =
+                prime * result + (int) (this.recoverMessageIntervalInMills ^ this.recoverMessageIntervalInMills >>> 32);
+        result = prime * result + this.recoverThreadCount;
+        result = prime * result + (this.serverUrl == null ? 0 : this.serverUrl.hashCode());
+        result = prime * result + (this.zkConfig == null ? 0 : this.zkConfig.hashCode());
+        return result;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+        MetaClientConfig other = (MetaClientConfig) obj;
+        if (this.diamondPartitionsDataId == null) {
+            if (other.diamondPartitionsDataId != null) {
+                return false;
+            }
+        }
+        else if (!this.diamondPartitionsDataId.equals(other.diamondPartitionsDataId)) {
+            return false;
+        }
+        if (this.diamondPartitionsGroup == null) {
+            if (other.diamondPartitionsGroup != null) {
+                return false;
+            }
+        }
+        else if (!this.diamondPartitionsGroup.equals(other.diamondPartitionsGroup)) {
+            return false;
+        }
+        if (this.partitionsInfo == null) {
+            if (other.partitionsInfo != null) {
+                return false;
+            }
+        }
+        else if (!this.partitionsInfo.equals(other.partitionsInfo)) {
+            return false;
+        }
+        if (this.recoverMessageIntervalInMills != other.recoverMessageIntervalInMills) {
+            return false;
+        }
+        if (this.recoverThreadCount != other.recoverThreadCount) {
+            return false;
+        }
+        if (this.serverUrl == null) {
+            if (other.serverUrl != null) {
+                return false;
+            }
+        }
+        else if (!this.serverUrl.equals(other.serverUrl)) {
+            return false;
+        }
+        if (this.zkConfig == null) {
+            if (other.zkConfig != null) {
+                return false;
+            }
+        }
+        else if (!this.zkConfig.equals(other.zkConfig)) {
+            return false;
+        }
+        return true;
+    }
+
 }

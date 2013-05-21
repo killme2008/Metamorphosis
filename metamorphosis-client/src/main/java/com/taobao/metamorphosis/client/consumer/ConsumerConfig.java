@@ -358,4 +358,98 @@ public class ConsumerConfig extends MetaClientConfig {
         this.loadBalanceStrategyType = loadBalanceStrategyType;
     }
 
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (this.alwaysConsumeFromMaxOffset ? 1231 : 1237);
+        result = prime * result + (int) (this.commitOffsetPeriodInMills ^ this.commitOffsetPeriodInMills >>> 32);
+        result = prime * result + (this.consumerId == null ? 0 : this.consumerId.hashCode());
+        result = prime * result + this.fetchRunnerCount;
+        result = prime * result + (int) (this.fetchTimeoutInMills ^ this.fetchTimeoutInMills >>> 32);
+        result = prime * result + (this.group == null ? 0 : this.group.hashCode());
+        result = prime * result + (this.loadBalanceStrategyType == null ? 0 : this.loadBalanceStrategyType.hashCode());
+        result = prime * result + (int) (this.maxDelayFetchTimeInMills ^ this.maxDelayFetchTimeInMills >>> 32);
+        result =
+                prime
+                * result
+                + (int) (this.maxDelayFetchTimeWhenExceptionInMills ^ this.maxDelayFetchTimeWhenExceptionInMills >>> 32);
+        result = prime * result + this.maxFetchRetries;
+        result = prime * result + this.maxIncreaseFetchDataRetries;
+        result = prime * result + (int) (this.offset ^ this.offset >>> 32);
+        result = prime * result + (this.partition == null ? 0 : this.partition.hashCode());
+        return result;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+        ConsumerConfig other = (ConsumerConfig) obj;
+        if (this.alwaysConsumeFromMaxOffset != other.alwaysConsumeFromMaxOffset) {
+            return false;
+        }
+        if (this.commitOffsetPeriodInMills != other.commitOffsetPeriodInMills) {
+            return false;
+        }
+        if (this.consumerId == null) {
+            if (other.consumerId != null) {
+                return false;
+            }
+        }
+        else if (!this.consumerId.equals(other.consumerId)) {
+            return false;
+        }
+        if (this.fetchRunnerCount != other.fetchRunnerCount) {
+            return false;
+        }
+        if (this.fetchTimeoutInMills != other.fetchTimeoutInMills) {
+            return false;
+        }
+        if (this.group == null) {
+            if (other.group != null) {
+                return false;
+            }
+        }
+        else if (!this.group.equals(other.group)) {
+            return false;
+        }
+        if (this.loadBalanceStrategyType != other.loadBalanceStrategyType) {
+            return false;
+        }
+        if (this.maxDelayFetchTimeInMills != other.maxDelayFetchTimeInMills) {
+            return false;
+        }
+        if (this.maxDelayFetchTimeWhenExceptionInMills != other.maxDelayFetchTimeWhenExceptionInMills) {
+            return false;
+        }
+        if (this.maxFetchRetries != other.maxFetchRetries) {
+            return false;
+        }
+        if (this.maxIncreaseFetchDataRetries != other.maxIncreaseFetchDataRetries) {
+            return false;
+        }
+        if (this.offset != other.offset) {
+            return false;
+        }
+        if (this.partition == null) {
+            if (other.partition != null) {
+                return false;
+            }
+        }
+        else if (!this.partition.equals(other.partition)) {
+            return false;
+        }
+        return true;
+    }
+
 }

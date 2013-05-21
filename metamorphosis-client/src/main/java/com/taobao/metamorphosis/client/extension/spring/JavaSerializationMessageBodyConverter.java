@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import com.taobao.metamorphosis.exception.MetaClientException;
+import com.taobao.metamorphosis.utils.codec.impl.JavaDeserializer;
 import com.taobao.metamorphosis.utils.codec.impl.JavaSerializer;
 
 
@@ -16,12 +17,25 @@ import com.taobao.metamorphosis.utils.codec.impl.JavaSerializer;
  */
 public class JavaSerializationMessageBodyConverter implements MessageBodyConverter<Serializable> {
     JavaSerializer serializer = new JavaSerializer();
+    JavaDeserializer deserializer = new JavaDeserializer();
 
 
     @Override
-    public byte[] convertBody(Serializable body) throws MetaClientException {
+    public byte[] toByteArray(Serializable body) throws MetaClientException {
         try {
             return this.serializer.encodeObject(body);
+        }
+        catch (IOException e) {
+            throw new MetaClientException(e);
+
+        }
+    }
+
+
+    @Override
+    public Serializable fromByteArray(byte[] bs) throws MetaClientException {
+        try {
+            return (Serializable) this.deserializer.decodeObject(bs);
         }
         catch (IOException e) {
             throw new MetaClientException(e);

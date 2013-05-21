@@ -27,7 +27,7 @@ public class MetaqTemplate {
 
     private String defaultTopic;
 
-    private MessageBodyConverter<?> messageBodyConverter = new JavaSerializationMessageBodyConverter();
+    private MessageBodyConverter<?> messageBodyConverter;
 
     private boolean shareProducer = false;
 

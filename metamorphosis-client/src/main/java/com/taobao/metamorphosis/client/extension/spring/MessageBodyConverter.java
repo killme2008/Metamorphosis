@@ -11,5 +11,22 @@ import com.taobao.metamorphosis.exception.MetaClientException;
  * @param <T>
  */
 public interface MessageBodyConverter<T> {
-    public byte[] convertBody(T body) throws MetaClientException;
+    /**
+     * Convert a message object to byte array.
+     * 
+     * @param body
+     * @return
+     * @throws MetaClientException
+     */
+    public byte[] toByteArray(T body) throws MetaClientException;
+
+
+    /**
+     * Convert a byte array to message object.
+     * 
+     * @param bs
+     * @return
+     * @throws MetaClientException
+     */
+    public T fromByteArray(byte[] bs) throws MetaClientException;
 }
