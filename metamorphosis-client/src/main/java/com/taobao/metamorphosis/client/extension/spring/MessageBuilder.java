@@ -20,6 +20,9 @@ public class MessageBuilder {
 
 
     private MessageBuilder(String topic) {
+        if (StringUtils.isBlank(topic)) {
+            throw new IllegalArgumentException("blank topic");
+        }
         this.topic = topic;
     }
 

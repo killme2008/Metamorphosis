@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.DisposableBean;
+
 import com.taobao.gecko.core.util.StringUtils;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MessageSessionFactory;
@@ -22,7 +24,7 @@ import com.taobao.metamorphosis.utils.ThreadUtils;
  * @author dennis<killme2008@gmail.com>
  * 
  */
-public class MetaqTemplate {
+public class MetaqTemplate implements DisposableBean {
     private MessageSessionFactory messageSessionFactory;
 
     private String defaultTopic;
@@ -229,6 +231,28 @@ public class MetaqTemplate {
         final String topic = msg.getTopic();
         MessageProducer producer = this.getOrCreateProducer(topic);
         producer.sendMessage(msg, cb, timeout, unit);
+    }
+
+
+    @Override
+    public void destroy() throws Exception {
+        if (this.sharedProducer != null) {
+            this.sharedProducer.shutdown();
+            this.sharedProducer = null;
+        }
+        for (FutureTask<MessageProducer> task : this.producers.values()) {
+            try {
+                MessageProducer producer = task.get(5000, TimeUnit.MILLISECONDS);
+                if (producer != null) {
+                    producer.shutdown();
+                }
+            }
+            catch (Exception e) {
+                // ignore
+            }
+        }
+        this.producers.clear();
+
     }
 
 

@@ -22,6 +22,19 @@ public class MetaQTopic {
     private int maxBufferSize = 1024 * 1024;
 
 
+    public MetaQTopic(String topic, int maxBufferSize, ConsumerConfig consumerConfig) {
+        super();
+        this.topic = topic;
+        this.maxBufferSize = maxBufferSize;
+        this.consumerConfig = consumerConfig;
+    }
+
+
+    public MetaQTopic() {
+        super();
+    }
+
+
     public int getMaxBufferSize() {
         return this.maxBufferSize;
     }

@@ -4,11 +4,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.PostConstruct;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
 
 import com.taobao.gecko.core.util.StringUtils;
 import com.taobao.metamorphosis.client.MessageSessionFactory;
@@ -24,7 +25,7 @@ import com.taobao.metamorphosis.exception.MetaClientException;
  * @since 1.4.5
  * 
  */
-public class MessageListenerContainer {
+public class MessageListenerContainer implements InitializingBean, DisposableBean {
 
     private MessageBodyConverter<?> messageBodyConverter;
 
@@ -42,6 +43,8 @@ public class MessageListenerContainer {
     private MetaQTopic defaultTopic;
 
     private MessageListener defaultMessageListener;
+
+    private final CopyOnWriteArrayList<MessageConsumer> consumers = new CopyOnWriteArrayList<MessageConsumer>();
 
 
     /**
@@ -98,6 +101,7 @@ public class MessageListenerContainer {
                             this.sharedConsumer.subscribe(this.defaultTopic.getTopic(),
                                 this.defaultTopic.getMaxBufferSize(), this.defaultMessageListener);
                         }
+                        this.consumers.add(this.sharedConsumer);
                     }
                 }
             }
@@ -108,7 +112,32 @@ public class MessageListenerContainer {
                 throw new IllegalStateException(
                         "You can't provide default topic or message listener when sharing consumer.");
             }
-            return this.messageSessionFactory.createConsumer(topic.getConsumerConfig());
+            MessageConsumer consumer = this.messageSessionFactory.createConsumer(topic.getConsumerConfig());
+            this.consumers.add(consumer);
+            return consumer;
+        }
+    }
+
+
+    @Override
+    public void destroy() throws Exception {
+        if (this.sharedConsumer != null) {
+            this.shutdownConsumer(this.sharedConsumer);
+            this.sharedConsumer = null;
+        }
+        for (MessageConsumer consumer : this.consumers) {
+            this.shutdownConsumer(consumer);
+        }
+        this.consumers.clear();
+    }
+
+
+    private void shutdownConsumer(MessageConsumer consumer) {
+        try {
+            consumer.shutdown();
+        }
+        catch (MetaClientException e) {
+            log.error("Shutdown consumer failed", e);
         }
     }
 
@@ -155,8 +184,8 @@ public class MessageListenerContainer {
     }
 
 
-    @PostConstruct
-    public void init() throws MetaClientException {
+    @Override
+    public void afterPropertiesSet() throws Exception {
         log.info("Start to initialize message listener container.");
         if (this.subscribers != null) {
             Set<MessageConsumer> consumers = new HashSet<MessageConsumer>();
