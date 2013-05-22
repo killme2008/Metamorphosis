@@ -107,7 +107,8 @@
                              (let [consumer-offset (if (seq offset-str)
                                                      (Integer/valueOf
                                                       (if (.contains offset-str "-")
-                                                        (second (.split offset-str "-"))
+                                                        (let [idx (.lastIndexOf offset-str "-")]
+                                                          (.substring offset-str (inc idx)))
                                                         offset-str))
                                                      0)
                                    max-offset (-> msg-store (.getMaxOffset))
@@ -221,7 +222,7 @@
     (try
       (or (handler req) (not-found))
       (catch Exception e
-        (log/error "Process request failed" e)
+        (log/error e "Process request failed")
         {:status 200
          :body (render-tpl "error.vm" :error (or (.getMessage e) e))}))))
 

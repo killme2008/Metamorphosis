@@ -708,7 +708,12 @@ public class MessageStore extends Thread implements Closeable {
      */
     public long getMaxOffset() {
         final Segment last = this.segments.last();
-        return last.start + last.size();
+        if (last != null) {
+            return last.start + last.size();
+        }
+        else {
+            return 0;
+        }
     }
 
 
@@ -718,7 +723,13 @@ public class MessageStore extends Thread implements Closeable {
      * @return
      */
     public long getMinOffset() {
-        return this.segments.first().start;
+        Segment first = this.segments.first();
+        if (first != null) {
+            return first.start;
+        }
+        else {
+            return 0;
+        }
     }
 
 
