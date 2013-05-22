@@ -34,8 +34,8 @@ public class IdWorkerUnitTest {
 
     @Before
     public void setUp() {
-        this.idWorker1 = new IdWorker(0);
-        this.idWorker2 = new IdWorker(1);
+        this.idWorker1 = new IdWorker(20);
+        this.idWorker2 = new IdWorker(21);
     }
 
 
@@ -45,6 +45,7 @@ public class IdWorkerUnitTest {
         final long id2 = this.idWorker1.nextId();
         final long id3 = this.idWorker1.nextId();
 
+        System.out.println(id1 + " " + id2 + " " + id3);
         assertFalse(id1 == id2);
         assertFalse(id1 == id3);
         assertFalse(id2 == id3);

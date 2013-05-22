@@ -475,8 +475,8 @@ public class SimpleFetchManager implements FetchManager {
 
         private void ackRequest(final FetchRequest request, final MessageIterator it, final boolean ack) {
             if (!this.stopped) {
-                request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage() != null ? it.getPrevMessage()
-                        .getId() : -1, ack);
+                long msgId = it.getPrevMessage() != null ? it.getPrevMessage().getId() : -1;
+                request.setOffset(request.getOffset() + it.getOffset(), msgId, ack);
             }
             this.addRequst(request);
         }

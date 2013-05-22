@@ -245,7 +245,7 @@ public class FetchRequest implements Delayed {
             // 对topicPartitionRegInfo加锁，防止提交到zk不一致
             synchronized (this.topicPartitionRegInfo) {
                 this.topicPartitionRegInfo.getOffset().set(offset);
-                if (msgId > 0) {
+                if (msgId != -1) {
                     this.topicPartitionRegInfo.setMessageId(msgId);
                 }
                 // 有变更，需要更新到storage
