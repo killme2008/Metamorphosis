@@ -23,7 +23,7 @@
   (apply render (str "templates/" tpl) vs))
 
 (defn-  index [req]
-  (render-tpl "index.vm" :topics (with-broker (.getStoreManager) (.getAllTopics))))
+  (render-tpl "index.vm" :broker_id (with-broker (.getMetaConfig) (.getBrokerId))))
 
 (defn- instance []
   {:start (u/pretty-time (with-broker (.getStatsManager) (.getStartupTimestamp)))
@@ -102,8 +102,9 @@
                                offset-znode (str (.consumerOffsetDir topicDirs) "/" part-str)
                                owner-znode (str (.consumerOwnerDir topicDirs) "/" part-str)
                                msg-store (-> msm (.getMessageStore topic partition))
-                               offset-str (ZkUtils/readDataMaybeNull zc offset-znode)]
-                           (when msg-store
+                               offset-str (ZkUtils/readDataMaybeNull zc offset-znode)
+                               owner (ZkUtils/readDataMaybeNull zc owner-znode)]
+                           (when (or msg-store (seq owner))
                              (let [consumer-offset (if (seq offset-str)
                                                      (Integer/valueOf
                                                       (if (.contains offset-str "-")
@@ -111,8 +112,12 @@
                                                           (.substring offset-str (inc idx)))
                                                         offset-str))
                                                      0)
-                                   max-offset (-> msg-store (.getMaxOffset))
-                                   min-offset (-> msg-store (.getMinOffset))
+                                   max-offset (if msg-store
+                                                (-> msg-store (.getMaxOffset))
+                                                0) 
+                                   min-offset (if msg-store
+                                                (-> msg-store (.getMinOffset))
+                                                0)
                                    pending-bytes (- max-offset consumer-offset)
                                    consumed-bytes (- consumer-offset min-offset)
                                    pending-messages (if-not (= avg-msg-size "N/A")
@@ -125,7 +130,7 @@
                                 "pending-messages" pending-messages
                                 "consumed-bytes" consumed-bytes
                                 "consumed-messages" consumed-messages
-                                "owner" (ZkUtils/readDataMaybeNull zc owner-znode)}
+                                "owner" owner}
                                )))))
                 (range 0 (.getNumPartitions topic-config))))
       {"error" (format "The consumer group <strong>'%s'</strong> is not exists." group)})))

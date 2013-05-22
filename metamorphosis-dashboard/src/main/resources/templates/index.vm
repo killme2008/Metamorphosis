@@ -11,7 +11,7 @@
 	<script type="text/javascript" src="js/bootstrap.js"></script>
 	<script type="text/javascript" src="js/metaq.js"></script>
 </script>
-<title>MetaQ admin 1.4.5</title>
+<title>MetaQ admin 1.4.5 -- Broker-$!broker_id</title>
 </head>
 <body>
   <div class="container-fluid">
