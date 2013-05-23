@@ -82,4 +82,54 @@ public class SendResult {
         return this.errorMessage;
     }
 
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (this.errorMessage == null ? 0 : this.errorMessage.hashCode());
+        result = prime * result + (int) (this.offset ^ this.offset >>> 32);
+        result = prime * result + (this.partition == null ? 0 : this.partition.hashCode());
+        result = prime * result + (this.success ? 1231 : 1237);
+        return result;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+        SendResult other = (SendResult) obj;
+        if (this.errorMessage == null) {
+            if (other.errorMessage != null) {
+                return false;
+            }
+        }
+        else if (!this.errorMessage.equals(other.errorMessage)) {
+            return false;
+        }
+        if (this.offset != other.offset) {
+            return false;
+        }
+        if (this.partition == null) {
+            if (other.partition != null) {
+                return false;
+            }
+        }
+        else if (!this.partition.equals(other.partition)) {
+            return false;
+        }
+        if (this.success != other.success) {
+            return false;
+        }
+        return true;
+    }
+
 }

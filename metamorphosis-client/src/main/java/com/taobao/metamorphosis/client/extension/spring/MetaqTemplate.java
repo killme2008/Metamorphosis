@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.springframework.beans.factory.DisposableBean;
 
 import com.taobao.gecko.core.util.StringUtils;
@@ -204,6 +205,27 @@ public class MetaqTemplate implements DisposableBean {
      * @throws InterruptedException
      * @since 1.4.5
      */
+    public SendResult send(MessageBuilder builder, long timeout, TimeUnit unit) throws InterruptedException {
+        Message msg = builder.build(this.messageBodyConverter);
+        final String topic = msg.getTopic();
+        MessageProducer producer = this.getOrCreateProducer(topic);
+        try {
+            return producer.sendMessage(msg, timeout, unit);
+        }
+        catch (MetaClientException e) {
+            return new SendResult(false, null, -1, ExceptionUtils.getFullStackTrace(e));
+        }
+    }
+
+
+    /**
+     * Send message built by message builder.Returns the sent result.
+     * 
+     * @param builder
+     * @return
+     * @throws InterruptedException
+     * @since 1.4.5
+     */
     public SendResult send(MessageBuilder builder) throws InterruptedException {
         Message msg = builder.build(this.messageBodyConverter);
         final String topic = msg.getTopic();
@@ -212,7 +234,7 @@ public class MetaqTemplate implements DisposableBean {
             return producer.sendMessage(msg);
         }
         catch (MetaClientException e) {
-            return new SendResult(false, null, -1, e.getMessage());
+            return new SendResult(false, null, -1, ExceptionUtils.getFullStackTrace(e));
         }
     }
 
