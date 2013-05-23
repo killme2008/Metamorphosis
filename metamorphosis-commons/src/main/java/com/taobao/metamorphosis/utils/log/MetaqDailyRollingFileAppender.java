@@ -17,14 +17,14 @@ import org.apache.log4j.spi.LoggingEvent;
  */
 public class MetaqDailyRollingFileAppender extends DailyRollingFileAppender {
 
-    private int logBufferSize = 10;
+    private int logBufferSize = 20;
 
     private LinkedList<LoggingEvent> events;
 
 
     public List<String> getLogs(long timestamp) {
         List<String> rt = new ArrayList<String>();
-        List<LoggingEvent> copiedEvents = getEvents();
+        List<LoggingEvent> copiedEvents = this.getEvents();
         for (LoggingEvent event : copiedEvents) {
             if (event.timeStamp > timestamp) {
                 rt.add(this.layout.format(event));

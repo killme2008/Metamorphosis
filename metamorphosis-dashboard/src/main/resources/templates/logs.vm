@@ -3,3 +3,9 @@
   $log <br/>
 #end
 </div>
+<script type="text/javascript">
+  function refresh (){
+     window.location.reload ();
+  };
+  setTimeout(refresh, 1500);
+</script>
