@@ -11,9 +11,13 @@
 
 这是MetaQ的一个github分支，我做了部分优化和改进，并将meta发布到maven central repository，还做了一些wiki文档，我能承诺的是我个人会持续维护本项目。
 
+MetaQ的淘宝版本已经发展到2.0乃至3.0版本，设计原则发生了变更，有兴趣的可以上它的官方网站看。
+
+本分支应用在京东，delicious.com，支付宝，腾讯等公司的产品上。
+
 #关于我
 
-我在淘宝中间件部门工作了近3年，主要负责分布式消息中间等产品的开发，Metamorphosis是我在淘宝发起和实现的项目。目前我在[AVOS.com](http://www.avos.com)工作。我的[个人主页](http://fnil.net/)。
+我在淘宝中间件部门工作了近3年，主要负责分布式消息中间件，高性能网络框架，分布式配置产品等的设计和开发，Metamorphosis是我在淘宝发起和实现的项目。目前我在[AVOS.com](http://www.avos.com)工作。我的[个人主页](http://fnil.net/)。
 
 #协议
 
