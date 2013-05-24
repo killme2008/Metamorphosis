@@ -63,6 +63,7 @@ public class XATransactionProducer {
 
 
     public static void main(final String[] args) throws Exception {
+        // create transaction manager,reuse it.
         final TransactionManager tm = new UserTransactionManager();
 
         final String topic = "meta-test";
@@ -71,10 +72,8 @@ public class XATransactionProducer {
         XAMessageProducer xaMessageProducer = xasf.createXAProducer();
         // publish topic
         xaMessageProducer.publish(topic);
-        // create XA datasource.
+        // create XA datasource,reuse it.
         final XADataSource xads = getXADataSource();
-
-        final XATransactionTemplate template = new XATransactionTemplate(tm, xads, xaMessageProducer);
 
         final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String line = null;
@@ -82,6 +81,8 @@ public class XATransactionProducer {
         while ((line = readLine(reader)) != null) {
             final String message = line;
             try {
+                // we should create a template every transaction.
+                final XATransactionTemplate template = new XATransactionTemplate(tm, xads, xaMessageProducer);
                 template.executeCallback(new XACallback() {
                     @Override
                     public Object execute(final Connection conn, final XAMessageProducer producer) throws Exception {
