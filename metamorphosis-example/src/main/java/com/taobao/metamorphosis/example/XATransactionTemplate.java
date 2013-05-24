@@ -19,8 +19,6 @@ package com.taobao.metamorphosis.example;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
@@ -31,9 +29,6 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 
-import com.taobao.metamorphosis.client.XAMessageSessionFactory;
-import com.taobao.metamorphosis.client.producer.PartitionSelector;
-import com.taobao.metamorphosis.client.producer.RoundRobinPartitionSelector;
 import com.taobao.metamorphosis.client.producer.XAMessageProducer;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
@@ -49,19 +44,11 @@ public class XATransactionTemplate {
 
     private XADataSource xaDataSource;
 
-    private XAMessageSessionFactory xaMessageSessionFactory;
-
     private XAMessageProducer xaMessageProducer;
-
-    private PartitionSelector partitionSelector;
 
     private TransactionManager transactionManager;
 
     private int transactionTimeout;
-
-    private Set<String> publishTopics = new HashSet<String>();
-
-    private boolean wasInit = false;
 
 
     public XATransactionTemplate() {
@@ -70,10 +57,10 @@ public class XATransactionTemplate {
 
 
     public XATransactionTemplate(final TransactionManager transactionManager, final XADataSource xaDataSource,
-            final XAMessageSessionFactory xaMessageSessionFactory) {
+            final XAMessageProducer xaMessageProducer) {
         super();
         this.xaDataSource = xaDataSource;
-        this.xaMessageSessionFactory = xaMessageSessionFactory;
+        this.xaMessageProducer = xaMessageProducer;
         this.transactionManager = transactionManager;
     }
 
@@ -83,51 +70,20 @@ public class XATransactionTemplate {
     }
 
 
-    public void publishTopic(final String topic) {
-        try {
-            this.init();
-            final XAMessageProducer producer = this.getXAMessageProducer();
-            producer.publish(topic);
-            this.publishTopics.add(topic);
-        }
-        catch (final Exception e) {
-            throw new XAWrapException(e);
-        }
-    }
-
-
-    public Set<String> getPublishTopics() {
-        return this.publishTopics;
-    }
-
-
-    public void setPublishTopics(final Set<String> publishTopics) {
-        this.publishTopics = publishTopics;
-    }
-
-
     public void setTransactionManager(final TransactionManager transactionManager) {
         this.transactionManager = transactionManager;
     }
 
 
-    private synchronized void init() throws SystemException {
-        if (this.wasInit) {
-            return;
-        }
-        this.wasInit = true;
+    private void init() throws SystemException {
         if (this.getTransactionManager() == null) {
             throw new IllegalArgumentException("null tm");
         }
         if (this.getXaDataSource() == null) {
             throw new IllegalArgumentException("null XADatasource");
         }
-        if (this.getXaMessageSessionFactory() == null) {
-            throw new IllegalArgumentException("null XAMessageSessionFactory");
-        }
-        final XAMessageProducer producer = this.getXAMessageProducer();
-        for (final String topic : this.publishTopics) {
-            producer.publish(topic);
+        if (this.getXAMessageProducer() == null) {
+            throw new IllegalArgumentException("null XAMessageProducer");
         }
         this.transactionManager.setTransactionTimeout(this.transactionTimeout);
     }
@@ -186,7 +142,7 @@ public class XATransactionTemplate {
 
 
     private Transaction beginTx(final XAMessageProducer producer, final XAConnection conn) throws SystemException,
-            MetaClientException, SQLException, RollbackException, NotSupportedException {
+    MetaClientException, SQLException, RollbackException, NotSupportedException {
         this.transactionManager.begin();
         final Transaction tx = this.transactionManager.getTransaction();
         if (tx == null) {
@@ -236,27 +192,8 @@ public class XATransactionTemplate {
     }
 
 
-    private synchronized XAMessageProducer getXAMessageProducer() {
-        if (this.xaMessageProducer != null) {
-            return this.xaMessageProducer;
-        }
-        final XAMessageSessionFactory xasf = this.getXaMessageSessionFactory();
-        PartitionSelector ps = this.getPartitionSelector();
-        if (ps == null) {
-            ps = new RoundRobinPartitionSelector();
-        }
-        this.xaMessageProducer = xasf.createXAProducer(ps);
+    public XAMessageProducer getXAMessageProducer() {
         return this.xaMessageProducer;
-    }
-
-
-    public PartitionSelector getPartitionSelector() {
-        return this.partitionSelector;
-    }
-
-
-    public void setPartitionSelector(final PartitionSelector partitionSelector) {
-        this.partitionSelector = partitionSelector;
     }
 
 
@@ -268,15 +205,4 @@ public class XATransactionTemplate {
     public void setXaDataSource(final XADataSource xaDataSource) {
         this.xaDataSource = xaDataSource;
     }
-
-
-    public XAMessageSessionFactory getXaMessageSessionFactory() {
-        return this.xaMessageSessionFactory;
-    }
-
-
-    public void setXaMessageSessionFactory(final XAMessageSessionFactory xaMessageSessionFactory) {
-        this.xaMessageSessionFactory = xaMessageSessionFactory;
-    }
-
 }

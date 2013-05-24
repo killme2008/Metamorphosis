@@ -54,7 +54,7 @@ public class XATransactionProducer {
     private static XADataSource getXADataSource() throws SQLException {
         final MysqlXADataSource mysqlXADataSource = new MysqlXADataSource();
         mysqlXADataSource
-            .setUrl("jdbc:mysql://10.232.36.83:3306/metamorphosis?characterEncoding=utf8&connectTimeout=1000&autoReconnect=true");
+        .setUrl("jdbc:mysql://10.232.36.83:3306/metamorphosis?characterEncoding=utf8&connectTimeout=1000&autoReconnect=true");
         mysqlXADataSource.setUser("notify");
         mysqlXADataSource.setPassword("notify");
         mysqlXADataSource.setPreparedStatementCacheSize(20);
@@ -67,10 +67,14 @@ public class XATransactionProducer {
 
         final String topic = "meta-test";
         final XAMessageSessionFactory xasf = getXAMessageSessionFactory();
+        // create XA producer,it should be used as a singleton instance.
+        XAMessageProducer xaMessageProducer = xasf.createXAProducer();
+        // publish topic
+        xaMessageProducer.publish(topic);
+        // create XA datasource.
         final XADataSource xads = getXADataSource();
 
-        final XATransactionTemplate template = new XATransactionTemplate(tm, xads, xasf);
-        template.publishTopic(topic);
+        final XATransactionTemplate template = new XATransactionTemplate(tm, xads, xaMessageProducer);
 
         final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String line = null;
@@ -79,6 +83,7 @@ public class XATransactionProducer {
             final String message = line;
             try {
                 template.executeCallback(new XACallback() {
+                    @Override
                     public Object execute(final Connection conn, final XAMessageProducer producer) throws Exception {
                         final PreparedStatement pstmt = conn.prepareStatement("insert into xa_demo(message) values(?)");
                         // 数据库msg不能为null，可以尝试将这里setString设置null，来观察回滚现象。
