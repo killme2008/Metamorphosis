@@ -17,7 +17,8 @@ import org.apache.log4j.spi.LoggingEvent;
  */
 public class MetaqDailyRollingFileAppender extends DailyRollingFileAppender {
 
-    private int logBufferSize = 20;
+    private int logBufferSize = Integer.valueOf(System.getProperty(
+        "metaq.log4j.daily.rolling.file.appender.log.bufferSize", "20"));
 
     private LinkedList<LoggingEvent> events;
 
