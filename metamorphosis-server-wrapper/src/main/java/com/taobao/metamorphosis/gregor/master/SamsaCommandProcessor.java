@@ -76,6 +76,51 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
     private volatile Thread healThread;
 
 
+    long getSendToSlaveTimeoutInMills() {
+        return this.sendToSlaveTimeoutInMills;
+    }
+
+
+    void setSendToSlaveTimeoutInMills(long sendToSlaveTimeoutInMills) {
+        this.sendToSlaveTimeoutInMills = sendToSlaveTimeoutInMills;
+    }
+
+
+    long getCheckSlaveIntervalInMills() {
+        return this.checkSlaveIntervalInMills;
+    }
+
+
+    void setCheckSlaveIntervalInMills(long checkSlaveIntervalInMills) {
+        this.checkSlaveIntervalInMills = checkSlaveIntervalInMills;
+    }
+
+
+    int getSlaveContinuousFailureThreshold() {
+        return this.slaveContinuousFailureThreshold;
+    }
+
+
+    void setSlaveContinuousFailureThreshold(int slaveContinuousFailureThreshold) {
+        this.slaveContinuousFailureThreshold = slaveContinuousFailureThreshold;
+    }
+
+
+    Thread getHealThread() {
+        return this.healThread;
+    }
+
+
+    void setHealThread(Thread healThread) {
+        this.healThread = healThread;
+    }
+
+
+    AtomicInteger getSlaveContinuousFailures() {
+        return this.slaveContinuousFailures;
+    }
+
+
     private void removeMasterTemporaryAndTryToHeal() {
         if (this.healThread != null) {
             return;
@@ -93,13 +138,14 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                         byte[] encodePayload = MessageUtils.encodePayload(msg);
                         int flag = 0;
                         int partition = 0;
+                        SyncCommand command = new SyncCommand(testTopic, partition, encodePayload, flag,
+                            SamsaCommandProcessor.this.idWorker.nextId(), CheckSum.crc32(encodePayload),
+                            OpaqueGenerator.getNextOpaque());
                         ResponseCommand resp =
                                 SamsaCommandProcessor.this.remotingClient.invokeToGroup(
                                     SamsaCommandProcessor.this.slaveUrl,
-                                    new SyncCommand(testTopic, partition, encodePayload, flag,
-                                        SamsaCommandProcessor.this.idWorker.nextId(), CheckSum.crc32(encodePayload),
-                                        OpaqueGenerator.getNextOpaque()),
-                                        SamsaCommandProcessor.this.sendToSlaveTimeoutInMills, TimeUnit.MILLISECONDS);
+                                    command,
+                                    SamsaCommandProcessor.this.sendToSlaveTimeoutInMills, TimeUnit.MILLISECONDS);
                         // Slave was back.
                         if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
                             slaveOk = true;
@@ -117,6 +163,7 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                     }
                 }
                 if (slaveOk) {
+                    log.warn("Slave " + SamsaCommandProcessor.this.slaveUrl + " is back.");
                     SamsaCommandProcessor.this.slaveContinuousFailures.set(0);
                     try {
                         SamsaCommandProcessor.this.brokerZooKeeper.reRegisterEveryThing();
