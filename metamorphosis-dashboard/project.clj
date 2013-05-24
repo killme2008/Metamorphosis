@@ -12,6 +12,7 @@
                  [com.taobao.metamorphosis/metamorphosis-server "1.4.5-SNAPSHOT"]]
   :resource-paths ["src/main/resources"]
   :source-paths ["src" "src/main/clojure"]
+  :warn-on-reflection true
   :main com.github.killme2008.metamorphosis.dashboard.Server
   :plugins [[lein-ring "0.8.2"]]
   :ring {:handler test.handler/app}

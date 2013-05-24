@@ -5,7 +5,9 @@
 </div>
 <script type="text/javascript">
   function refresh (){
-     window.location.reload ();
+     if(window.location.href.match(/#logging$/)){
+       window.location.reload ();
+     }
   };
   setTimeout(refresh, 1500);
 </script>

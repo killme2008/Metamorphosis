@@ -4,7 +4,12 @@
         [environ.core])
   (:import [org.apache.log4j Logger]
            [org.I0Itec.zkclient ZkClient]
+           [com.taobao.metamorphosis.cluster Broker]
+           [com.taobao.metamorphosis.server.utils TopicConfig]
+           [com.taobao.metamorphosis.server.assembly MetaMorphosisBroker]
            [com.taobao.metamorphosis.utils ZkUtils]
+           [com.taobao.metamorphosis.server.stats StatsManager StatsManager$TopicStats]
+           [com.taobao.metamorphosis.utils.log MetaqDailyRollingFileAppender]
            [com.taobao.metamorphosis.server.store MessageStoreManager MessageStore]
            [com.taobao.metamorphosis.utils MetaZookeeper MetaZookeeper$ZKGroupTopicDirs])
   (:require [compojure.handler :as handler]
@@ -14,10 +19,10 @@
             [com.github.killme2008.metamorphosis.dashboard.util :as u]
             [compojure.route :as route]))
 
-(defonce broker-ref (atom nil))
+(defonce ^MetaMorphosisBroker broker-ref (atom nil))
 
 (defmacro with-broker [ & body]
-  `(-> @broker-ref ~@body))
+  `(-> ^MetaMorphosisBroker @broker-ref ~@body))
 
 (defn- render-tpl [tpl & vs]
   (apply render (str "templates/" tpl) vs))
@@ -68,7 +73,7 @@
 (defn- logging [req]
   (let [timestamp (or (-> req :params :timetamp) 0)
         appender (-> (Logger/getRootLogger) (.getAppender "ServerDailyRollingFile"))]
-    (render-tpl "logs.vm" :logs (.getLogs appender timestamp))))
+    (render-tpl "logs.vm" :logs (.getLogs ^MetaqDailyRollingFileAppender appender timestamp))))
 
 (defn- java-properties [req]
   (render-tpl "java_properties.vm" :props (System/getProperties)))
@@ -85,7 +90,7 @@
 (defn- topic-list [req]
   (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getTopicsStats))))
 
-(defn- query-pending-messages [topic-stats topic-config group]
+(defn- query-pending-messages [^StatsManager$TopicStats topic-stats ^TopicConfig topic-config group]
   (let [^String topic (.getTopic topic-stats)
         avg-msg-size (if (> (.getMessageCount topic-stats) 0)
                        (/ (.getMessageBytes topic-stats) (.getMessageCount topic-stats))
@@ -137,7 +142,7 @@
 
 (defn- skip-pending-msgs [req]
   (let [{:keys [topic group partition]} (-> req :params)
-        partition (Integer/valueOf partition)
+        partition (Integer/valueOf ^String partition)
         ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
         ^ZkClient zc (.getZkClient mz)
         broker-id (with-broker (.getMetaConfig) (.getBrokerId))
@@ -190,7 +195,7 @@
                                 {"id" id
                                  "brokers"
                                  (map
-                                  (fn [broker]
+                                  (fn [^Broker broker]
                                     (when-let [broker-str (str broker)]
                                       (let [uri (java.net.URI. broker-str)
                                             host (.getHost uri)
