@@ -476,7 +476,8 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                 // ·¢Íùslave
                 this.remotingClient.sendToGroup(this.slaveUrl,
                     new SyncCommand(request.getTopic(), partition, request.getData(), request.getFlag(), messageId,
-                        request.getCheckSum(), OpaqueGenerator.getNextOpaque()), syncCB);
+                        request.getCheckSum(), OpaqueGenerator.getNextOpaque()), syncCB,
+                    this.sendToSlaveTimeoutInMills, TimeUnit.MILLISECONDS);
                 // Ð´Èëmaster
                 store.append(messageId, request, syncCB);
             }

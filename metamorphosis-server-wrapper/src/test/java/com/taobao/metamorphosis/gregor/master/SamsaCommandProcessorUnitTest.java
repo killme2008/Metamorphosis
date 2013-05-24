@@ -152,7 +152,8 @@ public class SamsaCommandProcessorUnitTest {
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb,
+            this.commandProcessor.getSendToSlaveTimeoutInMills(), TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
@@ -264,7 +265,8 @@ public class SamsaCommandProcessorUnitTest {
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb,
+            this.commandProcessor.getSendToSlaveTimeoutInMills(), TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
@@ -334,7 +336,8 @@ public class SamsaCommandProcessorUnitTest {
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb,
+            this.commandProcessor.getSendToSlaveTimeoutInMills(), TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
