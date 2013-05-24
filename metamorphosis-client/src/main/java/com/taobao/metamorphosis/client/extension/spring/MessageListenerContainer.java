@@ -14,7 +14,6 @@ import org.springframework.beans.factory.InitializingBean;
 import com.taobao.gecko.core.util.StringUtils;
 import com.taobao.metamorphosis.client.MessageSessionFactory;
 import com.taobao.metamorphosis.client.consumer.MessageConsumer;
-import com.taobao.metamorphosis.client.consumer.MessageListener;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 
@@ -191,7 +190,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
             Set<MessageConsumer> consumers = new HashSet<MessageConsumer>();
             for (Map.Entry<MetaQTopic, ? extends DefaultMessageListener<?>> entry : this.subscribers.entrySet()) {
                 final MetaQTopic topic = entry.getKey();
-                final MessageListener listener = entry.getValue();
+                final DefaultMessageListener<?> listener = entry.getValue();
                 if (topic == null) {
                     throw new IllegalArgumentException("Topic is null");
                 }
@@ -203,6 +202,9 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
                     throw new IllegalStateException("Get or create consumer failed");
                 }
                 log.info("Subscribe topic=" + topic.getTopic() + " with group=" + topic.getGroup());
+                if (listener.getMessageBodyConverter() == null) {
+                    listener.setMessageBodyConverter(this.messageBodyConverter);
+                }
                 consumer.subscribe(topic.getTopic(), topic.getMaxBufferSize(), listener);
                 consumers.add(consumer);
             }

@@ -1,40 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
-    <bean id="sessionFactory" class="com.taobao.metamorphosis.client.MetaMessageSessionFactory">
-         <constructor-arg>
-             <bean class="com.taobao.metamorphosis.client.MetaClientConfig">
-                 <property name="zkConfig">
-                     <bean class="com.taobao.metamorphosis.utils.ZkUtils.ZKConfig">
-                         <constructor-arg>
-                             <value>127.0.0.1:2181</value>
-                         </constructor-arg>
-                        <constructor-arg>
-                             <value>30000</value>
-                         </constructor-arg>
-                          <constructor-arg>
-                             <value>30000</value>
-                         </constructor-arg>
-                          <constructor-arg>
-                             <value>5000</value>
-                         </constructor-arg>
-                     </bean>
-                 </property>
-             </bean>
-         </constructor-arg>
+    <!--  message session factory -->
+    <bean id="sessionFactory" class="com.taobao.metamorphosis.client.extension.spring.MetaQMessageSessionFactoryBean">
+        <property name="zkConnect" value="127.0.0.1:2181"/>
+        <property name="zkSessionTimeoutMs" value="30000"/>
+        <property name="zkConnectionTimeoutMs" value="30000"/>
+        <property name="zkSyncTimeMs" value="5000"/>
     </bean>
-    <bean id ="producer" class="com.taobao.metamorphosis.client.producer.SimpleMessageProducer" factory-bean="sessionFactory"
-        factory-method="createProducer">     
+    <!--  message body converter using java serialization. -->
+    <bean id="messageBodyConverter" class="com.taobao.metamorphosis.client.extension.spring.JavaSerializationMessageBodyConverter"/>
+    <!--  template to send messages. -->
+    <bean id ="metaqTemplate" class="com.taobao.metamorphosis.client.extension.spring.MetaqTemplate">    
+        <property name="messageSessionFactory" ref="sessionFactory"/>
+        <property name="messageBodyConverter" ref="messageBodyConverter"/>
     </bean>
-    <bean id ="consumer" class="com.taobao.metamorphosis.client.consumer.SimpleMessageConsumer" factory-bean="sessionFactory"
-        factory-method="createConsumer"> 
-          <constructor-arg>
-              <bean class="com.taobao.metamorphosis.client.consumer.ConsumerConfig">
-                  <!--  group name -->
-                  <constructor-arg type="java.lang.String" value="meta-example"/>
-                  <!--  other options -->
-                  <property name="maxDelayFetchTimeInMills" value="100"/>
-              </bean>
-          </constructor-arg>    
+    <!--  topics to be subscribed. -->
+    <bean id = "testTopic" class="com.taobao.metamorphosis.client.extension.spring.MetaQTopic">
+        <!-- consumer group -->
+        <property name="group" value="testGroup"/>
+        <!--  topic -->
+        <property name="topic" value="meta-test"/>
+        <!--  max buffer size to fetch messages -->
+        <property name="maxBufferSize" value="16384"/>
+    </bean>
+    <!--  message listener -->
+    <bean id= "messageListener" class="com.taobao.metamorphosis.example.spring.TradeMessageListener">
+        <!--  threads to process these messages. -->
+        <property name="processThreads" value="10"/>
+    </bean>
+    <!--  listener container to subscribe topics -->
+    <bean id ="listenerContainer" class="com.taobao.metamorphosis.client.extension.spring.MessageListenerContainer"> 
+         <property name="messageSessionFactory" ref="sessionFactory"/>
+         <property name="messageBodyConverter" ref="messageBodyConverter"/>
+         <property name="subscribers">
+             <map>
+                 <entry key-ref="testTopic" value-ref="messageListener"/>
+             </map>
+         </property>
     </bean>
 </beans>

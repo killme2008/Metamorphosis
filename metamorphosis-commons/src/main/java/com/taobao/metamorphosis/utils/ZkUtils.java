@@ -307,6 +307,66 @@ public class ZkUtils {
         }
 
 
+        public String getZkRoot() {
+            return this.zkRoot;
+        }
+
+
+        public void setZkRoot(String zkRoot) {
+            this.zkRoot = zkRoot;
+        }
+
+
+        public boolean isZkEnable() {
+            return this.zkEnable;
+        }
+
+
+        public void setZkEnable(boolean zkEnable) {
+            this.zkEnable = zkEnable;
+        }
+
+
+        public String getZkConnect() {
+            return this.zkConnect;
+        }
+
+
+        public void setZkConnect(String zkConnect) {
+            this.zkConnect = zkConnect;
+        }
+
+
+        public int getZkSessionTimeoutMs() {
+            return this.zkSessionTimeoutMs;
+        }
+
+
+        public void setZkSessionTimeoutMs(int zkSessionTimeoutMs) {
+            this.zkSessionTimeoutMs = zkSessionTimeoutMs;
+        }
+
+
+        public int getZkConnectionTimeoutMs() {
+            return this.zkConnectionTimeoutMs;
+        }
+
+
+        public void setZkConnectionTimeoutMs(int zkConnectionTimeoutMs) {
+            this.zkConnectionTimeoutMs = zkConnectionTimeoutMs;
+        }
+
+
+        public int getZkSyncTimeMs() {
+            return this.zkSyncTimeMs;
+        }
+
+
+        public void setZkSyncTimeMs(int zkSyncTimeMs) {
+            this.zkSyncTimeMs = zkSyncTimeMs;
+        }
+
+
         public ZKConfig() {
             super();
             this.zkConnect = "localhost:2181";

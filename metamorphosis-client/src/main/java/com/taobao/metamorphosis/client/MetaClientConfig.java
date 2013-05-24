@@ -86,6 +86,66 @@ public class MetaClientConfig implements Serializable {
     }
 
 
+    public String getZkRoot() {
+        return this.zkConfig.getZkRoot();
+    }
+
+
+    public void setZkRoot(String zkRoot) {
+        this.zkConfig.setZkRoot(zkRoot);
+    }
+
+
+    public boolean isZkEnable() {
+        return this.zkConfig.isZkEnable();
+    }
+
+
+    public void setZkEnable(boolean zkEnable) {
+        this.zkConfig.setZkEnable(zkEnable);
+    }
+
+
+    public String getZkConnect() {
+        return this.zkConfig.getZkConnect();
+    }
+
+
+    public void setZkConnect(String zkConnect) {
+        this.zkConfig.setZkConnect(zkConnect);
+    }
+
+
+    public int getZkSessionTimeoutMs() {
+        return this.zkConfig.getZkSessionTimeoutMs();
+    }
+
+
+    public void setZkSessionTimeoutMs(int zkSessionTimeoutMs) {
+        this.zkConfig.setZkSessionTimeoutMs(zkSessionTimeoutMs);
+    }
+
+
+    public int getZkConnectionTimeoutMs() {
+        return this.zkConfig.getZkConnectionTimeoutMs();
+    }
+
+
+    public void setZkConnectionTimeoutMs(int zkConnectionTimeoutMs) {
+        this.zkConfig.setZkConnectionTimeoutMs(zkConnectionTimeoutMs);
+    }
+
+
+    public int getZkSyncTimeMs() {
+        return this.zkConfig.getZkSyncTimeMs();
+    }
+
+
+    public void setZkSyncTimeMs(int zkSyncTimeMs) {
+        this.zkConfig.setZkSyncTimeMs(zkSyncTimeMs);
+    }
+
+
     public String getServerUrl() {
         return this.serverUrl;
     }
