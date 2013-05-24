@@ -33,8 +33,8 @@ public class MetaTopicBrowser implements TopicBrowser {
 
     private final long timeoutInMills;
 
-    private class Itr implements Iterator<Message> {
-        private final List<Partition> partitions;
+    protected class Itr implements Iterator<Message> {
+        protected final List<Partition> partitions;
 
         private MessageIterator it;
 
@@ -65,7 +65,7 @@ public class MetaTopicBrowser implements TopicBrowser {
                         }
                     }
                     while (this.partition != null) {
-                        // increase offset.
+                        // increase offset for this partition if it is not null.
                         if (this.it != null) {
                             this.offset += this.it.getOffset();
                         }
@@ -73,14 +73,21 @@ public class MetaTopicBrowser implements TopicBrowser {
                                 MetaTopicBrowser.this.consumer.get(MetaTopicBrowser.this.topic, this.partition,
                                     this.offset, MetaTopicBrowser.this.maxSize, MetaTopicBrowser.this.timeoutInMills,
                                     TimeUnit.MILLISECONDS);
-                        if (this.it.hasNext()) {
+                        if (this.it != null && this.it.hasNext()) {
+                            // If this partition still has messages, returns
+                            // true.
                             return true;
                         }
                         else {
+                            // move on to next partition.
                             if (this.partitions.isEmpty()) {
+                                this.partition = null;
+                                // There is no more partitions,return false.
                                 return false;
                             }
                             else {
+                                // Change partition,and continue trying to get
+                                // iterator.
                                 this.nextPartition();
                             }
                         }
@@ -88,6 +95,10 @@ public class MetaTopicBrowser implements TopicBrowser {
                     return false;
 
                 }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
             }
             catch (Exception e) {
                 throw new IllegalStateException(e);
@@ -106,16 +117,16 @@ public class MetaTopicBrowser implements TopicBrowser {
 
         @Override
         public Message next() {
-            try {
-                if (this.hasNext()) {
+            if (this.hasNext()) {
+                try {
                     return this.it.next();
                 }
-                else {
-                    throw new NoSuchElementException();
+                catch (Exception e) {
+                    throw new IllegalStateException(e);
                 }
             }
-            catch (Exception e) {
-                throw new IllegalStateException(e);
+            else {
+                throw new NoSuchElementException();
             }
         }
 
