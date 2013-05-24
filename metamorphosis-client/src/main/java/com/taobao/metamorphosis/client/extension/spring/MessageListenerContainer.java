@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,7 +29,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
 
     private MessageBodyConverter<?> messageBodyConverter;
 
-    private Map<MetaQTopic/* topic */, DefaultMessageListener<?>> subscribers =
+    private Map<MetaQTopic/* topic */, ? extends DefaultMessageListener<?>> subscribers =
             new HashMap<MetaQTopic, DefaultMessageListener<?>>();
 
     private boolean shareConsumer = false;
@@ -42,9 +42,9 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
 
     private MetaQTopic defaultTopic;
 
-    private MessageListener defaultMessageListener;
+    private DefaultMessageListener<?> defaultMessageListener;
 
-    private final CopyOnWriteArrayList<MessageConsumer> consumers = new CopyOnWriteArrayList<MessageConsumer>();
+    protected final CopyOnWriteArraySet<MessageConsumer> consumers = new CopyOnWriteArraySet<MessageConsumer>();
 
 
     /**
@@ -72,7 +72,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
      * 
      * @return
      */
-    public MessageListener getDefaultMessageListener() {
+    public DefaultMessageListener<?> getDefaultMessageListener() {
         return this.defaultMessageListener;
     }
 
@@ -82,17 +82,17 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
      * 
      * @param defaultMessageListener
      */
-    public void setDefaultMessageListener(MessageListener defaultMessageListener) {
+    public void setDefaultMessageListener(DefaultMessageListener<?> defaultMessageListener) {
         this.defaultMessageListener = defaultMessageListener;
     }
 
 
     protected MessageConsumer getMessageConsumer(MetaQTopic topic) throws MetaClientException {
         if (this.shareConsumer) {
-            if (this.defaultTopic == null) {
-                throw new IllegalArgumentException("You don't set default topic when sharing consumer.");
-            }
             if (this.sharedConsumer == null) {
+                if (this.defaultTopic == null) {
+                    throw new IllegalArgumentException("Please provide default topic when sharing consumer.");
+                }
                 synchronized (this) {
                     if (this.sharedConsumer == null) {
                         this.sharedConsumer =
@@ -110,7 +110,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
         else {
             if (this.defaultMessageListener != null || this.defaultTopic != null) {
                 throw new IllegalStateException(
-                        "You can't provide default topic or message listener when sharing consumer.");
+                        "You can't provide default topic or message listener when not sharing consumer.");
             }
             MessageConsumer consumer = this.messageSessionFactory.createConsumer(topic.getConsumerConfig());
             this.consumers.add(consumer);
@@ -189,7 +189,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
         log.info("Start to initialize message listener container.");
         if (this.subscribers != null) {
             Set<MessageConsumer> consumers = new HashSet<MessageConsumer>();
-            for (Map.Entry<MetaQTopic, DefaultMessageListener<?>> entry : this.subscribers.entrySet()) {
+            for (Map.Entry<MetaQTopic, ? extends DefaultMessageListener<?>> entry : this.subscribers.entrySet()) {
                 final MetaQTopic topic = entry.getKey();
                 final MessageListener listener = entry.getValue();
                 if (topic == null) {
@@ -202,8 +202,8 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
                 if (consumer == null) {
                     throw new IllegalStateException("Get or create consumer failed");
                 }
-                log.info("Subscribe topic=" + topic + " with group=" + topic.getGroup());
-                consumer.subscribe(topic.getTopic(), topic.getMaxBufferSize(), listener).completeSubscribe();
+                log.info("Subscribe topic=" + topic.getTopic() + " with group=" + topic.getGroup());
+                consumer.subscribe(topic.getTopic(), topic.getMaxBufferSize(), listener);
                 consumers.add(consumer);
             }
             for (MessageConsumer consumer : consumers) {
@@ -224,7 +224,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
     }
 
 
-    public Map<MetaQTopic, DefaultMessageListener<?>> getSubscribers() {
+    public Map<MetaQTopic, ? extends DefaultMessageListener<?>> getSubscribers() {
         return this.subscribers;
     }
 
@@ -234,8 +234,8 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
      * 
      * @param listeners
      */
-    public void setSubscribers(Map<MetaQTopic, DefaultMessageListener<?>> listeners) {
-        this.subscribers = listeners;
+    public void setSubscribers(Map<MetaQTopic, ? extends DefaultMessageListener<?>> subscribers) {
+        this.subscribers = subscribers;
     }
 
 
