@@ -216,7 +216,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                             log.warn("Close " + oldBrokerString + ",connect to " + newBrokerString);
                             ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
                             ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                            ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, false);
+                            ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, true);
                         }
                         else {
                             // ignore
@@ -225,7 +225,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                     else {
                         changed = true;
                         // 新的没有，旧的有，关闭
-                        ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, false);
+                        ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, true);
                         log.warn("Close " + oldBrokerString);
                     }
                 }

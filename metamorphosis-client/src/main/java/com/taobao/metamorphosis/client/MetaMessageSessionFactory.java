@@ -85,6 +85,8 @@ import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
  * @Date 2011-8-4
  */
 public class MetaMessageSessionFactory implements MessageSessionFactory {
+    private static final int MAX_RECONNECT_TIMES = Integer.valueOf(System.getProperty(
+        "metaq.client.network.max.reconnect.times", "350"));
     private static final int STATS_OPTIMEOUT = 3000;
     protected RemotingClientWrapper remotingClient;
     private final MetaClientConfig metaClientConfig;
@@ -206,6 +208,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         this.metaClientConfig = metaClientConfig;
         final ClientConfig clientConfig = new ClientConfig();
         clientConfig.setTcpNoDelay(TCP_NO_DELAY);
+        clientConfig.setMaxReconnectTimes(MAX_RECONNECT_TIMES);
         clientConfig.setWireFormatType(new MetamorphosisWireFormatType());
         clientConfig.setMaxScheduleWrittenBytes(MAX_SCHEDULE_WRITTEN_BYTES);
         try {

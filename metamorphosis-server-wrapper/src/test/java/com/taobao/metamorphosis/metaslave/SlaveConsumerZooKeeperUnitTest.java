@@ -350,7 +350,7 @@ public class SlaveConsumerZooKeeperUnitTest {
 
 
     private void mockConnectCloseAnyTimes(final String url) throws NotifyRemotingException, InterruptedException {
-        this.remotingClient.closeWithRef(EasyMock.eq(url), EasyMock.anyObject(), EasyMock.eq(false));
+        this.remotingClient.closeWithRef(EasyMock.eq(url), EasyMock.anyObject(), EasyMock.eq(true));
         EasyMock.expectLastCall().anyTimes();
     }
 

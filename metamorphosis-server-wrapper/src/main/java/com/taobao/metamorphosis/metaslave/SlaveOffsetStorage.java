@@ -64,7 +64,7 @@ public class SlaveOffsetStorage implements OffsetStorage {
         final String masterServerUrl = this.slaveZooKeeper.getMasterServerUrl();
         try {
             if (!StringUtils.isBlank(masterServerUrl)) {
-                this.remotingClient.closeWithRef(masterServerUrl, this, false);
+                this.remotingClient.closeWithRef(masterServerUrl, this, true);
             }
         }
         catch (NotifyRemotingException e) {
