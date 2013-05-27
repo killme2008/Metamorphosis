@@ -609,7 +609,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
     }
 
     static final char[] INVALID_GROUP_CHAR = { '~', '!', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '`', '\'',
-                                               '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':' };
+                                              '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':', ' ' };
 
 
     protected void checkConsumerConfig(final ConsumerConfig consumerConfig) {
@@ -643,7 +643,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
 
     @Override
     public TopicBrowser createTopicBrowser(String topic, int maxSize, long timeout, TimeUnit timeUnit) {
-        MessageConsumer consumer = this.createConsumer(new ConsumerConfig("just for topic browser"));
+        MessageConsumer consumer = this.createConsumer(new ConsumerConfig("Just_for_Browser"));
         return new MetaTopicBrowser(topic, maxSize, TimeUnit.MILLISECONDS.convert(timeout, timeUnit), consumer,
             this.getPartitionsForTopic(topic));
     }
