@@ -1,6 +1,5 @@
 package com.taobao.metamorphosis.client.extension.spring;
 
-import com.taobao.metamorphosis.client.MessageSessionFactory;
 import com.taobao.metamorphosis.client.XAMessageSessionFactory;
 import com.taobao.metamorphosis.client.XAMetaMessageSessionFactory;
 
@@ -12,9 +11,9 @@ import com.taobao.metamorphosis.client.XAMetaMessageSessionFactory;
  * @author dennis<killme2008@gmail.com>
  * 
  */
-public class XAMetaQMessageSessionFactoryBean extends MetaQMessageSessionFactoryBean {
+public class XAMetaQMessageSessionFactoryBean extends AbstractMetaQMessageSessionFactory<XAMetaMessageSessionFactory> {
     @Override
-    public MessageSessionFactory getObject() throws Exception {
+    public XAMetaMessageSessionFactory getObject() throws Exception {
         this.sessionFactory = new XAMetaMessageSessionFactory(this.metaClientConfig);
         return this.sessionFactory;
     }
