@@ -10,6 +10,13 @@ import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
 
 
+/**
+ * Base factory bean class to create message sessionfactory.
+ * 
+ * @author dennis<killme2008@gmail.com>
+ * @since 1.4.5
+ * @param <T>
+ */
 public abstract class AbstractMetaQMessageSessionFactory<T extends MessageSessionFactory> implements FactoryBean<T>,
 DisposableBean {
     protected MetaClientConfig metaClientConfig = new MetaClientConfig();
