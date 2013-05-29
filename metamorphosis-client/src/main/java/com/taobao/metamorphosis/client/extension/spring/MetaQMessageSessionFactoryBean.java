@@ -19,13 +19,13 @@ import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
  * 
  */
 public class MetaQMessageSessionFactoryBean implements FactoryBean<MessageSessionFactory>, DisposableBean {
-    private MetaClientConfig metaClientConfig = new MetaClientConfig();
+    protected MetaClientConfig metaClientConfig = new MetaClientConfig();
 
     {
         this.metaClientConfig.setZkConfig(new ZKConfig());
     }
 
-    private MessageSessionFactory sessionFactory;
+    protected MessageSessionFactory sessionFactory;
 
 
     @Override
