@@ -16,9 +16,9 @@ public class MetaQTopicUnitTest {
 
     @Test
     public void testAsMapKey() {
-        MetaQTopic metaQTopic1 = new MetaQTopic("test", 1024, new ConsumerConfig("test-group"));
-        MetaQTopic metaQTopic2 = new MetaQTopic("test", 1024, new ConsumerConfig("test-group"));
-        Map<MetaQTopic, Boolean> map = new HashMap<MetaQTopic, Boolean>();
+        MetaqTopic metaQTopic1 = new MetaqTopic("test", 1024, new ConsumerConfig("test-group"));
+        MetaqTopic metaQTopic2 = new MetaqTopic("test", 1024, new ConsumerConfig("test-group"));
+        Map<MetaqTopic, Boolean> map = new HashMap<MetaqTopic, Boolean>();
         assertEquals(metaQTopic1, metaQTopic2);
         map.put(metaQTopic1, true);
         assertEquals("test", metaQTopic1.getTopic());

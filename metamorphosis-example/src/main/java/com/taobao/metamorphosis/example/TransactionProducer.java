@@ -46,6 +46,9 @@ public class TransactionProducer {
         final String topic = "meta-test";
         producer.publish(topic);
 
+        // 设置事务超时为10秒
+        producer.setTransactionTimeout(10);
+
         final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         String line = null;
         while ((line = readLine(reader)) != null) {

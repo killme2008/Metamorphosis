@@ -28,8 +28,8 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
 
     private MessageBodyConverter<?> messageBodyConverter;
 
-    private Map<MetaQTopic/* topic */, ? extends DefaultMessageListener<?>> subscribers =
-            new HashMap<MetaQTopic, DefaultMessageListener<?>>();
+    private Map<MetaqTopic/* topic */, ? extends DefaultMessageListener<?>> subscribers =
+            new HashMap<MetaqTopic, DefaultMessageListener<?>>();
 
     private boolean shareConsumer = false;
 
@@ -39,7 +39,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
 
     private MessageSessionFactory messageSessionFactory;
 
-    private MetaQTopic defaultTopic;
+    private MetaqTopic defaultTopic;
 
     private DefaultMessageListener<?> defaultMessageListener;
 
@@ -51,7 +51,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
      * 
      * @return
      */
-    public MetaQTopic getDefaultTopic() {
+    public MetaqTopic getDefaultTopic() {
         return this.defaultTopic;
     }
 
@@ -61,7 +61,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
      * 
      * @param defaultTopic
      */
-    public void setDefaultTopic(MetaQTopic defaultTopic) {
+    public void setDefaultTopic(MetaqTopic defaultTopic) {
         this.defaultTopic = defaultTopic;
     }
 
@@ -86,7 +86,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
     }
 
 
-    protected MessageConsumer getMessageConsumer(MetaQTopic topic) throws MetaClientException {
+    protected MessageConsumer getMessageConsumer(MetaqTopic topic) throws MetaClientException {
         if (this.shareConsumer) {
             if (this.sharedConsumer == null) {
                 if (this.defaultTopic == null) {
@@ -188,8 +188,8 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
         log.info("Start to initialize message listener container.");
         if (this.subscribers != null) {
             Set<MessageConsumer> consumers = new HashSet<MessageConsumer>();
-            for (Map.Entry<MetaQTopic, ? extends DefaultMessageListener<?>> entry : this.subscribers.entrySet()) {
-                final MetaQTopic topic = entry.getKey();
+            for (Map.Entry<MetaqTopic, ? extends DefaultMessageListener<?>> entry : this.subscribers.entrySet()) {
+                final MetaqTopic topic = entry.getKey();
                 final DefaultMessageListener<?> listener = entry.getValue();
                 if (topic == null) {
                     throw new IllegalArgumentException("Topic is null");
@@ -226,7 +226,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
     }
 
 
-    public Map<MetaQTopic, ? extends DefaultMessageListener<?>> getSubscribers() {
+    public Map<MetaqTopic, ? extends DefaultMessageListener<?>> getSubscribers() {
         return this.subscribers;
     }
 
@@ -236,7 +236,7 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
      * 
      * @param listeners
      */
-    public void setSubscribers(Map<MetaQTopic, ? extends DefaultMessageListener<?>> subscribers) {
+    public void setSubscribers(Map<MetaqTopic, ? extends DefaultMessageListener<?>> subscribers) {
         this.subscribers = subscribers;
     }
 

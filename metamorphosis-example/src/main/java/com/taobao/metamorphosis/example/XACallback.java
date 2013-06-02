@@ -30,5 +30,14 @@ import com.taobao.metamorphosis.client.producer.XAMessageProducer;
  * 
  */
 public interface XACallback {
-    public Object execute(Connection conn, XAMessageProducer producer) throws Exception;
+    class Status {
+        boolean rollback;
+
+        public void setRollbackOnly() {
+            this.rollback = true;
+        }
+    }
+
+
+    public Object execute(Connection conn, XAMessageProducer producer, Status status) throws Exception;
 }
