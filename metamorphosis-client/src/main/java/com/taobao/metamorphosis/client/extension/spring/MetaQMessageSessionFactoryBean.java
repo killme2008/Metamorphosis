@@ -11,7 +11,7 @@ import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
  * @since 1.4.5
  * 
  */
-public class MetaQMessageSessionFactoryBean extends AbstractMetaQMessageSessionFactory<MessageSessionFactory> {
+public class MetaqMessageSessionFactoryBean extends AbstractMetaqMessageSessionFactory<MessageSessionFactory> {
 
     @Override
     public MessageSessionFactory getObject() throws Exception {

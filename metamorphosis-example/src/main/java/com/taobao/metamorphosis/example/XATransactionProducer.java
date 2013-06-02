@@ -54,9 +54,9 @@ public class XATransactionProducer {
     private static XADataSource getXADataSource() throws SQLException {
         final MysqlXADataSource mysqlXADataSource = new MysqlXADataSource();
         mysqlXADataSource
-        .setUrl("jdbc:mysql://10.232.36.83:3306/metamorphosis?characterEncoding=utf8&connectTimeout=1000&autoReconnect=true");
-        mysqlXADataSource.setUser("notify");
-        mysqlXADataSource.setPassword("notify");
+        .setUrl("jdbc:mysql://localhost:3306/test?characterEncoding=utf8&connectTimeout=1000&autoReconnect=true");
+        mysqlXADataSource.setUser("root");
+        mysqlXADataSource.setPassword("");
         mysqlXADataSource.setPreparedStatementCacheSize(20);
         return mysqlXADataSource;
     }
@@ -79,22 +79,27 @@ public class XATransactionProducer {
         String line = null;
 
         while ((line = readLine(reader)) != null) {
-            final String message = line;
+            final String address = line;
             try {
+                final int uid = 100;
+
                 // we should create a template every transaction.
                 final XATransactionTemplate template = new XATransactionTemplate(tm, xads, xaMessageProducer);
                 template.executeCallback(new XACallback() {
                     @Override
-                    public Object execute(final Connection conn, final XAMessageProducer producer) throws Exception {
-                        final PreparedStatement pstmt = conn.prepareStatement("insert into xa_demo(message) values(?)");
-                        // 数据库msg不能为null，可以尝试将这里setString设置null，来观察回滚现象。
-                        pstmt.setString(1, message);
-                        if (pstmt.executeUpdate() <= 0) {
-                            throw new RuntimeException("insert message to mysql failed");
-                        }
+                    public Object execute(final Connection conn, final XAMessageProducer producer, Status status)
+                            throws Exception {
+                        final PreparedStatement pstmt =
+                                conn.prepareStatement("insert into orders(uid,address) values(?,?)");
+                        pstmt.setInt(1, uid);
+                        pstmt.setString(2, address);
                         pstmt.close();
-                        if (!producer.sendMessage(new Message(topic, message.getBytes())).isSuccess()) {
-                            throw new RuntimeException("send message failed");
+                        if (pstmt.executeUpdate() <= 0) {
+                            status.setRollbackOnly();
+                            return null;
+                        }
+                        if (!producer.sendMessage(new Message(topic, address.getBytes())).isSuccess()) {
+                            status.setRollbackOnly();
                         }
                         return null;
                     }

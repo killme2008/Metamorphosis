@@ -17,7 +17,7 @@ import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
  * @since 1.4.5
  * @param <T>
  */
-public abstract class AbstractMetaQMessageSessionFactory<T extends MessageSessionFactory> implements FactoryBean<T>,
+public abstract class AbstractMetaqMessageSessionFactory<T extends MessageSessionFactory> implements FactoryBean<T>,
 DisposableBean {
     protected MetaClientConfig metaClientConfig = new MetaClientConfig();
 
