@@ -50,10 +50,10 @@ public class MessageListenerContainerUnitTest {
 
     @Test
     public void testSubscribeOneTopic() throws Exception {
-        Map<MetaQTopic, MyListener> subscribers = new HashMap<MetaQTopic, MyListener>();
+        Map<MetaqTopic, MyListener> subscribers = new HashMap<MetaqTopic, MyListener>();
         ConsumerConfig consumerConfig = new ConsumerConfig("group1");
         MyListener listener = new MyListener();
-        subscribers.put(new MetaQTopic("topic1", 1024, consumerConfig), listener);
+        subscribers.put(new MetaqTopic("topic1", 1024, consumerConfig), listener);
         this.container.setSubscribers(subscribers);
 
         EasyMock.expect(this.sessionFactory.createConsumer(consumerConfig)).andReturn(this.consumer);
@@ -69,13 +69,13 @@ public class MessageListenerContainerUnitTest {
 
     @Test
     public void testSubscribeTwoTopics() throws Exception {
-        Map<MetaQTopic, MyListener> subscribers = new HashMap<MetaQTopic, MyListener>();
+        Map<MetaqTopic, MyListener> subscribers = new HashMap<MetaqTopic, MyListener>();
         ConsumerConfig consumerConfig1 = new ConsumerConfig("group1");
         MyListener listener1 = new MyListener();
-        subscribers.put(new MetaQTopic("topic1", 1024, consumerConfig1), listener1);
+        subscribers.put(new MetaqTopic("topic1", 1024, consumerConfig1), listener1);
         ConsumerConfig consumerConfig2 = new ConsumerConfig("group1");
         MyListener listener2 = new MyListener();
-        subscribers.put(new MetaQTopic("topic2", 1024 * 1024, consumerConfig2), listener2);
+        subscribers.put(new MetaqTopic("topic2", 1024 * 1024, consumerConfig2), listener2);
         this.container.setSubscribers(subscribers);
 
         EasyMock.expect(this.sessionFactory.createConsumer(consumerConfig1)).andReturn(this.consumer);
@@ -93,13 +93,13 @@ public class MessageListenerContainerUnitTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testSubscribeTwoTopicsShareConsumerWithoutDefaultTopic() throws Exception {
-        Map<MetaQTopic, MyListener> subscribers = new HashMap<MetaQTopic, MyListener>();
+        Map<MetaqTopic, MyListener> subscribers = new HashMap<MetaqTopic, MyListener>();
         ConsumerConfig consumerConfig1 = new ConsumerConfig("group1");
         MyListener listener1 = new MyListener();
-        subscribers.put(new MetaQTopic("topic1", 1024, consumerConfig1), listener1);
+        subscribers.put(new MetaqTopic("topic1", 1024, consumerConfig1), listener1);
         ConsumerConfig consumerConfig2 = new ConsumerConfig("group1");
         MyListener listener2 = new MyListener();
-        subscribers.put(new MetaQTopic("topic2", 1024 * 1024, consumerConfig2), listener2);
+        subscribers.put(new MetaqTopic("topic2", 1024 * 1024, consumerConfig2), listener2);
         this.container.setSubscribers(subscribers);
         this.container.setShareConsumer(true);
         this.control.replay();
@@ -110,15 +110,15 @@ public class MessageListenerContainerUnitTest {
 
     @Test
     public void testSubscribeTwoTopicsShareTopic() throws Exception {
-        Map<MetaQTopic, MyListener> subscribers = new HashMap<MetaQTopic, MyListener>();
+        Map<MetaqTopic, MyListener> subscribers = new HashMap<MetaqTopic, MyListener>();
         ConsumerConfig consumerConfig1 = new ConsumerConfig("group1");
         MyListener listener1 = new MyListener();
-        subscribers.put(new MetaQTopic("topic1", 1024, consumerConfig1), listener1);
+        subscribers.put(new MetaqTopic("topic1", 1024, consumerConfig1), listener1);
         ConsumerConfig consumerConfig2 = new ConsumerConfig("group1");
         MyListener listener2 = new MyListener();
         this.container.setSubscribers(subscribers);
         this.container.setShareConsumer(true);
-        this.container.setDefaultTopic(new MetaQTopic("topic2", 1024 * 1024, consumerConfig2));
+        this.container.setDefaultTopic(new MetaqTopic("topic2", 1024 * 1024, consumerConfig2));
         this.container.setDefaultMessageListener(listener2);
 
         EasyMock.expect(this.sessionFactory.createConsumer(consumerConfig2)).andReturn(this.consumer);
@@ -147,10 +147,10 @@ public class MessageListenerContainerUnitTest {
 
     @Test(expected = IllegalStateException.class)
     public void testShareConsumerAndProvideDefaultTopic() throws Exception {
-        Map<MetaQTopic, MyListener> subscribers = new HashMap<MetaQTopic, MyListener>();
+        Map<MetaqTopic, MyListener> subscribers = new HashMap<MetaqTopic, MyListener>();
         ConsumerConfig consumerConfig = new ConsumerConfig("group1");
         MyListener listener = new MyListener();
-        subscribers.put(new MetaQTopic("topic1", 1024, consumerConfig), listener);
+        subscribers.put(new MetaqTopic("topic1", 1024, consumerConfig), listener);
         this.container.setSubscribers(subscribers);
         this.container.setDefaultMessageListener(listener);
         this.control.replay();

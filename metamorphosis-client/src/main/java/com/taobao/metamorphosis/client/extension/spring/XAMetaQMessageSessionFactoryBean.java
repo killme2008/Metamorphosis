@@ -11,7 +11,7 @@ import com.taobao.metamorphosis.client.XAMetaMessageSessionFactory;
  * @author dennis<killme2008@gmail.com>
  * 
  */
-public class XAMetaQMessageSessionFactoryBean extends AbstractMetaQMessageSessionFactory<XAMetaMessageSessionFactory> {
+public class XAMetaqMessageSessionFactoryBean extends AbstractMetaqMessageSessionFactory<XAMetaMessageSessionFactory> {
     @Override
     public XAMetaMessageSessionFactory getObject() throws Exception {
         this.sessionFactory = new XAMetaMessageSessionFactory(this.metaClientConfig);

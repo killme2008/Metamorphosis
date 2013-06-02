@@ -14,7 +14,7 @@ import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
  * @since 1.4.5
  * 
  */
-public class MetaQTopic {
+public class MetaqTopic {
     private ConsumerConfig consumerConfig = new ConsumerConfig();
 
     private String topic;
@@ -22,7 +22,7 @@ public class MetaQTopic {
     private int maxBufferSize = 1024 * 1024;
 
 
-    public MetaQTopic(String topic, int maxBufferSize, ConsumerConfig consumerConfig) {
+    public MetaqTopic(String topic, int maxBufferSize, ConsumerConfig consumerConfig) {
         super();
         this.topic = topic;
         this.maxBufferSize = maxBufferSize;
@@ -30,7 +30,7 @@ public class MetaQTopic {
     }
 
 
-    public MetaQTopic() {
+    public MetaqTopic() {
         super();
     }
 
@@ -66,7 +66,7 @@ public class MetaQTopic {
         if (this.getClass() != obj.getClass()) {
             return false;
         }
-        MetaQTopic other = (MetaQTopic) obj;
+        MetaqTopic other = (MetaqTopic) obj;
         if (this.consumerConfig == null) {
             if (other.consumerConfig != null) {
                 return false;

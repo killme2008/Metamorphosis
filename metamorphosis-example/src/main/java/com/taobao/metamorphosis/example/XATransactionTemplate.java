@@ -30,6 +30,7 @@ import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 
 import com.taobao.metamorphosis.client.producer.XAMessageProducer;
+import com.taobao.metamorphosis.example.XACallback.Status;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 
@@ -114,8 +115,9 @@ public class XATransactionTemplate {
 
             tx = this.beginTx(producer, conn);
             sqlConn = conn.getConnection();
-            final Object rt = callback.execute(sqlConn, producer);
-            this.commitOrRollbackTx(producer, conn, tx, false);
+            Status status = new Status();
+            final Object rt = callback.execute(sqlConn, producer, status);
+            this.commitOrRollbackTx(producer, conn, tx, status.rollback);
             return rt;
         }
         catch (final Exception e) {
