@@ -566,13 +566,15 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             // 关闭连接
             for (final Broker broker : this.oldBrokerSet) {
                 if (!changedBrokers.contains(broker)) {
-                    try {
-                        ConsumerZooKeeper.this.remotingClient.closeWithRef(broker.getZKString(), this, true);
-                        log.warn("Closed " + broker.getZKString());
-                    }
-                    catch (final NotifyRemotingException e) {
-                        log.error("Close " + broker.getZKString() + " failed", e);
-                    }
+                    // try {
+                    // ConsumerZooKeeper.this.remotingClient.closeWithRef(broker.getZKString(),
+                    // this, true);
+                    // log.warn("Closed " + broker.getZKString());
+                    // }
+                    // catch (final NotifyRemotingException e) {
+                    // log.error("Close " + broker.getZKString() + " failed",
+                    // e);
+                    // }
                 }
             }
             // 重新启动fetch线程
