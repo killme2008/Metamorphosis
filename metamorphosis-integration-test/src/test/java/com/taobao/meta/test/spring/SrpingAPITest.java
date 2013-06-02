@@ -1,5 +1,6 @@
 package com.taobao.meta.test.spring;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -32,5 +33,6 @@ public class SrpingAPITest extends BaseMetaTest {
         while (listener.counter.get() != count) {
             Thread.sleep(100);
         }
+        assertEquals(listener.counter.get(), count);
     }
 }
