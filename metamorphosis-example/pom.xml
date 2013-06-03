@@ -19,12 +19,12 @@
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client</artifactId>
-			<version>1.4.4</version>
+			<version>1.4.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client-extension</artifactId>
-			<version>1.4.4</version>
+			<version>1.4.5</version>
 		</dependency>
 		<dependency>
             <groupId>org.springframework</groupId>
