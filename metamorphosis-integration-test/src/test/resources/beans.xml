@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+    <bean id="propertyConfigurer"  
+          class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">  
+        <property name="location" value="classpath:zk.properties"/>  
+    </bean>  
+    <!--  message session factory -->
+    <bean id="sessionFactory" class="com.taobao.metamorphosis.client.extension.spring.MetaqMessageSessionFactoryBean">
+        <property name="zkConnect" value="${zk.zkConnect}"/>
+        <property name="zkSessionTimeoutMs" value="30000"/>
+        <property name="zkConnectionTimeoutMs" value="30000"/>
+        <property name="zkSyncTimeMs" value="5000"/>
+    </bean>
+    <!--  message body converter using java serialization. -->
+    <bean id="messageBodyConverter" class="com.taobao.metamorphosis.client.extension.spring.JavaSerializationMessageBodyConverter"/>
+    <!--  template to send messages. -->
+    <bean id ="metaqTemplate" class="com.taobao.metamorphosis.client.extension.spring.MetaqTemplate">    
+        <property name="messageSessionFactory" ref="sessionFactory"/>
+        <property name="messageBodyConverter" ref="messageBodyConverter"/>
+    </bean>
+    <!--  topics to be subscribed. -->
+    <bean id = "testTopic" class="com.taobao.metamorphosis.client.extension.spring.MetaqTopic">
+        <!-- consumer group -->
+        <property name="group" value="testGroup"/>
+        <!--  topic -->
+        <property name="topic" value="meta-test"/>
+        <!--  max buffer size to fetch messages -->
+        <property name="maxBufferSize" value="16384"/>
+        <property name="maxDelayFetchTimeInMills" value="10"/>
+    </bean>
+    <!--  message listener -->
+    <bean id= "messageListener" class="com.taobao.meta.test.spring.TradeMessageListener">
+        <!--  threads to process these messages. -->
+        <property name="processThreads" value="10"/>
+    </bean>
+    <!--  listener container to subscribe topics -->
+    <bean id ="listenerContainer" class="com.taobao.metamorphosis.client.extension.spring.MessageListenerContainer"> 
+         <property name="messageSessionFactory" ref="sessionFactory"/>
+         <property name="messageBodyConverter" ref="messageBodyConverter"/>
+         <property name="subscribers">
+             <map>
+                 <entry key-ref="testTopic" value-ref="messageListener"/>
+             </map>
+         </property>
+    </bean>
+</beans>
