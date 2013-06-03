@@ -92,12 +92,12 @@ public class XATransactionProducer {
                         final PreparedStatement pstmt =
                                 conn.prepareStatement("insert into orders(uid,address) values(?,?)");
                         pstmt.setInt(1, uid);
-                        pstmt.setString(2, address);
-                        pstmt.close();
+                        pstmt.setString(2, null);
                         if (pstmt.executeUpdate() <= 0) {
                             status.setRollbackOnly();
                             return null;
                         }
+                        pstmt.close();
                         if (!producer.sendMessage(new Message(topic, address.getBytes())).isSuccess()) {
                             status.setRollbackOnly();
                         }
