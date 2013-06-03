@@ -1,7 +1,7 @@
-#����
-metamorphosis��Ϊ�¼�����Դ֧��twitter storm��������Ŀ
+#Introduction
+metamorphosis作为twitter strom spout数据源的支持项目
 
-#����
+#Maven dependency
 
     <dependency>
 		<groupId>com.taobao.metamorphosis</groupId>
