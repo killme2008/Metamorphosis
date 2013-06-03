@@ -1,11 +1,11 @@
-#介绍
-metamorphosis作为事件输入源支持twitter storm的配套项目
+#锟斤拷锟斤拷
+metamorphosis锟斤拷为锟铰硷拷锟斤拷锟斤拷源支锟斤拷twitter storm锟斤拷锟斤拷锟斤拷锟斤拷目
 
-#依赖
+#锟斤拷锟斤拷
 
     <dependency>
 		<groupId>com.taobao.metamorphosis</groupId>
 		<artifactId>storm-metamorphosis-spout</artifactId>
-		<version>1.0.0</version>
+		<version>1.4.5</version>
 	</dependency>
 
