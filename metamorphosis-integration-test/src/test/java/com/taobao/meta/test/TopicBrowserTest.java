@@ -13,7 +13,7 @@ import com.taobao.metamorphosis.client.TopicBrowser;
 
 public class TopicBrowserTest extends BaseMetaTest {
 
-    private final String topic = "meta-test";
+    private final String topic = "test";
 
 
     @Test

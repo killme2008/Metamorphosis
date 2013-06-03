@@ -20,7 +20,7 @@
         <!-- consumer group -->
         <property name="group" value="testGroup"/>
         <!--  topic -->
-        <property name="topic" value="meta-test"/>
+        <property name="topic" value="test"/>
         <!--  max buffer size to fetch messages -->
         <property name="maxBufferSize" value="16384"/>
     </bean>

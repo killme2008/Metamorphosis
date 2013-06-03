@@ -17,7 +17,7 @@ public class TradeSender {
     public static void main(final String[] args) throws Exception {
         ApplicationContext context = new ClassPathXmlApplicationContext("bean.xml");
         // use template to send messages.
-        final String topic = "meta-test";
+        final String topic = "test";
         MetaqTemplate template = (MetaqTemplate) context.getBean("metaqTemplate");
 
         final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));

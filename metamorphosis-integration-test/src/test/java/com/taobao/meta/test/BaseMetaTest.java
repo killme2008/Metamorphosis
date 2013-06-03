@@ -145,6 +145,7 @@ public abstract class BaseMetaTest {
             if (!result.isSuccess()) {
                 throw new RuntimeException("Send message failed:" + result.getErrorMessage());
             }
+            System.out.println(i);
             this.messages.add(msg);
         }
     }
