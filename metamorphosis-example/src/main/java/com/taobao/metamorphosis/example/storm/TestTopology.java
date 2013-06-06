@@ -51,7 +51,7 @@ public class TestTopology {
 
     public static void main(String[] args) {
         TopologyBuilder builder = new TopologyBuilder();
-        builder.setSpout("words",
+        builder.setSpout("spout",
             new MetaSpout(initMetaConfig(), new ConsumerConfig("storm-spout"), new StringScheme()), 10);
         builder.setBolt("bolt", new FailEveryOther()).shuffleGrouping("spout");
 
