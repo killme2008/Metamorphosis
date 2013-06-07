@@ -14,6 +14,7 @@ import org.springframework.beans.factory.InitializingBean;
 import com.taobao.gecko.core.util.StringUtils;
 import com.taobao.metamorphosis.client.MessageSessionFactory;
 import com.taobao.metamorphosis.client.consumer.MessageConsumer;
+import com.taobao.metamorphosis.client.consumer.RejectConsumptionHandler;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 
@@ -43,6 +44,8 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
 
     private DefaultMessageListener<?> defaultMessageListener;
 
+    private RejectConsumptionHandler rejectConsumptionHandler;
+
     protected final CopyOnWriteArraySet<MessageConsumer> consumers = new CopyOnWriteArraySet<MessageConsumer>();
 
 
@@ -67,6 +70,26 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
 
 
     /**
+     * Returns RejectConsumptionHandler
+     * 
+     * @return
+     */
+    public RejectConsumptionHandler getRejectConsumptionHandler() {
+        return this.rejectConsumptionHandler;
+    }
+
+
+    /**
+     * set rejectConsumptionHandler
+     * 
+     * @param rejectConsumptionHandler
+     */
+    public void setRejectConsumptionHandler(RejectConsumptionHandler rejectConsumptionHandler) {
+        this.rejectConsumptionHandler = rejectConsumptionHandler;
+    }
+
+
+    /**
      * Returns the default listener
      * 
      * @return
@@ -87,6 +110,15 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
 
 
     protected MessageConsumer getMessageConsumer(MetaqTopic topic) throws MetaClientException {
+        MessageConsumer consumer = this.getMessageConsumer0(topic);
+        if (this.rejectConsumptionHandler != null) {
+            consumer.setRejectConsumptionHandler(this.rejectConsumptionHandler);
+        }
+        return consumer;
+    }
+
+
+    private MessageConsumer getMessageConsumer0(MetaqTopic topic) throws MetaClientException {
         if (this.shareConsumer) {
             if (this.sharedConsumer == null) {
                 if (this.defaultTopic == null) {
