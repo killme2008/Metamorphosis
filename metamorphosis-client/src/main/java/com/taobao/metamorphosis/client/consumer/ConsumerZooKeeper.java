@@ -43,6 +43,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 
+import com.taobao.gecko.core.util.StringUtils;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.client.RemotingClientWrapper;
 import com.taobao.metamorphosis.client.ZkClientChangedListener;
@@ -100,9 +101,11 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         if (task != null) {
             try {
                 return task.get();
-            } catch (final ExecutionException e) {
+            }
+            catch (final ExecutionException e) {
                 throw ThreadUtils.launderThrowable(e.getCause());
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
@@ -221,25 +224,28 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             loadBalanceListener.fetchManager.startFetchRunner();
         }
         else {
+            for (int i = 0; i < MAX_N_RETRIES; i++) {
+                // 注册consumer id
+                ZkUtils.createEphemeralPathExpectConflict(this.zkClient, dirs.consumerRegistryDir + "/"
+                        + loadBalanceListener.consumerIdString, topicString);
+                // 监视同一个分组的consumer列表是否有变化
+                this.zkClient.subscribeChildChanges(dirs.consumerRegistryDir, loadBalanceListener);
 
-            // 注册consumer id
-            ZkUtils.createEphemeralPathExpectConflict(this.zkClient, dirs.consumerRegistryDir + "/"
-                    + loadBalanceListener.consumerIdString, topicString);
-            // 监视同一个分组的consumer列表是否有变化
-            this.zkClient.subscribeChildChanges(dirs.consumerRegistryDir, loadBalanceListener);
+                // 监视订阅topic的分区是否有变化
+                for (final String topic : loadBalanceListener.topicSubcriberRegistry.keySet()) {
+                    final String partitionPath = this.metaZookeeper.brokerTopicsSubPath + "/" + topic;
+                    ZkUtils.makeSurePersistentPathExists(this.zkClient, partitionPath);
+                    this.zkClient.subscribeChildChanges(partitionPath, loadBalanceListener);
+                }
 
-            // 监视订阅topic的分区是否有变化
-            for (final String topic : loadBalanceListener.topicSubcriberRegistry.keySet()) {
-                final String partitionPath = this.metaZookeeper.brokerTopicsSubPath + "/" + topic;
-                ZkUtils.makeSurePersistentPathExists(this.zkClient, partitionPath);
-                this.zkClient.subscribeChildChanges(partitionPath, loadBalanceListener);
+                // 监视zk client状态，在连接重连的时候重新注册
+                this.zkClient.subscribeStateChanges(new ZKSessionExpireListenner(loadBalanceListener));
+
+                // 第一次，需要明确触发balance
+                if (loadBalanceListener.syncedRebalance()) {
+                    break;
+                }
             }
-
-            // 监视zk client状态，在连接重连的时候重新注册
-            this.zkClient.subscribeStateChanges(new ZKSessionExpireListenner(loadBalanceListener));
-
-            // 第一次，需要明确触发balance
-            loadBalanceListener.syncedRebalance();
         }
         return loadBalanceListener;
     }
@@ -320,10 +326,6 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             log.info("ZK expired; release old broker parition ownership; re-register consumer " + this.consumerIdString);
             this.loadBalancerListener.resetState();
             ConsumerZooKeeper.this.registerConsumerInternal(this.loadBalancerListener);
-            ;
-            // explicitly trigger load balancing for this consumer
-            this.loadBalancerListener.syncedRebalance();
-
         }
 
 
@@ -351,6 +353,8 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
     }
 
+    static final int MAX_N_RETRIES = 7;
+
     static final Log log = LogFactory.getLog(ConsumerZooKeeper.class);
 
     /**
@@ -366,8 +370,6 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         private final String group;
 
         protected final String consumerIdString;
-
-        static final int MAX_N_RETRIES = 7;
 
         private final LoadBalanceStrategy loadBalanceStrategy;
 
@@ -475,7 +477,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         }
 
 
-        void syncedRebalance() throws Exception {
+        boolean syncedRebalance() throws Exception {
             this.rebalanceLock.lock();
             try {
                 for (int i = 0; i < MAX_N_RETRIES; i++) {
@@ -494,7 +496,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
                     if (done) {
                         log.info("rebalance success.");
-                        return;
+                        return true;
                     }
                     else {
                         log.warn("rebalance failed,try #" + i);
@@ -507,6 +509,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     Thread.sleep(ConsumerZooKeeper.this.zkConfig.zkSyncTimeMs);
                 }
                 log.error("rebalance failed,finally");
+                return false;
             }
             finally {
                 this.rebalanceLock.unlock();
@@ -915,7 +918,11 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          */
         protected List<String> getTopics(final String consumerId) throws Exception {
             final String topicsString =
-                    ZkUtils.readData(ConsumerZooKeeper.this.zkClient, this.dirs.consumerRegistryDir + "/" + consumerId);
+                    ZkUtils.readDataMaybeNull(ConsumerZooKeeper.this.zkClient, this.dirs.consumerRegistryDir + "/"
+                            + consumerId);
+            if (StringUtils.isBlank(topicsString)) {
+                return Collections.emptyList();
+            }
             final String[] topics = topicsString.split(",");
             final List<String> rt = new ArrayList<String>(topics.length);
             for (final String topic : topics) {
