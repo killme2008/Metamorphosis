@@ -131,7 +131,7 @@ public class MetaSpout extends BaseRichSpout {
                 }
                 // 消费失败，抛出运行时异常
                 if (!wrapper.success) {
-                    throw new RuntimeException("Consume message failed");
+                    message.setRollbackOnly();
                 }
             }
 
