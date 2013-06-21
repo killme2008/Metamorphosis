@@ -17,6 +17,7 @@
  */
 package com.taobao.metamorphosis.client.consumer;
 
+import java.lang.management.ManagementFactory;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -276,10 +277,19 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         }
         else {
             consumerUUID =
-                    RemotingUtils.getLocalHost() + "-" + System.currentTimeMillis() + "-"
+                    RemotingUtils.getLocalHost() + "-" + this.getPid() + "-" + System.currentTimeMillis() + "-"
                             + this.counter.incrementAndGet();
         }
         return consumerUUID;
+    }
+
+
+    private String getPid() {
+        final String name = ManagementFactory.getRuntimeMXBean().getName();
+        if (name.contains("@")) {
+            return name.split("@")[0];
+        }
+        return name;
     }
 
 
