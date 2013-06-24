@@ -24,17 +24,34 @@ public class ConsumerFilterManager implements Service {
     private ClassLoader filterClassLoader;
     private final ConcurrentHashMap<String/* class name */, FutureTask<ConsumerMessageFilter>> filters =
             new ConcurrentHashMap<String, FutureTask<ConsumerMessageFilter>>();
+    private final MetaConfig metaConfig;
 
 
     public ConsumerFilterManager(MetaConfig metaConfig) throws Exception {
-        String path = "/tmp";
-        this.filterClassLoader =
-                new URLClassLoader(new URL[] { new URL(path) }, Thread.currentThread().getContextClassLoader());
+        this.metaConfig = metaConfig;
+        if (!StringUtils.isBlank(metaConfig.getAppClassPath())) {
+            this.filterClassLoader =
+                    new URLClassLoader(new URL[] { new URL("file://" + metaConfig.getAppClassPath()) }, Thread
+                        .currentThread().getContextClassLoader());
+        }
     }
 
 
-    public ConsumerMessageFilter findFilter(String group) {
-        final String className = null;
+    ClassLoader getFilterClassLoader() {
+        return this.filterClassLoader;
+    }
+
+
+    void setFilterClassLoader(ClassLoader filterClassLoader) {
+        this.filterClassLoader = filterClassLoader;
+    }
+
+
+    public ConsumerMessageFilter findFilter(String topic, String group) {
+        if (this.filterClassLoader == null) {
+            return null;
+        }
+        final String className = this.metaConfig.getTopicConfig(topic).getFilterClass(group);
         if (StringUtils.isBlank(className)) {
             return null;
         }
@@ -51,6 +68,9 @@ public class ConsumerFilterManager implements Service {
             FutureTask<ConsumerMessageFilter> existsTask = this.filters.putIfAbsent(className, task);
             if (existsTask != null) {
                 task = existsTask;
+            }
+            else {
+                task.run();
             }
         }
         return this.getFilter0(task);

@@ -13,7 +13,8 @@ import com.taobao.metamorphosis.Message;
 public interface ConsumerMessageFilter {
     /**
      * Test if the filter can accept a metaq message.Any exceptions threw by
-     * this method means the message is not accepted.
+     * this method means the message is not accepted.This method must be
+     * thread-safe.
      * 
      * @param group
      * @param message

@@ -89,6 +89,11 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
 
     private String path;
 
+    /**
+     * App class path.
+     */
+    private String appClassPath;
+
     // 事务相关配置
     // 最大保存的checkpoint数目，超过将淘汰最老的
     private int maxCheckpoints = 3;
@@ -300,6 +305,10 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         try {
             this.path = path;
             final File file = new File(path);
+            File appClassDir = new File(file.getParentFile(), "provided");
+            if (appClassDir.exists() && appClassDir.isDirectory()) {
+                this.appClassPath = appClassDir.getAbsolutePath();
+            }
             if (!file.exists()) {
                 throw new MetamorphosisServerStartupException("File " + path + " is not exists");
             }
@@ -424,7 +433,17 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
 
                 final TopicConfig topicConfig = new TopicConfig(topic, this);
                 Set<String> validKeySet = topicConfig.getFieldSet();
-                Set<String> configKeySet = section.keySet();
+                Set<String> allKeySet = section.keySet();
+                Set<String> filterClassKeys = new HashSet<String>();
+                Set<String> configKeySet = new HashSet<String>();
+                for (String key : allKeySet) {
+                    if (key.startsWith("group.")) {
+                        filterClassKeys.add(key);
+                    }
+                    else {
+                        configKeySet.add(key);
+                    }
+                }
                 this.checkConfigKeys(configKeySet, validKeySet);
 
                 if (StringUtils.isNotBlank(section.get("numPartitions"))) {
@@ -458,6 +477,14 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
                 }
                 if (!StringUtils.isBlank(section.get("acceptPublish"))) {
                     topicConfig.setAcceptPublish(this.getBoolean(section, "acceptPublish"));
+                }
+
+                // Added filter class
+                for (String key : filterClassKeys) {
+                    String consumerGroup = key.substring(6);
+                    if (!StringUtils.isBlank(section.get(key))) {
+                        topicConfig.addFilterClass(consumerGroup, section.get(key));
+                    }
                 }
 
                 // this.topicPartitions.put(topic, numPartitions);
@@ -579,6 +606,9 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         if (!StringUtils.isBlank(sysConf.get("dataPath"))) {
             this.setDataPath(sysConf.get("dataPath"));
         }
+        if (!StringUtils.isBlank(sysConf.get("appClassPath"))) {
+            this.appClassPath = sysConf.get("appClassPath");
+        }
         if (!StringUtils.isBlank(sysConf.get("dataLogPath"))) {
             this.dataLogPath = sysConf.get("dataLogPath");
         }
@@ -661,6 +691,16 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
     }
 
     static final Log log = LogFactory.getLog(MetaConfig.class);
+
+
+    public String getAppClassPath() {
+        return this.appClassPath;
+    }
+
+
+    public void setAppClassPath(String appClassPath) {
+        this.appClassPath = appClassPath;
+    }
 
 
     private void newZkConfigIfNull() {
@@ -854,7 +894,7 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
     }
 
 
-    public TopicConfig getTopicConfig(final String topic) {
+    public final TopicConfig getTopicConfig(final String topic) {
         TopicConfig topicConfig = this.topicConfigMap.get(topic);
         if (topicConfig == null) {
             topicConfig = new TopicConfig(topic, this);

@@ -17,7 +17,9 @@
  */
 package com.taobao.metamorphosis.server.utils;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -74,6 +76,10 @@ public class MetaConfigUnitTest {
         this.LoadProperty(metaConfig, "master_brokerIdEmpty.ini");
         Assert.assertEquals(-1, metaConfig.getSlaveId());
         Assert.assertFalse(metaConfig.isSlave());
+        assertEquals("com.avos.TestFilter1", metaConfig.getTopicConfig("test1").getFilterClass("A"));
+        assertEquals("com.avos.TestFilter2", metaConfig.getTopicConfig("test1").getFilterClass("B"));
+        assertNull(metaConfig.getTopicConfig("test2").getFilterClass("B"));
+        assertNull(metaConfig.getTopicConfig("test2").getFilterClass("A"));
 
         metaConfig = new MetaConfig();
         this.LoadProperty(metaConfig, "master_noBrokerId.ini");
