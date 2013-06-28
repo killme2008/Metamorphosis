@@ -66,7 +66,7 @@
 (defn- dashboard [req]
   (render-tpl "dashboard.vm"
               :instance (u/stringfy-map-keys (instance))
-              :version (u/stringfy-map-keys (version)) 
+              :version (u/stringfy-map-keys (version))
               :jvm (u/stringfy-map-keys (jvm))
               :system (u/stringfy-map-keys (system))))
 
@@ -111,7 +111,7 @@
                                owner (ZkUtils/readDataMaybeNull zc owner-znode)]
                            (when (or msg-store (seq owner))
                              (let [consumer-offset (if (seq offset-str)
-                                                     (Integer/valueOf
+                                                     (Long/valueOf
                                                       (if (.contains offset-str "-")
                                                         (let [idx (.lastIndexOf offset-str "-")]
                                                           (.substring offset-str (inc idx)))
@@ -119,7 +119,7 @@
                                                      0)
                                    max-offset (if msg-store
                                                 (-> msg-store (.getMaxOffset))
-                                                0) 
+                                                0)
                                    min-offset (if msg-store
                                                 (-> msg-store (.getMinOffset))
                                                 0)
@@ -142,7 +142,7 @@
 
 (defn- skip-pending-msgs [req]
   (let [{:keys [topic group partition]} (-> req :params)
-        partition (Integer/valueOf ^String partition)
+        partition (Long/valueOf ^String partition)
         ^MetaZookeeper mz (with-broker (.getBrokerZooKeeper) (.getMetaZookeeper))
         ^ZkClient zc (.getZkClient mz)
         broker-id (with-broker (.getMetaConfig) (.getBrokerId))
