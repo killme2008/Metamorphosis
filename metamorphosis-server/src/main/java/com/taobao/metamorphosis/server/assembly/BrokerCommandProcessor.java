@@ -36,7 +36,9 @@ import com.taobao.gecko.service.Connection;
 import com.taobao.gecko.service.RemotingServer;
 import com.taobao.gecko.service.SingleRequestCallBackListener;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
+import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
 import com.taobao.metamorphosis.network.BooleanCommand;
 import com.taobao.metamorphosis.network.ByteUtils;
 import com.taobao.metamorphosis.network.DataCommand;
@@ -51,6 +53,7 @@ import com.taobao.metamorphosis.network.VersionCommand;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.CommandProcessor;
 import com.taobao.metamorphosis.server.exception.MetamorphosisException;
+import com.taobao.metamorphosis.server.filter.ConsumerFilterManager;
 import com.taobao.metamorphosis.server.network.PutCallback;
 import com.taobao.metamorphosis.server.network.SessionContext;
 import com.taobao.metamorphosis.server.stats.StatsManager;
@@ -60,6 +63,7 @@ import com.taobao.metamorphosis.server.store.MessageSet;
 import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.transaction.Transaction;
+import com.taobao.metamorphosis.server.transaction.store.MessageIterator;
 import com.taobao.metamorphosis.server.utils.BuildProperties;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.transaction.TransactionId;
@@ -199,6 +203,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
     protected MetaConfig metaConfig;
     protected IdWorker idWorker;
     protected BrokerZooKeeper brokerZooKeeper;
+    protected ConsumerFilterManager consumerFilterManager;
 
 
     protected String genErrorMessage(String topic, int partition) {
@@ -219,7 +224,8 @@ public class BrokerCommandProcessor implements CommandProcessor {
 
     public BrokerCommandProcessor(final MessageStoreManager storeManager, final ExecutorsManager executorsManager,
             final StatsManager statsManager, final RemotingServer remotingServer, final MetaConfig metaConfig,
-            final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper) {
+            final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper,
+            final ConsumerFilterManager consumerFilterManager) {
         super();
         this.storeManager = storeManager;
         this.executorsManager = executorsManager;
@@ -228,6 +234,17 @@ public class BrokerCommandProcessor implements CommandProcessor {
         this.metaConfig = metaConfig;
         this.idWorker = idWorker;
         this.brokerZooKeeper = brokerZooKeeper;
+        this.consumerFilterManager = consumerFilterManager;
+    }
+
+
+    public ConsumerFilterManager getConsumerFilterManager() {
+        return this.consumerFilterManager;
+    }
+
+
+    public void setConsumerFilterManager(ConsumerFilterManager consumerFilterManager) {
+        this.consumerFilterManager = consumerFilterManager;
     }
 
 
@@ -412,8 +429,9 @@ public class BrokerCommandProcessor implements CommandProcessor {
             final MessageSet set =
                     store.slice(request.getOffset(),
                         Math.min(this.metaConfig.getMaxTransferSize(), request.getMaxSize()));
+            ConsumerMessageFilter filter = this.consumerFilterManager.findFilter(topic, group);
             if (set != null) {
-                if (zeroCopy) {
+                if (zeroCopy && filter == null) {
                     set.write(request, ctx);
                     return null;
                 }
@@ -425,10 +443,31 @@ public class BrokerCommandProcessor implements CommandProcessor {
                     final ByteBuffer byteBuffer =
                             ByteBuffer.allocate(Math.min(this.metaConfig.getMaxTransferSize(), request.getMaxSize()));
                     set.read(byteBuffer);
-                    byteBuffer.flip();
-                    final byte[] bytes = new byte[byteBuffer.remaining()];
-                    byteBuffer.get(bytes);
-                    return new DataCommand(bytes, request.getOpaque());
+                    byte[] bytes = this.getBytesFromBuffer(byteBuffer);
+                    // If filter is not null,we filter the messages by it.
+                    if (filter != null) {
+                        MessageIterator it = new MessageIterator(topic, bytes);
+                        // reuse the buffer.
+                        byteBuffer.clear();
+                        while (it.hasNext()) {
+                            Message msg = it.next();
+                            try {
+                                if (filter.accept(group, msg)) {
+                                    ByteBuffer msgBuf = it.getCurrentMessageBuffer();
+                                    // Append current message buffer to result
+                                    // buffer.
+                                    byteBuffer.put(msgBuf.array());
+                                }
+                            }
+                            catch (Exception e) {
+                                log.error("Filter message for consumer failed,topic=" + topic + ",group=" + group
+                                    + ",filterClass=" + filter.getClass().getCanonicalName(), e);
+                            }
+                        }
+                        // re-new the byte array.
+                        bytes = this.getBytesFromBuffer(byteBuffer);
+                    }
+                    return new DataCommand(bytes, request.getOpaque(), true);
                 }
             }
             else {
@@ -470,6 +509,14 @@ public class BrokerCommandProcessor implements CommandProcessor {
                 + "Detail:" + e.getMessage(), request.getOpaque());
         }
 
+    }
+
+
+    private byte[] getBytesFromBuffer(final ByteBuffer byteBuffer) {
+        byteBuffer.flip();
+        byte[] bytes = new byte[byteBuffer.remaining()];
+        byteBuffer.get(bytes);
+        return bytes;
     }
 
 

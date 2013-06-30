@@ -45,6 +45,7 @@ import com.taobao.gecko.core.buffer.IoBuffer;
 public class DataCommand extends AbstractResponseCommand {
     private final byte[] data;
     static final long serialVersionUID = -1L;
+    private boolean encodeHeader = false;
 
 
     public byte[] getData() {
@@ -53,8 +54,14 @@ public class DataCommand extends AbstractResponseCommand {
 
 
     public DataCommand(final byte[] data, final Integer opaque) {
+        this(data, opaque, false);
+    }
+
+
+    public DataCommand(final byte[] data, final Integer opaque, boolean encodeHeader) {
         super(opaque);
         this.data = data;
+        this.encodeHeader = encodeHeader;
     }
 
 
@@ -65,9 +72,23 @@ public class DataCommand extends AbstractResponseCommand {
 
 
     @Override
-    public IoBuffer encode() {
-        // 不做任何事情，发送data command由transferTo替代
-        return null;
+    public final IoBuffer encode() {
+        if (this.encodeHeader) {
+            int totalDataLength = this.data != null ? this.data.length : 0;
+            final IoBuffer buffer =
+                    IoBuffer.allocate(9 + ByteUtils.stringSize(totalDataLength)
+                        + ByteUtils.stringSize(this.getOpaque()) + totalDataLength);
+            ByteUtils.setArguments(buffer, MetaEncodeCommand.VALUE_CMD, totalDataLength, this.getOpaque());
+            if (this.data != null) {
+                buffer.put(this.data);
+            }
+            buffer.flip();
+            return buffer;
+        }
+        else {
+            // We don't encode header,it is done by message set.
+            return null;
+        }
     }
 
 }

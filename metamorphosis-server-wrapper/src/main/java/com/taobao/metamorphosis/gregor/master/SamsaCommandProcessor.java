@@ -43,6 +43,7 @@ import com.taobao.metamorphosis.network.SyncCommand;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.assembly.BrokerCommandProcessor;
 import com.taobao.metamorphosis.server.assembly.ExecutorsManager;
+import com.taobao.metamorphosis.server.filter.ConsumerFilterManager;
 import com.taobao.metamorphosis.server.network.PutCallback;
 import com.taobao.metamorphosis.server.network.SessionContext;
 import com.taobao.metamorphosis.server.stats.StatsManager;
@@ -138,13 +139,13 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                         byte[] encodePayload = MessageUtils.encodePayload(msg);
                         int flag = 0;
                         int partition = 0;
-                        SyncCommand command = new SyncCommand(testTopic, partition, encodePayload, flag,
-                            SamsaCommandProcessor.this.idWorker.nextId(), CheckSum.crc32(encodePayload),
-                            OpaqueGenerator.getNextOpaque());
+                        SyncCommand command =
+                                new SyncCommand(testTopic, partition, encodePayload, flag,
+                                    SamsaCommandProcessor.this.idWorker.nextId(), CheckSum.crc32(encodePayload),
+                                    OpaqueGenerator.getNextOpaque());
                         ResponseCommand resp =
                                 SamsaCommandProcessor.this.remotingClient.invokeToGroup(
-                                    SamsaCommandProcessor.this.slaveUrl,
-                                    command,
+                                    SamsaCommandProcessor.this.slaveUrl, command,
                                     SamsaCommandProcessor.this.sendToSlaveTimeoutInMills, TimeUnit.MILLISECONDS);
                         // Slave was back.
                         if (resp.getResponseStatus() == ResponseStatus.NO_ERROR) {
@@ -411,10 +412,11 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
     public SamsaCommandProcessor(final MessageStoreManager storeManager, final ExecutorsManager executorsManager,
             final StatsManager statsManager, final RemotingServer remotingServer, final MetaConfig metaConfig,
             final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper, final RemotingClient remotingClient,
-            final String slave, final int callbackThreadCount, long sendToSlaveTimeoutInMills,
-            long checkSlaveIntervalInMills, int slaveContinuousFailureThreshold) throws NotifyRemotingException,
-            InterruptedException {
-        super(storeManager, executorsManager, statsManager, remotingServer, metaConfig, idWorker, brokerZooKeeper);
+            final ConsumerFilterManager consumerFilterManager, final String slave, final int callbackThreadCount,
+            long sendToSlaveTimeoutInMills, long checkSlaveIntervalInMills, int slaveContinuousFailureThreshold)
+                    throws NotifyRemotingException, InterruptedException {
+        super(storeManager, executorsManager, statsManager, remotingServer, metaConfig, idWorker, brokerZooKeeper,
+            consumerFilterManager);
         this.slaveUrl = MetamorphosisWireFormatType.SCHEME + "://" + slave;
         this.remotingClient = remotingClient;
         this.sendToSlaveTimeoutInMills = sendToSlaveTimeoutInMills;
@@ -477,7 +479,7 @@ public class SamsaCommandProcessor extends BrokerCommandProcessor {
                 this.remotingClient.sendToGroup(this.slaveUrl,
                     new SyncCommand(request.getTopic(), partition, request.getData(), request.getFlag(), messageId,
                         request.getCheckSum(), OpaqueGenerator.getNextOpaque()), syncCB,
-                    this.sendToSlaveTimeoutInMills, TimeUnit.MILLISECONDS);
+                        this.sendToSlaveTimeoutInMills, TimeUnit.MILLISECONDS);
                 // –¥»Îmaster
                 store.append(messageId, request, syncCB);
             }

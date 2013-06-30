@@ -17,6 +17,7 @@
  */
 package com.taobao.metamorphosis.server.transaction.store;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
@@ -37,6 +38,7 @@ public class MessageIterator {
     private final String topic;
     private final byte[] data;
     private int offset;
+    private ByteBuffer currentMsgBuf;
 
 
     public MessageIterator(final String topic, final byte[] data) {
@@ -44,6 +46,11 @@ public class MessageIterator {
         this.topic = topic;
         this.data = data;
         this.offset = 0;
+    }
+
+
+    public ByteBuffer getCurrentMessageBuffer() {
+        return this.currentMsgBuf;
     }
 
 
@@ -104,6 +111,7 @@ public class MessageIterator {
         final MessageUtils.DecodedMessage decodeMessage =
                 MessageUtils.decodeMessage(this.topic, this.data, this.offset);
         this.offset = decodeMessage.newOffset;
+        this.currentMsgBuf = decodeMessage.buf;
         return decodeMessage.message;
     }
 

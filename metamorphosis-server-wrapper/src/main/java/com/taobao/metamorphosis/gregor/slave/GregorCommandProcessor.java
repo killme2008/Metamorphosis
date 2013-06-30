@@ -27,6 +27,7 @@ import com.taobao.metamorphosis.network.SyncCommand;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.assembly.BrokerCommandProcessor;
 import com.taobao.metamorphosis.server.assembly.ExecutorsManager;
+import com.taobao.metamorphosis.server.filter.ConsumerFilterManager;
 import com.taobao.metamorphosis.server.network.PutCallback;
 import com.taobao.metamorphosis.server.network.SessionContext;
 import com.taobao.metamorphosis.server.stats.StatsManager;
@@ -55,8 +56,9 @@ public class GregorCommandProcessor extends BrokerCommandProcessor implements Sy
 
     public GregorCommandProcessor(final MessageStoreManager storeManager, final ExecutorsManager executorsManager,
             final StatsManager statsManager, final RemotingServer remotingServer, final MetaConfig metaConfig,
-            final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper) {
-        super(storeManager, executorsManager, statsManager, remotingServer, metaConfig, idWorker, brokerZooKeeper);
+            final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper, ConsumerFilterManager consumerFilterManager) {
+        super(storeManager, executorsManager, statsManager, remotingServer, metaConfig, idWorker, brokerZooKeeper,
+            consumerFilterManager);
     }
 
 

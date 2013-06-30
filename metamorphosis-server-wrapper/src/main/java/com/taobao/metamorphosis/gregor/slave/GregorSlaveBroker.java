@@ -71,7 +71,8 @@ public class GregorSlaveBroker extends AbstractBrokerPlugin {
                 new GregorCommandProcessor(metaMorphosisBroker.getStoreManager(),
                     metaMorphosisBroker.getExecutorsManager(), metaMorphosisBroker.getStatsManager(),
                     metaMorphosisBroker.getRemotingServer(), metaMorphosisBroker.getMetaConfig(),
-                    metaMorphosisBroker.getIdWorker(), metaMorphosisBroker.getBrokerZooKeeper());
+                    metaMorphosisBroker.getIdWorker(), metaMorphosisBroker.getBrokerZooKeeper(),
+                    metaMorphosisBroker.getConsumerFilterManager());
         // «ø÷∆…Ë÷√processor
         metaMorphosisBroker.setBrokerProcessor(processor);
         final SyncProcessor syncProcessor = new SyncProcessor(processor, this.orderedPutExecutor);

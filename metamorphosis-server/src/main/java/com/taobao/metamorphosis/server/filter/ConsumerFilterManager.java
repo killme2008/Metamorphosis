@@ -47,7 +47,7 @@ public class ConsumerFilterManager implements Service {
     }
 
 
-    public ConsumerMessageFilter findFilter(String topic, String group) {
+    public final ConsumerMessageFilter findFilter(String topic, String group) {
         if (this.filterClassLoader == null) {
             return null;
         }

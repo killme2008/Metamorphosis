@@ -40,6 +40,7 @@ public interface MetaEncodeCommand {
     public String GET_CMD = "get";
     public String RESULT_CMD = "result";
     public String OFFSET_CMD = "offset";
+    public String VALUE_CMD = "value";
     public String PUT_CMD = "put";
     public String SYNC_CMD = "sync";
     public String QUIT_CMD = "quit";

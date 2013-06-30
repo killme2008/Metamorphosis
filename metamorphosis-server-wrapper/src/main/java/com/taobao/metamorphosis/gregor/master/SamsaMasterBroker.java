@@ -596,8 +596,9 @@ public class SamsaMasterBroker extends AbstractBrokerPlugin {
                         metaMorphosisBroker.getExecutorsManager(), metaMorphosisBroker.getStatsManager(),
                         metaMorphosisBroker.getRemotingServer(), metaMorphosisBroker.getMetaConfig(),
                         metaMorphosisBroker.getIdWorker(), metaMorphosisBroker.getBrokerZooKeeper(),
-                        this.remotingClient, slave, callbackThreadCount, this.sendToSlaveTimeoutInMills,
-                        this.checkSlaveIntervalInMills, this.slaveContinuousFailureThreshold);
+                        this.remotingClient, metaMorphosisBroker.getConsumerFilterManager(), slave,
+                        callbackThreadCount, this.sendToSlaveTimeoutInMills, this.checkSlaveIntervalInMills,
+                        this.slaveContinuousFailureThreshold);
             // Ìæ»»´¦ÀíÆ÷
             this.broker.setBrokerProcessor(this.masterProcessor);
             log.info("Init samsa mater successfully with config:" + props);
