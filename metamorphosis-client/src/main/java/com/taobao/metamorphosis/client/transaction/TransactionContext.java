@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -501,6 +502,12 @@ public class TransactionContext implements XAResource {
      * @return
      */
     XAException toXAException(final Exception e) {
+        if (e instanceof TimeoutException) {
+            final XAException xae = new XAException(e.getMessage());
+            xae.errorCode = XAException.XA_RBTIMEOUT;
+            xae.initCause(e);
+            return xae;
+        }
         if (e.getCause() != null && e.getCause() instanceof XAException) {
             final XAException original = (XAException) e.getCause();
             final XAException xae = new XAException(original.getMessage());
@@ -652,6 +659,10 @@ public class TransactionContext implements XAResource {
                 this.transactionId = null;
                 this.syncSendLocalTxCommand(info);
             }
+            catch (TimeoutException e) {
+                throw new MetaClientException(
+                    "Commit transaction timeout,the transaction state is unknown,you must check it by yourself.", e);
+            }
             finally {
                 this.logTxTime();
             }
@@ -668,7 +679,7 @@ public class TransactionContext implements XAResource {
     }
 
 
-    private void syncSendLocalTxCommand(final TransactionInfo info) throws MetaClientException {
+    private void syncSendLocalTxCommand(final TransactionInfo info) throws MetaClientException, TimeoutException {
         try {
 
             final BooleanCommand resp =
@@ -677,6 +688,9 @@ public class TransactionContext implements XAResource {
             if (resp.getResponseStatus() != ResponseStatus.NO_ERROR) {
                 throw new MetaClientException(resp.getErrorMsg());
             }
+        }
+        catch (TimeoutException te) {
+            throw te;
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -704,6 +718,10 @@ public class TransactionContext implements XAResource {
                             TransactionInfo.TransactionType.ROLLBACK, this.uniqueQualifier);
                 this.transactionId = null;
                 this.syncSendLocalTxCommand(info);
+            }
+            catch (TimeoutException e) {
+                throw new MetaClientException(
+                    "Rollback transaction timeout,the transaction state is unknown,you must check it by yourself.", e);
             }
             finally {
                 this.logTxTime();
