@@ -358,19 +358,7 @@ public class SimpleFetchManager implements FetchManager {
                 try {
                     final Message msg = it.next();
                     MessageAccessor.setPartition(msg, partition);
-                    boolean accept = true;
-                    try {
-                        if (filter != null) {
-                            accept = filter.accept(group, msg);
-                        }
-                    }
-                    catch (Exception e) {
-                        log.error("Filter message failed,topic=" + request.getTopic() + ",group=" + group
-                            + ",filterClass=" + filter.getClass().getCanonicalName());
-                        // If accept throw exception,we think we can't accept
-                        // this message.
-                        accept = false;
-                    }
+                    boolean accept = this.isAcceptable(request, filter, group, msg);
                     if (accept) {
                         listener.recieveMessages(msg);
                     }
@@ -422,6 +410,26 @@ public class SimpleFetchManager implements FetchManager {
             }
             MetaStatLog.addStatValue2(null, StatConstants.GET_MSG_COUNT_STAT, request.getTopic(), count);
             return false;
+        }
+
+
+        private boolean isAcceptable(final FetchRequest request, final ConsumerMessageFilter filter,
+                final String group, final Message msg) {
+            if (filter == null) {
+                return true;
+            }
+            else {
+                try {
+                    return filter.accept(group, msg);
+                }
+                catch (Exception e) {
+                    log.error("Filter message failed,topic=" + request.getTopic() + ",group=" + group + ",filterClass="
+                            + filter.getClass().getCanonicalName());
+                    // If accept throw exception,we think we can't accept
+                    // this message.
+                    return false;
+                }
+            }
         }
 
 
