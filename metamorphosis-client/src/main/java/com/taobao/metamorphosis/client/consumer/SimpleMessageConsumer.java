@@ -40,6 +40,7 @@ import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
 import com.taobao.metamorphosis.client.producer.ProducerZooKeeper;
 import com.taobao.metamorphosis.cluster.Broker;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.exception.MetaOpeartionTimeoutException;
 import com.taobao.metamorphosis.network.BooleanCommand;
@@ -180,6 +181,13 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
     @Override
     public MessageConsumer subscribe(final String topic, final int maxSize, final MessageListener messageListener)
             throws MetaClientException {
+        return this.subscribe(topic, maxSize, messageListener, null);
+    }
+
+    @Override
+    public MessageConsumer subscribe(final String topic, final int maxSize, final MessageListener messageListener,
+            ConsumerMessageFilter filter)
+                    throws MetaClientException {
         this.checkState();
         if (StringUtils.isBlank(topic)) {
             throw new IllegalArgumentException("Blank topic");
@@ -188,11 +196,11 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
             throw new IllegalArgumentException("Null messageListener");
         }
         // 先添加到公共管理器
-        this.subscribeInfoManager.subscribe(topic, this.consumerConfig.getGroup(), maxSize, messageListener);
+        this.subscribeInfoManager.subscribe(topic, this.consumerConfig.getGroup(), maxSize, messageListener, filter);
         // 然后添加到自身的管理器
         SubscriberInfo info = this.topicSubcriberRegistry.get(topic);
         if (info == null) {
-            info = new SubscriberInfo(messageListener, maxSize);
+            info = new SubscriberInfo(messageListener, filter, maxSize);
             final SubscriberInfo oldInfo = this.topicSubcriberRegistry.putIfAbsent(topic, info);
             if (oldInfo != null) {
                 throw new MetaClientException("Topic=" + topic + " has been subscribered");
@@ -244,6 +252,16 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
             return null;
         }
         return info.getMessageListener();
+    }
+
+
+    @Override
+    public ConsumerMessageFilter getMessageFilter(final String topic) {
+        final SubscriberInfo info = this.topicSubcriberRegistry.get(topic);
+        if (info == null) {
+            return null;
+        }
+        return info.getConsumerMessageFilter();
     }
 
 

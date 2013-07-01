@@ -102,7 +102,7 @@ public class SimpleMessageConsumerUnitTest {
         };
         final ConcurrentHashMap<String/* topic */, SubscriberInfo> topicSubcriberRegistry =
                 new ConcurrentHashMap<String, SubscriberInfo>();
-        topicSubcriberRegistry.put(topic, new SubscriberInfo(messageListener, maxSize));
+        topicSubcriberRegistry.put(topic, new SubscriberInfo(messageListener, null, maxSize));
         this.consumerZooKeeper.registerConsumer(this.consumerConfig, this.consumer.getFetchManager(),
             topicSubcriberRegistry, this.offsetStorage, this.loadBalanceStrategy);
         EasyMock.expectLastCall();

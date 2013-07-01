@@ -17,6 +17,9 @@
  */
 package com.taobao.metamorphosis.client.consumer;
 
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+
+
 /**
  * ∂©‘ƒ’ﬂ–≈œ¢
  * 
@@ -26,13 +29,21 @@ package com.taobao.metamorphosis.client.consumer;
  */
 public class SubscriberInfo {
     private final MessageListener messageListener;
+    private final ConsumerMessageFilter consumerMessageFilter;
     private final int maxSize;
 
 
-    public SubscriberInfo(final MessageListener messageListener, final int maxSize) {
+    public SubscriberInfo(final MessageListener messageListener, final ConsumerMessageFilter consumerMessageFilter,
+            final int maxSize) {
         super();
         this.messageListener = messageListener;
         this.maxSize = maxSize;
+        this.consumerMessageFilter = consumerMessageFilter;
+    }
+
+
+    public ConsumerMessageFilter getConsumerMessageFilter() {
+        return this.consumerMessageFilter;
     }
 
 
@@ -45,6 +56,7 @@ public class SubscriberInfo {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + (this.consumerMessageFilter == null ? 0 : this.consumerMessageFilter.hashCode());
         result = prime * result + this.maxSize;
         result = prime * result + (this.messageListener == null ? 0 : this.messageListener.hashCode());
         return result;
@@ -52,7 +64,7 @@ public class SubscriberInfo {
 
 
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -62,7 +74,15 @@ public class SubscriberInfo {
         if (this.getClass() != obj.getClass()) {
             return false;
         }
-        final SubscriberInfo other = (SubscriberInfo) obj;
+        SubscriberInfo other = (SubscriberInfo) obj;
+        if (this.consumerMessageFilter == null) {
+            if (other.consumerMessageFilter != null) {
+                return false;
+            }
+        }
+        else if (!this.consumerMessageFilter.equals(other.consumerMessageFilter)) {
+            return false;
+        }
         if (this.maxSize != other.maxSize) {
             return false;
         }

@@ -27,6 +27,7 @@ import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.MessageAccessor;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.utils.MetaStatLog;
@@ -180,7 +181,10 @@ public class SimpleFetchManager implements FetchManager {
                 final MessageIterator iterator = SimpleFetchManager.this.consumer.fetch(request, -1, null);
                 final MessageListener listener =
                         SimpleFetchManager.this.consumer.getMessageListener(request.getTopic());
-                this.notifyListener(request, iterator, listener);
+                final ConsumerMessageFilter filter =
+                        SimpleFetchManager.this.consumer.getMessageFilter(request.getTopic());
+                this.notifyListener(request, iterator, listener, filter, SimpleFetchManager.this.consumer
+                    .getConsumerConfig().getGroup());
             }
             catch (final MetaClientException e) {
                 this.updateDelay(request);
@@ -243,7 +247,8 @@ public class SimpleFetchManager implements FetchManager {
         private final ConcurrentHashSet<Thread> executorThreads = new ConcurrentHashSet<Thread>();
 
 
-        private void notifyListener(final FetchRequest request, final MessageIterator it, final MessageListener listener) {
+        private void notifyListener(final FetchRequest request, final MessageIterator it,
+                final MessageListener listener, final ConsumerMessageFilter filter, final String group) {
             if (listener != null) {
                 if (listener.getExecutor() != null) {
                     try {
@@ -253,7 +258,7 @@ public class SimpleFetchManager implements FetchManager {
                                 Thread currentThread = Thread.currentThread();
                                 FetchRequestRunner.this.executorThreads.add(currentThread);
                                 try {
-                                    FetchRequestRunner.this.receiveMessages(request, it, listener);
+                                    FetchRequestRunner.this.receiveMessages(request, it, listener, filter, group);
                                 }
                                 finally {
                                     FetchRequestRunner.this.executorThreads.remove(currentThread);
@@ -270,7 +275,7 @@ public class SimpleFetchManager implements FetchManager {
 
                 }
                 else {
-                    this.receiveMessages(request, it, listener);
+                    this.receiveMessages(request, it, listener, filter, group);
                 }
             }
         }
@@ -304,13 +309,13 @@ public class SimpleFetchManager implements FetchManager {
          * @param listener
          */
         private void receiveMessages(final FetchRequest request, final MessageIterator it,
-                final MessageListener listener) {
+                final MessageListener listener, final ConsumerMessageFilter filter, final String group) {
             if (it != null && it.hasNext()) {
                 if (this.processWhenRetryTooMany(request, it)) {
                     return;
                 }
                 final Partition partition = request.getPartitionObject();
-                if (this.processReceiveMessage(request, it, listener, partition)) {
+                if (this.processReceiveMessage(request, it, listener, filter, partition, group)) {
                     return;
                 }
                 this.postReceiveMessage(request, it, partition);
@@ -345,14 +350,30 @@ public class SimpleFetchManager implements FetchManager {
          * @return
          */
         private boolean processReceiveMessage(final FetchRequest request, final MessageIterator it,
-                final MessageListener listener, final Partition partition) {
+                final MessageListener listener, final ConsumerMessageFilter filter, final Partition partition,
+                final String group) {
             int count = 0;
             while (it.hasNext()) {
                 final int prevOffset = it.getOffset();
                 try {
                     final Message msg = it.next();
                     MessageAccessor.setPartition(msg, partition);
-                    listener.recieveMessages(msg);
+                    boolean accept = true;
+                    try {
+                        if (filter != null) {
+                            accept = filter.accept(group, msg);
+                        }
+                    }
+                    catch (Exception e) {
+                        log.error("Filter message failed,topic=" + request.getTopic() + ",group=" + group
+                            + ",filterClass=" + filter.getClass().getCanonicalName());
+                        // If accept throw exception,we think we can't accept
+                        // this message.
+                        accept = false;
+                    }
+                    if (accept) {
+                        listener.recieveMessages(msg);
+                    }
                     // rollback message if it is in rollback only state.
                     if (MessageAccessor.isRollbackOnly(msg)) {
                         it.setOffset(prevOffset);

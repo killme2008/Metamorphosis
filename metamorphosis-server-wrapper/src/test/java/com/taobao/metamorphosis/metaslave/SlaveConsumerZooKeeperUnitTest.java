@@ -106,8 +106,8 @@ public class SlaveConsumerZooKeeperUnitTest {
         consumerConfig.setGroup(GROUP);
         final ConcurrentHashMap<String/* topic */, SubscriberInfo> topicSubcriberRegistry =
                 new ConcurrentHashMap<String, SubscriberInfo>();
-        topicSubcriberRegistry.put("topic1", new SubscriberInfo(null, 1024 * 1024));
-        topicSubcriberRegistry.put("topic2", new SubscriberInfo(null, 1024 * 1024));
+        topicSubcriberRegistry.put("topic1", new SubscriberInfo(null, null, 1024 * 1024));
+        topicSubcriberRegistry.put("topic2", new SubscriberInfo(null, null, 1024 * 1024));
 
         // 假设集群里有两台master,topic1在master里有3个分区;
         // topic2在master里有1个分区,在另一个不相关的master里有1个分区
