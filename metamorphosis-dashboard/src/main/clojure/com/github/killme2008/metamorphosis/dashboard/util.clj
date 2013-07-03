@@ -45,7 +45,7 @@
 
 (defn dump-threads []
   (let [tmb (ManagementFactory/getThreadMXBean)]
-    (.dumpAllThreads tmb false false)))
+    (map str (seq (.dumpAllThreads tmb false false)))))
 
 (defonce ^:private units ["B" "KB" "MB" "GB" "TB"])
 (defn readable-size [size]

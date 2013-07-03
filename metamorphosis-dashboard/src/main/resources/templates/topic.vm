@@ -115,7 +115,7 @@
 <script type="text/javascript">
   	$("#query-pending-msgs button").on("click", function(e) {
 		var group = $("#query-pending-msgs input").val();
-	    var url = "#topic/$topic.topic?group=" + group
+	    var url = "#topics/$topic.topic?group=" + group
 	    window.location.href = url;
     });
   	$("#group-stats-table tr td button").on("click", function(e) {

@@ -25,7 +25,7 @@
 		  <li><a href="#java-properties"><i class="icon-chevron-right"></i>Java properties</a></li>
 		  <li><a href="#thread-dump"><i class="icon-chevron-right"></i>Thread Dump</a></li>
 		  <li><a href="#config"><i class="icon-chevron-right"></i>Broker config</a></li>
-		  <li><a href="#topic-list"><i class="icon-chevron-right"></i>Topics</a></li>
+		  <li><a href="#topics"><i class="icon-chevron-right"></i>Topics</a></li>
 		  <li><a href="#stats"><i class="icon-chevron-right"></i>Statstics</a></li>
         </ul>
 	  </div>

@@ -14,6 +14,7 @@
            [com.taobao.metamorphosis.utils MetaZookeeper MetaZookeeper$ZKGroupTopicDirs])
   (:require [compojure.handler :as handler]
             [clojure.java.io :as io]
+            [clojure.data.json :as json]
             [clojure.tools.logging :as log]
             [com.github.killme2008.metamorphosis.dashboard.stats :as stats]
             [com.github.killme2008.metamorphosis.dashboard.util :as u]
@@ -24,11 +25,18 @@
 (defmacro with-broker [ & body]
   `(-> ^MetaMorphosisBroker @broker-ref ~@body))
 
-(defn- render-tpl [tpl & vs]
-  (apply render (str "templates/" tpl) vs))
+(defn- json-request?
+  [req]
+  (if-let [^String type (:content-type req)]
+    (seq (re-find #"^application/(vnd.+)?json" type))))
+
+(defn- render-tpl [req tpl & vs]
+  (if (json-request? req)
+    (json/write-str (apply hash-map vs))
+    (apply render (str "templates/" tpl) vs)))
 
 (defn-  index [req]
-  (render-tpl "index.vm" :broker_id (with-broker (.getMetaConfig) (.getBrokerId))))
+  (render-tpl req "index.vm" :broker_id (with-broker (.getMetaConfig) (.getBrokerId))))
 
 (defn- instance []
   {:start (u/pretty-time (with-broker (.getStatsManager) (.getStartupTimestamp)))
@@ -40,7 +48,7 @@
 (defn- version []
   {:metaq (with-broker (.getStatsManager) (.getVersion))
    :id (with-broker (.getMetaConfig) (.getBrokerId))
-   :uri (with-broker (.getBrokerZooKeeper) (.getBroker))})
+   :uri (str (with-broker (.getBrokerZooKeeper) (.getBroker)))})
 
 (defn- jvm []
   {:runtime (System/getProperty "java.vm.name")
@@ -64,7 +72,7 @@
               :jvm_memory_used (- (-> (Runtime/getRuntime) (.totalMemory)) (-> (Runtime/getRuntime) (.freeMemory)))})))
 
 (defn- dashboard [req]
-  (render-tpl "dashboard.vm"
+  (render-tpl req "dashboard.vm"
               :instance (u/stringfy-map-keys (instance))
               :version (u/stringfy-map-keys (version))
               :jvm (u/stringfy-map-keys (jvm))
@@ -73,22 +81,34 @@
 (defn- logging [req]
   (let [timestamp (or (-> req :params :timetamp) 0)
         appender (-> (Logger/getRootLogger) (.getAppender "ServerDailyRollingFile"))]
-    (render-tpl "logs.vm" :logs (.getLogs ^MetaqDailyRollingFileAppender appender timestamp))))
+    (render-tpl req "logs.vm"
+                :logs (.getLogs ^MetaqDailyRollingFileAppender appender timestamp))))
 
 (defn- java-properties [req]
-  (render-tpl "java_properties.vm" :props (System/getProperties)))
+  (render-tpl req
+              "java_properties.vm" :props (System/getProperties)))
 
 (defn- thread-dump [req]
-  (render-tpl "thread_dump.vm" :threads (u/dump-threads)))
+  (render-tpl req
+              "thread_dump.vm" :threads (u/dump-threads)))
 
 (defn- config [req]
   (with-open [in (io/reader (with-broker (.getMetaConfig) (.getConfigFilePath)))]
-    (render-tpl "config.vm"
+    (render-tpl req "config.vm"
                 :config (slurp in)
                 :lastLoaded (u/pretty-time (with-broker (.getMetaConfig) (.getLastModified))))))
 
+(defn- mybean [x]
+  (u/stringfy-map-keys (dissoc (bean x) :class)))
+
+(defn- transform-topic-stats [stats]
+  (let [kvs (mybean stats)
+        kvs (assoc kvs "topicConfig" (mybean (get kvs "topicConfig")))]
+    (u/stringfy-map-keys kvs)))
+
 (defn- topic-list [req]
-  (render-tpl "topics.vm" :topics (with-broker (.getStatsManager) (.getTopicsStats))))
+  (render-tpl req
+              "topics.vm" :topics (map transform-topic-stats (with-broker (.getStatsManager) (.getTopicsStats)))))
 
 (defn- query-pending-messages [^StatsManager$TopicStats topic-stats ^TopicConfig topic-config group]
   (let [^String topic (.getTopic topic-stats)
@@ -165,9 +185,10 @@
         topic-stats (with-broker (.getStatsManager) (.getTopicStats topic))
         group (-> req :params :group)]
     (if-not (empty? group)
-      (render-tpl "topic.vm" :topic topic-stats :group group
+      (render-tpl req "topic.vm" :topic (transform-topic-stats topic-stats)
+                  :group group
                   :pending-stats (query-pending-messages topic-stats topic-config group))
-      (render-tpl "topic.vm" :topic topic-stats))))
+      (render-tpl req "topic.vm" :topic (transform-topic-stats topic-stats)))))
 
 (defn- reload-config [req]
   (try
@@ -179,7 +200,7 @@
 
 (defn- stats [req]
   (let [item (-> req :params :item)]
-    (render-tpl "stats.vm"
+    (render-tpl req "stats.vm"
                 :result
                 (with-broker (.getStatsManager) (.getStatsInfo item)))))
 
@@ -188,7 +209,7 @@
         cluster (.getCluster mz)
         current-broker (with-broker (.getBrokerZooKeeper) (.getBroker))
         all-brokers (.getBrokers cluster)]
-    (render-tpl "cluster.vm" :current current-broker
+    (render-tpl req "cluster.vm" :current (str current-broker)
                 :nodes
                 (sort-by #(get % "id")
                          (map (fn [[id brokers]]
@@ -202,14 +223,13 @@
                                             broker-port (.getPort uri)]
                                         {"dashboard-uri" (str "http://" host ":" (-> (stats/get-meta-config host broker-port) (.getDashboardHttpPort)))
                                          "slave" (.isSlave broker)
-                                         "broker" broker
                                          "broker-uri" broker-str})))
                                   brokers)})
                               all-brokers)))))
 
-(defn not-found []
-  {:status 200
-   :body (render-tpl "not_found.vm")})
+(defn not-found [req]
+  {:status 404
+   :body (render-tpl req "not_found.vm")})
 
 (defroutes app-routes
   (GET "/" [] index)
@@ -220,8 +240,8 @@
   (GET "/thread-dump" [] thread-dump)
   (GET "/config" [] config)
   (POST "/reload-config" [] reload-config)
-  (GET "/topic-list" [] topic-list)
-  (GET "/topic/:topic" [] topic-info)
+  (GET "/topics" [] topic-list)
+  (GET "/topics/:topic" [] topic-info)
   (POST "/topics/:topic/groups/:group/partitions/:partition/skip" [] skip-pending-msgs)
   (GET "/stats" [] stats)
   (GET "/stats/:item" [] stats)
@@ -230,11 +250,23 @@
 (defn wrap-error-handler [handler]
   (fn [req]
     (try
-      (or (handler req) (not-found))
+      (or (handler req) (not-found req))
       (catch Exception e
         (log/error e "Process request failed")
-        {:status 200
-         :body (render-tpl "error.vm" :error (or (.getMessage e) e))}))))
+        {:status 500
+         :body (render-tpl req "error.vm" :error (or (.getMessage e) e))}))))
+;;json params middleware
+(defn wrap-json-params [handler]
+  (fn [req]
+    (if-let [body (and (json-request? req) (:body req))]
+      (let [bstr (slurp body)]
+        (if (not-empty bstr)
+          (let [json-params (json/read-str bstr)
+                req* (assoc req
+                       :json-params json-params)]
+            (handler req*))
+          (handler req)))
+      (handler req))))
 
 (def app
-  (handler/site (-> app-routes wrap-error-handler)))
+  (handler/site (-> app-routes wrap-json-params wrap-error-handler)))

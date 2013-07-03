@@ -15,7 +15,7 @@
 		$broker.slave</td>
 	  <td>$broker.broker-uri</td>
 	  <td><a href="$broker.dashboard-uri"> $broker.dashboard-uri</a>
-        #if ($current.equals($broker.broker))
+        #if ($current.equals($broker.broker-uri))
 		<span class="badge badge-success">Current</span>
         #end
 	  </td>

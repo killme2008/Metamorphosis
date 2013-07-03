@@ -5,6 +5,7 @@
                  [compojure "1.1.5"]
                  [environ "0.3.0"]
                  [org.clojure/core.cache "0.6.3"]
+                 [org.clojure/data.json "0.2.2"]
                  [org.ocpsoft.prettytime/prettytime "2.1.2.Final"]
                  [org.clojure/tools.logging "0.2.3"]
                  [ring/ring-jetty-adapter "1.1.6"]
