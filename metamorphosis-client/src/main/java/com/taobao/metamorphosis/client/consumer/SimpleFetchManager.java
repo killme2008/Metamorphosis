@@ -67,7 +67,7 @@ public class SimpleFetchManager implements FetchManager {
     private final int CACAHE_SIZE = Integer.parseInt(System
         .getProperty("metaq.consumer.message.ids.cache.size", "1024"));
 
-    private final ConcurrentLRUHashMap<Long, Byte> messageIdCache = new ConcurrentLRUHashMap<Long, Byte>(
+    private final ConcurrentLRUHashMap<String, Byte> messageIdCache = new ConcurrentLRUHashMap<String, Byte>(
             this.CACAHE_SIZE);
 
 
@@ -87,6 +87,7 @@ public class SimpleFetchManager implements FetchManager {
     public static TopicPartitionRegInfo currentTopicRegInfo() {
         return currentTopicRegInfo.get();
     }
+
 
     @Override
     public int getFetchRequestCount() {
@@ -383,7 +384,7 @@ public class SimpleFetchManager implements FetchManager {
                     final Message msg = it.next();
                     // If the message is processed before,don't process it
                     // again.
-                    if (this.isProcessed(msg)) {
+                    if (this.isProcessed(msg.getId(), group)) {
                         continue;
                     }
                     MessageAccessor.setPartition(msg, partition);
@@ -404,7 +405,7 @@ public class SimpleFetchManager implements FetchManager {
                     }
                     if (partition.isAutoAck()) {
                         count++;
-                        this.markProcessed(msg.getId());
+                        this.markProcessed(msg.getId(), group);
                     }
                     else {
                         // 提交或者回滚都必须跳出循环
@@ -412,9 +413,9 @@ public class SimpleFetchManager implements FetchManager {
                             count++;
                             // mark all in transaction messages were processed.
                             for (Long msgId : inTransactionMsgIds) {
-                                this.markProcessed(msgId);
+                                this.markProcessed(msgId, group);
                             }
-                            this.markProcessed(msg.getId());
+                            this.markProcessed(msg.getId(), group);
                             break;
                         }
                         else if (partition.isRollback()) {
@@ -455,13 +456,18 @@ public class SimpleFetchManager implements FetchManager {
         }
 
 
-        private boolean isProcessed(final Message msg) {
-            return SimpleFetchManager.this.messageIdCache.get(msg.getId()) != null;
+        private boolean isProcessed(final Long id, String group) {
+            return SimpleFetchManager.this.messageIdCache.get(this.cacheKey(id, group)) != null;
         }
 
 
-        private void markProcessed(final Long msgId) {
-            SimpleFetchManager.this.messageIdCache.put(msgId, PROCESSED);
+        private String cacheKey(final Long id, String group) {
+            return group + id;
+        }
+
+
+        private void markProcessed(final Long msgId, String group) {
+            SimpleFetchManager.this.messageIdCache.put(this.cacheKey(msgId, group), PROCESSED);
         }
 
 
