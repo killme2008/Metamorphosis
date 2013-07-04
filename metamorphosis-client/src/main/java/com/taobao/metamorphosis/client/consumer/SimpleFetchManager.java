@@ -57,6 +57,9 @@ public class SimpleFetchManager implements FetchManager {
 
     private final ConsumerConfig consumerConfig;
 
+    private static final ThreadLocal<TopicPartitionRegInfo> currentTopicRegInfo =
+            new ThreadLocal<TopicPartitionRegInfo>();
+
     private final InnerConsumer consumer;
 
     public static final Byte PROCESSED = (byte) 1;
@@ -74,6 +77,16 @@ public class SimpleFetchManager implements FetchManager {
         this.consumer = consumer;
     }
 
+
+    /**
+     * Returns current thread processing message's TopicPartitionRegInfo.
+     * 
+     * @since 1.4.6
+     * @return
+     */
+    public static TopicPartitionRegInfo currentTopicRegInfo() {
+        return currentTopicRegInfo.get();
+    }
 
     @Override
     public int getFetchRequestCount() {
@@ -376,7 +389,13 @@ public class SimpleFetchManager implements FetchManager {
                     MessageAccessor.setPartition(msg, partition);
                     boolean accept = this.isAcceptable(request, filter, group, msg);
                     if (accept) {
-                        listener.recieveMessages(msg);
+                        currentTopicRegInfo.set(request.getTopicPartitionRegInfo().clone(it));
+                        try {
+                            listener.recieveMessages(msg);
+                        }
+                        finally {
+                            currentTopicRegInfo.remove();
+                        }
                     }
                     // rollback message if it is in rollback only state.
                     if (MessageAccessor.isRollbackOnly(msg)) {

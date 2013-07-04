@@ -48,6 +48,11 @@ public class FetchRequest implements Delayed {
     private FetchRequestQueue refQueue;
 
 
+    public TopicPartitionRegInfo getTopicPartitionRegInfo() {
+        return this.topicPartitionRegInfo;
+    }
+
+
     public FetchRequestQueue getRefQueue() {
         return this.refQueue;
     }

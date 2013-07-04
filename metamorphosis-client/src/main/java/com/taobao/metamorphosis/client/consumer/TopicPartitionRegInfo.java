@@ -42,6 +42,10 @@ public class TopicPartitionRegInfo implements Serializable {
     private boolean modified;
 
 
+    public TopicPartitionRegInfo clone(MessageIterator it) {
+        return new TopicPartitionRegInfo(this.topic, this.partition, this.offset.get() + it.getOffset(), this.messageId);
+    }
+
     public synchronized boolean isModified() {
         return this.modified;
     }
