@@ -17,6 +17,8 @@
  */
 package com.taobao.metamorphosis.client.consumer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.commons.logging.Log;
@@ -56,6 +58,14 @@ public class SimpleFetchManager implements FetchManager {
     private final ConsumerConfig consumerConfig;
 
     private final InnerConsumer consumer;
+
+    public static final Byte PROCESSED = (byte) 1;
+
+    private final int CACAHE_SIZE = Integer.parseInt(System
+        .getProperty("metaq.consumer.message.ids.cache.size", "1024"));
+
+    private final ConcurrentLRUHashMap<Long, Byte> messageIdCache = new ConcurrentLRUHashMap<Long, Byte>(
+            this.CACAHE_SIZE);
 
 
     public SimpleFetchManager(final ConsumerConfig consumerConfig, final InnerConsumer consumer) {
@@ -353,10 +363,16 @@ public class SimpleFetchManager implements FetchManager {
                 final MessageListener listener, final ConsumerMessageFilter filter, final Partition partition,
                 final String group) {
             int count = 0;
+            List<Long> inTransactionMsgIds = new ArrayList<Long>();
             while (it.hasNext()) {
                 final int prevOffset = it.getOffset();
                 try {
                     final Message msg = it.next();
+                    // If the message is processed before,don't process it
+                    // again.
+                    if (this.isProcessed(msg)) {
+                        continue;
+                    }
                     MessageAccessor.setPartition(msg, partition);
                     boolean accept = this.isAcceptable(request, filter, group, msg);
                     if (accept) {
@@ -369,17 +385,24 @@ public class SimpleFetchManager implements FetchManager {
                     }
                     if (partition.isAutoAck()) {
                         count++;
+                        this.markProcessed(msg.getId());
                     }
                     else {
                         // 提交或者回滚都必须跳出循环
                         if (partition.isAcked()) {
                             count++;
+                            // mark all in transaction messages were processed.
+                            for (Long msgId : inTransactionMsgIds) {
+                                this.markProcessed(msgId);
+                            }
+                            this.markProcessed(msg.getId());
                             break;
                         }
                         else if (partition.isRollback()) {
                             break;
                         }
                         else {
+                            inTransactionMsgIds.add(msg.getId());
                             // 不是提交也不是回滚，仅递增计数
                             count++;
                         }
@@ -410,6 +433,16 @@ public class SimpleFetchManager implements FetchManager {
             }
             MetaStatLog.addStatValue2(null, StatConstants.GET_MSG_COUNT_STAT, request.getTopic(), count);
             return false;
+        }
+
+
+        private boolean isProcessed(final Message msg) {
+            return SimpleFetchManager.this.messageIdCache.get(msg.getId()) != null;
+        }
+
+
+        private void markProcessed(final Long msgId) {
+            SimpleFetchManager.this.messageIdCache.put(msgId, PROCESSED);
         }
 
 
