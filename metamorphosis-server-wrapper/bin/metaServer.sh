@@ -101,7 +101,7 @@ function stop_server() {
 	fi
 	count=0
 	pid=$(cat $PID_FILE)
-	rm $PID_FILE
+	
 	while running;
 	do
 	  let count=$count+1
@@ -115,6 +115,7 @@ function stop_server() {
 	  fi
 	  sleep 3;
 	done	
+	rm $PID_FILE
 	echo "Stop meta broker successfully." 	
 }
 
