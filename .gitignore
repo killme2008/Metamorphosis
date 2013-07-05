@@ -1,9 +1,16 @@
 .classpath
 .project
+.idea/
+.metadata/
 .settings/
 target/
+dist/
+*.tar.gz
 .DS_Store
 *.pyc
 build/
-.log
+*.log
+*.log.*
+*.out.*
+*.out
 *.iml
