@@ -1,4 +1,4 @@
-(defproject test "0.1.0-SNAPSHOT"
+(defproject com.taobao.metamorphosis/metamorphosis-dashboard "1.4.6-SNAPSHOT"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :dependencies [[org.clojure/clojure "1.4.0"]
@@ -10,7 +10,7 @@
                  [org.clojure/tools.logging "0.2.3"]
                  [ring/ring-jetty-adapter "1.1.6"]
                  [ring.velocity "0.1.2"]
-                 [com.taobao.metamorphosis/metamorphosis-server "1.4.5-SNAPSHOT"]]
+                 [com.taobao.metamorphosis/metamorphosis-server "1.4.6-SNAPSHOT"]]
   :resource-paths ["src/main/resources"]
   :source-paths ["src" "src/main/clojure"]
   :warn-on-reflection true
