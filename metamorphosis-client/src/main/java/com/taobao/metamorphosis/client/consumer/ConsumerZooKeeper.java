@@ -557,37 +557,22 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                         this.fetchManager.addFetchRequest(new FetchRequest(broker, 0L, info, subscriberInfo
                             .getMaxSize()));
                     }
+                    else {
+                        log.error("Could not find broker for broker id " + partition.getBrokerId()
+                            + ", it should not happend.");
+                    }
                 }
             }
 
-            // 建立连接
-            for (final Broker broker : changedBrokers) {
-                if (!this.oldBrokerSet.contains(broker)) {
-                    try {
-                        ConsumerZooKeeper.this.remotingClient.connectWithRef(broker.getZKString(), this);
-                        ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(broker.getZKString());
-                        log.warn("Connect to " + broker.getZKString());
-                    }
-                    catch (final NotifyRemotingException e) {
-                        log.error("Connect to " + broker.getZKString() + " failed", e);
-                    }
-                    catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+            for (Broker newOne : changedBrokers) {
+                ConsumerZooKeeper.this.remotingClient.connectWithRef(newOne.getZKString(), this);
+                try {
+                    ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(newOne.getZKString(), 10000);
+                    log.warn("Connected to " + newOne.getZKString());
                 }
-            }
-            // 关闭连接
-            for (final Broker broker : this.oldBrokerSet) {
-                if (!changedBrokers.contains(broker)) {
-                    // try {
-                    // ConsumerZooKeeper.this.remotingClient.closeWithRef(broker.getZKString(),
-                    // this, true);
-                    // log.warn("Closed " + broker.getZKString());
-                    // }
-                    // catch (final NotifyRemotingException e) {
-                    // log.error("Close " + broker.getZKString() + " failed",
-                    // e);
-                    // }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Remoting client is interrupted", e);
                 }
             }
             // 重新启动fetch线程
@@ -624,20 +609,24 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 // 导致partitionsPerTopicMap可能是没有变化的,
                 // 所以要检查集群的变化并重新连接
                 if (this.checkClusterChange(cluster)) {
-                    log.info("Stopping fetch runners,maybe master or slave changed");
+                    log.warn("Stopping fetch runners,maybe master or slave changed");
                     this.fetchManager.stopFetchRunner();
+                    // closed all connections to old brokers.
+                    this.closeOldBrokersConnections();
                     this.updateFetchRunner(cluster);
                     this.oldCluster = cluster;
                 }
                 else {
-                    log.info("Consumer " + this.consumerIdString + " with " + consumersPerTopicMap
+                    log.warn("Consumer " + this.consumerIdString + " with " + consumersPerTopicMap
                         + " doesn't need to be rebalanced.");
                 }
                 return true;
             }
-            log.info("Stopping fetch runners");
+            log.warn("Stopping fetch runners");
             this.fetchManager.stopFetchRunner();
-            log.info("Comitting all offsets");
+            // closed all connections to old brokers.
+            this.closeOldBrokersConnections();
+            log.warn("Comitting all offsets");
             this.commitOffsets();
 
             for (final Map.Entry<String, String> entry : relevantTopicConsumerIdMap.entrySet()) {
@@ -652,17 +641,17 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 final List<String> curPartitions = partitionsPerTopicMap.get(topic);
 
                 if (curConsumers == null) {
-                    log.info("Releasing partition ownerships for topic:" + topic);
+                    log.warn("Releasing partition ownerships for topic:" + topic);
                     this.releasePartitionOwnership(topic);
                     this.topicRegistry.remove(topic);
-                    log.info("There are no consumers subscribe topic " + topic);
+                    log.warn("There are no consumers subscribe topic " + topic);
                     continue;
                 }
                 if (curPartitions == null) {
-                    log.info("Releasing partition ownerships for topic:" + topic);
+                    log.warn("Releasing partition ownerships for topic:" + topic);
                     this.releasePartitionOwnership(topic);
                     this.topicRegistry.remove(topic);
-                    log.info("There are no partitions under topic " + topic);
+                    log.warn("There are no partitions under topic " + topic);
                     continue;
                 }
 
@@ -681,18 +670,19 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 for (final Partition partition : currentParts) {
                     // 新的分区列表中不存在的分区，需要释放ownerShip，也就是老的有，新的没有
                     if (!newParts.contains(partition.toString())) {
-                        log.info("Releasing partition ownerships for partition:" + partition);
-                        partRegInfos.remove(partition);
+                        log.warn("Releasing partition ownerships for partition:" + partition);
                         this.releasePartitionOwnership(topic, partition);
+                        partRegInfos.remove(partition);
                     }
                 }
 
                 for (final String partition : newParts) {
                     // 当前没有的分区，挂载上去，也就是新的有，老的没有
                     if (!currentParts.contains(new Partition(partition))) {
-                        log.info(consumerId + " attempting to claim partition " + partition);
+                        log.warn(consumerId + " attempting to claim partition " + partition);
                         // 注册分区owner关系
-                        if (!this.processPartition(topicDirs, partition, topic, consumerId)) {
+                        if (!this.ownPartition(topicDirs, partition, topic, consumerId)) {
+                            log.warn("Claim partition " + partition + " failed,retry...");
                             return false;
                         }
                     }
@@ -705,6 +695,14 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             this.oldCluster = cluster;
 
             return true;
+        }
+
+
+        private void closeOldBrokersConnections() throws NotifyRemotingException {
+            for (Broker old : this.oldBrokerSet) {
+                ConsumerZooKeeper.this.remotingClient.closeWithRef(old.getZKString(), this, false);
+                log.warn("Closed " + old.getZKString());
+            }
         }
 
 
@@ -727,7 +725,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          * @param consumerThreadId
          * @return
          */
-        protected boolean processPartition(final ZKGroupTopicDirs topicDirs, final String partition,
+        protected boolean ownPartition(final ZKGroupTopicDirs topicDirs, final String partition,
                 final String topic, final String consumerThreadId) throws Exception {
             final String partitionOwnerPath = topicDirs.consumerOwnerDir + "/" + partition;
             try {

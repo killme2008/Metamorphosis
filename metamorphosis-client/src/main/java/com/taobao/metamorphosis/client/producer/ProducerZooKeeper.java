@@ -190,46 +190,26 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
                 log.warn("Begin receiving broker changes for topic " + this.topic + ",broker ids:"
                         + newTopicPartitionMap);
-                boolean changed = false;
+                final boolean changed = !this.brokersInfo.oldBrokerStringMap.equals(newBrokerStringMap);
+
+                // Close old brokers;
+                for (final Map.Entry<Integer, String> oldEntry : this.brokersInfo.oldBrokerStringMap.entrySet()) {
+                    final String oldBrokerString = oldEntry.getValue();
+                    ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, false);
+                    log.warn("Closed " + oldBrokerString);
+                }
                 // Connect to new brokers
                 for (final Map.Entry<Integer, String> newEntry : newBrokerStringMap.entrySet()) {
-                    final Integer newBrokerId = newEntry.getKey();
                     final String newBrokerString = newEntry.getValue();
-                    // 新的有，旧的没有，创建
-                    if (!this.brokersInfo.oldBrokerStringMap.containsKey(newBrokerId)) {
-                        changed = true;
-                        ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
-                        ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                        log.warn("Connect to " + newBrokerString);
+                    ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
+                    try {
+                        ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString, 10000);
                     }
-                }
-                // Close removed brokers.
-                for (final Map.Entry<Integer, String> oldEntry : this.brokersInfo.oldBrokerStringMap.entrySet()) {
-                    final Integer oldBrokerId = oldEntry.getKey();
-                    final String oldBrokerString = oldEntry.getValue();
-                    final String newBrokerString = newBrokerStringMap.get(oldBrokerId);
-                    // 新旧都有
-                    if (newBrokerStringMap.containsKey(oldBrokerId)) {
-                        // 判断内容是否变化
-                        if (!newBrokerString.equals(oldBrokerString)) {
-                            changed = true;
-                            log.warn("Close " + oldBrokerString + ",connect to " + newBrokerString);
-                            ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
-                            ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                            // ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString,
-                            // this, true);
-                        }
-                        else {
-                            // ignore
-                        }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Connecting to broker is interrupted", e);
                     }
-                    else {
-                        changed = true;
-                        // 新的没有，旧的有，关闭
-                        // ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString,
-                        // this, true);
-                        log.warn("Close " + oldBrokerString);
-                    }
+                    log.warn("Connect to " + newBrokerString);
                 }
 
                 // Set the new brokers info.

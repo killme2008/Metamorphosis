@@ -153,7 +153,7 @@ public class SlaveConsumerZooKeeper extends ConsumerZooKeeper {
 
 
         @Override
-        protected boolean processPartition(final ZKGroupTopicDirs topicDirs, final String partition,
+        protected boolean ownPartition(final ZKGroupTopicDirs topicDirs, final String partition,
                 final String topic, final String consumerThreadId) throws Exception {
             // 不owner partition,以免其他slave不能订阅
 
