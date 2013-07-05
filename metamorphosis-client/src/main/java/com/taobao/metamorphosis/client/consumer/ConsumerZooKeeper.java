@@ -541,7 +541,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          */
         protected void updateFetchRunner(final Cluster cluster) throws Exception {
             this.fetchManager.resetFetchState();
-            final Set<Broker> changedBrokers = new HashSet<Broker>();
+            final Set<Broker> newBrokers = new HashSet<Broker>();
             for (final Map.Entry<String/* topic */, ConcurrentHashMap<Partition, TopicPartitionRegInfo>> entry : this.topicRegistry
                     .entrySet()) {
                 final String topic = entry.getKey();
@@ -551,7 +551,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     // 随机取master或slave的一个读,wuhua
                     final Broker broker = cluster.getBrokerRandom(partition.getBrokerId());
                     if (broker != null) {
-                        changedBrokers.add(broker);
+                        newBrokers.add(broker);
                         final SubscriberInfo subscriberInfo = this.topicSubcriberRegistry.get(topic);
                         // 添加fetch请求
                         this.fetchManager.addFetchRequest(new FetchRequest(broker, 0L, info, subscriberInfo
@@ -559,12 +559,12 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     }
                     else {
                         log.error("Could not find broker for broker id " + partition.getBrokerId()
-                            + ", it should not happend.");
+                                + ", it should not happen.");
                     }
                 }
             }
 
-            for (Broker newOne : changedBrokers) {
+            for (Broker newOne : newBrokers) {
                 ConsumerZooKeeper.this.remotingClient.connectWithRef(newOne.getZKString(), this);
                 try {
                     ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(newOne.getZKString(), 10000);
@@ -577,7 +577,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             }
             // 重新启动fetch线程
             log.info("Starting fetch runners");
-            this.oldBrokerSet = changedBrokers;
+            this.oldBrokerSet = newBrokers;
             this.fetchManager.startFetchRunner();
         }
 

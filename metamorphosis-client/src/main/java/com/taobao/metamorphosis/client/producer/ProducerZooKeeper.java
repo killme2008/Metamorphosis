@@ -209,7 +209,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
                         Thread.currentThread().interrupt();
                         throw new IllegalStateException("Connecting to broker is interrupted", e);
                     }
-                    log.warn("Connect to " + newBrokerString);
+                    log.warn("Connected to " + newBrokerString);
                 }
 
                 // Set the new brokers info.
