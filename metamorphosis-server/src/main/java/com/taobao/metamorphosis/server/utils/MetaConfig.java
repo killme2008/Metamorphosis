@@ -87,7 +87,7 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
 
     private long lastModified = -1;
 
-    private String path;
+    private volatile String path;
 
     /**
      * App class path.
