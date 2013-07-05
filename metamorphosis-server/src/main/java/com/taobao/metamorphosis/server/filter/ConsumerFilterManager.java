@@ -24,8 +24,12 @@ public class ConsumerFilterManager implements Service {
     private ClassLoader filterClassLoader;
     private final ConcurrentHashMap<String/* class name */, FutureTask<ConsumerMessageFilter>> filters =
             new ConcurrentHashMap<String, FutureTask<ConsumerMessageFilter>>();
-    private final MetaConfig metaConfig;
+    private MetaConfig metaConfig;
 
+
+    public ConsumerFilterManager() {
+
+    }
 
     public ConsumerFilterManager(MetaConfig metaConfig) throws Exception {
         this.metaConfig = metaConfig;
@@ -47,7 +51,7 @@ public class ConsumerFilterManager implements Service {
     }
 
 
-    public final ConsumerMessageFilter findFilter(String topic, String group) {
+    public ConsumerMessageFilter findFilter(String topic, String group) {
         if (this.filterClassLoader == null) {
             return null;
         }

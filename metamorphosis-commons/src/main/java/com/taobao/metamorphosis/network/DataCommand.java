@@ -17,6 +17,8 @@
  */
 package com.taobao.metamorphosis.network;
 
+import java.util.Arrays;
+
 import com.taobao.gecko.core.buffer.IoBuffer;
 
 
@@ -46,6 +48,38 @@ public class DataCommand extends AbstractResponseCommand {
     private final byte[] data;
     static final long serialVersionUID = -1L;
     private boolean encodeHeader = false;
+
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + Arrays.hashCode(this.data);
+        result = prime * result + (this.encodeHeader ? 1231 : 1237);
+        return result;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+        DataCommand other = (DataCommand) obj;
+        if (!Arrays.equals(this.data, other.data)) {
+            return false;
+        }
+        if (this.encodeHeader != other.encodeHeader) {
+            return false;
+        }
+        return true;
+    }
 
 
     public byte[] getData() {
