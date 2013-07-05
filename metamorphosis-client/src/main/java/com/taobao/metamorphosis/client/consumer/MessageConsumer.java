@@ -24,6 +24,7 @@ import com.taobao.metamorphosis.client.Shutdownable;
 import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 

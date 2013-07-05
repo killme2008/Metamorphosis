@@ -30,6 +30,7 @@ import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.MessageAccessor;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.utils.MetaStatLog;

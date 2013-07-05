@@ -35,6 +35,7 @@ import com.taobao.metamorphosis.client.consumer.SimpleFetchManager.FetchRequestR
 import com.taobao.metamorphosis.cluster.Broker;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.MessageUtils;

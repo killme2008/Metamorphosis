@@ -16,9 +16,9 @@ import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.client.XAMessageSessionFactory;
 import com.taobao.metamorphosis.client.XAMetaMessageSessionFactory;
-import com.taobao.metamorphosis.client.consumer.MessageIterator;
 import com.taobao.metamorphosis.client.producer.SendResult;
 import com.taobao.metamorphosis.client.producer.XAMessageProducer;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 
 
 /**

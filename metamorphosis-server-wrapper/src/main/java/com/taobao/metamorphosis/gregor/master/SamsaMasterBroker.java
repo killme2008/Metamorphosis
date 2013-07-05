@@ -38,7 +38,7 @@ import com.taobao.gecko.service.config.ClientConfig;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.AbstractBrokerPlugin;
 import com.taobao.metamorphosis.Message;
-import com.taobao.metamorphosis.client.consumer.MessageIterator;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.network.MetamorphosisWireFormatType;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;

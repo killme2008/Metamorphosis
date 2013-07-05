@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 
 
 /**

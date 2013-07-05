@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 import com.taobao.gecko.core.util.StringUtils;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.consumer.MessageConsumer;
-import com.taobao.metamorphosis.client.consumer.MessageIterator;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 

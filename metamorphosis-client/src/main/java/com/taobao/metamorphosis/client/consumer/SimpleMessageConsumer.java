@@ -41,6 +41,7 @@ import com.taobao.metamorphosis.client.producer.ProducerZooKeeper;
 import com.taobao.metamorphosis.cluster.Broker;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.exception.MetaOpeartionTimeoutException;
 import com.taobao.metamorphosis.network.BooleanCommand;

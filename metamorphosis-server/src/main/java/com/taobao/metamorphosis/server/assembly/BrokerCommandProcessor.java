@@ -39,6 +39,7 @@ import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.network.BooleanCommand;
 import com.taobao.metamorphosis.network.ByteUtils;
 import com.taobao.metamorphosis.network.DataCommand;
@@ -63,7 +64,6 @@ import com.taobao.metamorphosis.server.store.MessageSet;
 import com.taobao.metamorphosis.server.store.MessageStore;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.transaction.Transaction;
-import com.taobao.metamorphosis.server.transaction.store.MessageIterator;
 import com.taobao.metamorphosis.server.utils.BuildProperties;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.transaction.TransactionId;
@@ -453,7 +453,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
                             Message msg = it.next();
                             try {
                                 if (filter.accept(group, msg)) {
-                                    ByteBuffer msgBuf = it.getCurrentMessageBuffer();
+                                    ByteBuffer msgBuf = it.getCurrentMsgBuf();
                                     // Append current message buffer to result
                                     // buffer.
                                     byteBuffer.put(msgBuf.array());

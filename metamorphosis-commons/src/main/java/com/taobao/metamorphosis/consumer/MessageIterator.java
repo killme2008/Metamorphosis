@@ -15,8 +15,9 @@
  * Authors:
  *   wuhua <wq163@163.com> , boyan <killme2008@gmail.com>
  */
-package com.taobao.metamorphosis.client.consumer;
+package com.taobao.metamorphosis.consumer;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
@@ -37,6 +38,7 @@ public class MessageIterator {
     private final byte[] data;
     private int offset;
     private Message message;
+    private ByteBuffer currentMsgBuf;
 
 
     public MessageIterator(final String topic, final byte[] data) {
@@ -44,6 +46,11 @@ public class MessageIterator {
         this.topic = topic;
         this.data = data;
         this.offset = 0;
+    }
+
+
+    public ByteBuffer getCurrentMsgBuf() {
+        return this.currentMsgBuf;
     }
 
 
@@ -110,6 +117,7 @@ public class MessageIterator {
                 MessageUtils.decodeMessage(this.topic, this.data, this.offset);
         this.setOffset(decodeMessage.newOffset);
         this.message = decodeMessage.message;
+        this.currentMsgBuf = decodeMessage.buf;
         return decodeMessage.message;
     }
 
