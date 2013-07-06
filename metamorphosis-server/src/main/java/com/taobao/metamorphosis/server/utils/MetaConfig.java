@@ -305,9 +305,10 @@ public class MetaConfig extends Config implements Serializable, MetaConfigMBean 
         try {
             this.path = path;
             final File file = new File(path);
-            File appClassDir = new File(file.getParentFile(), "provided");
+            File appClassDir = new File(file.getParentFile().getParentFile(), "provided");
             if (appClassDir.exists() && appClassDir.isDirectory()) {
-                this.appClassPath = appClassDir.getAbsolutePath();
+                // It's a directory,it must be ends with "/"
+                this.appClassPath = appClassDir.getAbsolutePath() + "/";
             }
             if (!file.exists()) {
                 throw new MetamorphosisServerStartupException("File " + path + " is not exists");

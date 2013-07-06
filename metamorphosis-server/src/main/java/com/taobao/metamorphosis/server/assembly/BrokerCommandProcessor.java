@@ -466,6 +466,12 @@ public class BrokerCommandProcessor implements CommandProcessor {
                         }
                         // re-new the byte array.
                         bytes = this.getBytesFromBuffer(byteBuffer);
+                        // All these messages are not acceptable,move forward
+                        // offset.
+                        if (bytes.length == 0) {
+                            return new BooleanCommand(HttpStatus.Moved, String.valueOf(request.getOffset()
+                                + it.getOffset()), request.getOpaque());
+                        }
                     }
                     return new DataCommand(bytes, request.getOpaque(), true);
                 }

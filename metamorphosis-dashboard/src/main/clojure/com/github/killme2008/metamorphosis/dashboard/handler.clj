@@ -184,11 +184,16 @@
         topic-config (with-broker (.getMetaConfig) (.getTopicConfig topic))
         topic-stats (with-broker (.getStatsManager) (.getTopicStats topic))
         group (-> req :params :group)]
-    (if-not (empty? group)
-      (render-tpl req "topic.vm" :topic (transform-topic-stats topic-stats)
-                  :group group
-                  :pending-stats (query-pending-messages topic-stats topic-config group))
-      (render-tpl req "topic.vm" :topic (transform-topic-stats topic-stats)))))
+    (if topic-stats
+      (if-not (empty? group)
+        (render-tpl req "topic.vm" :topic (transform-topic-stats topic-stats)
+                    :group group
+                    :group-filter (if-let [clazz (with-broker (.getConsumerFilterManager) (.findFilter topic group) (class))]
+                                    (.getCanonicalName clazz)
+                                    "null")
+                    :pending-stats (query-pending-messages topic-stats topic-config group))
+        (render-tpl req "topic.vm" :topic (transform-topic-stats topic-stats)))
+      (render-tpl req "error.vm" :error "The topic is not exists or doesn't have data right now."))))
 
 (defn- reload-config [req]
   (try

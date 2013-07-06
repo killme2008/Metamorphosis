@@ -1,11 +1,16 @@
 package com.taobao.metamorphosis.server.filter;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.taobao.gecko.core.util.StringUtils;
 import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
@@ -25,18 +30,32 @@ public class ConsumerFilterManager implements Service {
     private final ConcurrentHashMap<String/* class name */, FutureTask<ConsumerMessageFilter>> filters =
             new ConcurrentHashMap<String, FutureTask<ConsumerMessageFilter>>();
     private MetaConfig metaConfig;
+    private static final Log log = LogFactory.getLog(ConsumerFilterManager.class);
 
 
     public ConsumerFilterManager() {
 
     }
 
+
     public ConsumerFilterManager(MetaConfig metaConfig) throws Exception {
         this.metaConfig = metaConfig;
         if (!StringUtils.isBlank(metaConfig.getAppClassPath())) {
-            this.filterClassLoader =
-                    new URLClassLoader(new URL[] { new URL("file://" + metaConfig.getAppClassPath()) }, Thread
-                        .currentThread().getContextClassLoader());
+            File dir = new File(metaConfig.getAppClassPath());
+            File[] jars = dir.listFiles(new FilenameFilter() {
+
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.endsWith(".jar");
+                }
+            });
+            URL[] urls = new URL[jars.length + 1];
+            urls[0] = dir.toURI().toURL();
+            int i = 1;
+            for (File jarFile : jars) {
+                urls[i++] = jarFile.toURI().toURL();
+            }
+            this.filterClassLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
         }
     }
 
@@ -51,7 +70,7 @@ public class ConsumerFilterManager implements Service {
     }
 
 
-    public ConsumerMessageFilter findFilter(String topic, String group) {
+    public ConsumerMessageFilter findFilter(final String topic, final String group) {
         if (this.filterClassLoader == null) {
             return null;
         }
@@ -65,7 +84,11 @@ public class ConsumerFilterManager implements Service {
 
                 @Override
                 public ConsumerMessageFilter call() throws Exception {
-                    return ConsumerFilterManager.this.intanceFilter(className);
+                    ConsumerMessageFilter intanceFilter = ConsumerFilterManager.this.intanceFilter(className);
+                    if (intanceFilter != null) {
+                        log.warn("Created filter '" + className + "' for group:" + group + " and topic:" + topic);
+                    }
+                    return intanceFilter;
                 }
 
             });

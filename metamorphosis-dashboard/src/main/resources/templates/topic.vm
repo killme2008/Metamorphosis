@@ -12,7 +12,12 @@
 </div>
   #else
     #if ($pending-stats)
-      <div id="alert" class="alert alert-info">Consumer Group: $group</div>
+      <div id="alert" class="alert alert-info">
+		<ul>
+		  <li>Group name: $group</li>
+		  <li>Group filter: $!group-filter</li>
+		<ul>
+	  </div>
 	  <input type= "hidden" id="consumer_group" value= "$!group"/>
 	  <input type= "hidden" id="consumer_topic" value= "$!topic.topic"/>
       <table class= "table table-bordered" id= "group-stats-table">
