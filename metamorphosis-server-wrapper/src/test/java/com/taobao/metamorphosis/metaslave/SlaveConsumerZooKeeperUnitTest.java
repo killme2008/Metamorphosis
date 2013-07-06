@@ -206,13 +206,6 @@ public class SlaveConsumerZooKeeperUnitTest {
                 ConsumerZooKeeperAccessor.getTopicRegistry(listener);
         assertNotNull(topicRegistry);
         assertTrue(topicRegistry.isEmpty());
-        // assertEquals(2, topicRegistry.size());
-        //
-        // assertTrue(topicRegistry.containsKey("topic1"));
-        // assertTrue(topicRegistry.containsKey("topic2"));
-        // assertEquals(0, topicRegistry.get("topic1").size());
-        // assertEquals(0, topicRegistry.get("topic2").size());
-
         final Set<Broker> brokerSet = ConsumerZooKeeperAccessor.getOldBrokerSet(listener);
         assertEquals(0, brokerSet.size());
         assertFalse(brokerSet.contains(new Broker(0, "meta://localhost:0")));
@@ -303,7 +296,7 @@ public class SlaveConsumerZooKeeperUnitTest {
     private void mockConnect(final String url) throws NotifyRemotingException, InterruptedException {
         this.remotingClient.connectWithRef(EasyMock.eq(url), EasyMock.anyObject());
         EasyMock.expectLastCall();
-        this.remotingClient.awaitReadyInterrupt(url);
+        this.remotingClient.awaitReadyInterrupt(url, 10000);
         EasyMock.expectLastCall();
     }
 
@@ -350,7 +343,7 @@ public class SlaveConsumerZooKeeperUnitTest {
 
 
     private void mockConnectCloseAnyTimes(final String url) throws NotifyRemotingException, InterruptedException {
-        this.remotingClient.closeWithRef(EasyMock.eq(url), EasyMock.anyObject(), EasyMock.eq(true));
+        this.remotingClient.closeWithRef(EasyMock.eq(url), EasyMock.anyObject(), EasyMock.eq(false));
         EasyMock.expectLastCall().anyTimes();
     }
 
