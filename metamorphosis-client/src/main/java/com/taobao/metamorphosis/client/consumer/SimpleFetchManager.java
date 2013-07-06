@@ -65,11 +65,25 @@ public class SimpleFetchManager implements FetchManager {
 
     public static final Byte PROCESSED = (byte) 1;
 
-    private final int CACAHE_SIZE = Integer.parseInt(System
-        .getProperty("metaq.consumer.message.ids.cache.size", "1024"));
+    private final static int CACAHE_SIZE = Integer.parseInt(System.getProperty(
+        "metaq.consumer.message_ids.lru_cache.size", "4096"));
 
-    private final ConcurrentLRUHashMap<String, Byte> messageIdCache = new ConcurrentLRUHashMap<String, Byte>(
-            this.CACAHE_SIZE);
+    private static MessageIdCache messageIdCache = new ConcurrentLRUHashMap(CACAHE_SIZE);
+
+
+    /**
+     * Set new message id cache to prevent duplicated messages for the same
+     * consumer group.
+     * 
+     * @since 1.4.6
+     * @param newCache
+     */
+    public static void setMessageIdCache(MessageIdCache newCache) {
+        if (newCache == null) {
+            throw new IllegalArgumentException("Null message id cache.");
+        }
+        messageIdCache = newCache;
+    }
 
 
     public SimpleFetchManager(final ConsumerConfig consumerConfig, final InnerConsumer consumer) {
@@ -458,7 +472,7 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private boolean isProcessed(final Long id, String group) {
-            return SimpleFetchManager.this.messageIdCache.get(this.cacheKey(id, group)) != null;
+            return messageIdCache.get(this.cacheKey(id, group)) != null;
         }
 
 
@@ -468,7 +482,7 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private void markProcessed(final Long msgId, String group) {
-            SimpleFetchManager.this.messageIdCache.put(this.cacheKey(msgId, group), PROCESSED);
+            messageIdCache.put(this.cacheKey(msgId, group), PROCESSED);
         }
 
 

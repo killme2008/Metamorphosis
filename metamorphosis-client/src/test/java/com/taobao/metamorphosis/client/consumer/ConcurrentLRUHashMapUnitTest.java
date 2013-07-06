@@ -13,12 +13,12 @@ import com.taobao.metamorphosis.utils.test.ConcurrentTestTask;
 
 public class ConcurrentLRUHashMapUnitTest {
 
-    private ConcurrentLRUHashMap<Long, Long> map;
+    private ConcurrentLRUHashMap map;
 
 
     @Before
     public void setUp() {
-        this.map = new ConcurrentLRUHashMap<Long, Long>(100);
+        this.map = new ConcurrentLRUHashMap(100);
     }
 
 
@@ -30,7 +30,7 @@ public class ConcurrentLRUHashMapUnitTest {
             @Override
             public void run(int index, int times) throws Exception {
                 long v = counter.incrementAndGet();
-                ConcurrentLRUHashMapUnitTest.this.map.put(v, v);
+                ConcurrentLRUHashMapUnitTest.this.map.put(String.valueOf(v), (byte) 1);
 
             }
         });

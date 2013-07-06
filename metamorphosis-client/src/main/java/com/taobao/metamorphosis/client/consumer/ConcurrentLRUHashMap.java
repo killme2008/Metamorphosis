@@ -13,9 +13,9 @@ import com.taobao.common.store.util.LRUHashMap;
  * @param <K>
  * @param <V>
  */
-public class ConcurrentLRUHashMap<K, V> {
-    private final LRUHashMap<K, V> innerMap;
-    private ReentrantLock lock;
+public class ConcurrentLRUHashMap implements MessageIdCache {
+    private final LRUHashMap<String, Byte> innerMap;
+    private final ReentrantLock lock;
 
 
     public ConcurrentLRUHashMap() {
@@ -35,12 +35,13 @@ public class ConcurrentLRUHashMap<K, V> {
 
 
     public ConcurrentLRUHashMap(int capacity) {
-        this.innerMap = new LRUHashMap<K, V>(capacity, true);
+        this.innerMap = new LRUHashMap<String, Byte>(capacity, true);
         this.lock = new ReentrantLock();
     }
 
 
-    public void put(K k, V v) {
+    @Override
+    public void put(String k, Byte v) {
         this.lock.lock();
         try {
             this.innerMap.put(k, v);
@@ -51,7 +52,8 @@ public class ConcurrentLRUHashMap<K, V> {
     }
 
 
-    public V get(K k) {
+    @Override
+    public Byte get(String k) {
         this.lock.lock();
         try {
             return this.innerMap.get(k);

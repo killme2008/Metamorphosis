@@ -80,6 +80,7 @@ public final class MessageUtils {
         return buffer;
     }
 
+
     public static final ByteBuffer makeMessageBuffer(final List<Long> msgIds, final List<PutCommand> reqs) {
         if (msgIds == null || reqs == null) {
             throw new IllegalArgumentException("Null id list or request list");
@@ -150,7 +151,8 @@ public final class MessageUtils {
         MessageAccessor.setFlag(msg, flag);
         msg.setAttribute(attribute);
         MessageAccessor.setId(msg, id);
-        return new DecodedMessage(payLoadOffset + payLoadLen, msg, buf);
+        return new DecodedMessage(payLoadOffset + payLoadLen, msg, ByteBuffer.wrap(data, offset, payLoadOffset
+            + payLoadLen - offset));
     }
 
 

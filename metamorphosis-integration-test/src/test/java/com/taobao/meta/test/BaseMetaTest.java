@@ -75,11 +75,12 @@ public abstract class BaseMetaTest {
         this.consumer = this.sessionFactory.createConsumer(new ConsumerConfig());
     }
 
+    MetaClientConfig metaClientConfig;
 
     @Before
     public void setUp() throws Exception {
-        final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        this.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
+        this.metaClientConfig = new MetaClientConfig();
+        this.sessionFactory = new MetaMessageSessionFactory(this.metaClientConfig);
         this.startServer("server1");
         System.out.println("before run");
     }

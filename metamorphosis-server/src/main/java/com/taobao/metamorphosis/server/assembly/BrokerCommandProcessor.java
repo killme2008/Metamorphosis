@@ -456,7 +456,7 @@ public class BrokerCommandProcessor implements CommandProcessor {
                                     ByteBuffer msgBuf = it.getCurrentMsgBuf();
                                     // Append current message buffer to result
                                     // buffer.
-                                    byteBuffer.put(msgBuf.array());
+                                    byteBuffer.put(msgBuf);
                                 }
                             }
                             catch (Exception e) {

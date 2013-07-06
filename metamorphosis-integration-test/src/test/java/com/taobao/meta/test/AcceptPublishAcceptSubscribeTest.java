@@ -22,12 +22,14 @@ public class AcceptPublishAcceptSubscribeTest extends BaseMetaTest {
 
     private final String topic2 = "meta-test2";
 
+    private MetaClientConfig metaClientConfig;
+
 
     @Override
     @Before
     public void setUp() throws Exception {
-        final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        this.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
+        this.metaClientConfig = new MetaClientConfig();
+        this.sessionFactory = new MetaMessageSessionFactory(this.metaClientConfig);
         this.startServer("server4");
         System.out.println("before run");
     }
