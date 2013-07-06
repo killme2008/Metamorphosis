@@ -300,7 +300,7 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
                 }
             });
         this.commandProcessor.setConsumerFilterManager(this.consumerFilterManager);
-        this.conn.response(new DataCommand(new byte[0], opaque, true));
+        this.conn.response(new BooleanCommand(HttpStatus.Moved, String.valueOf(offset + msgBuf.capacity()), opaque));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
 
