@@ -12,9 +12,11 @@ import org.junit.Test;
 
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
+import com.taobao.metamorphosis.client.consumer.ConcurrentLRUHashMap;
 import com.taobao.metamorphosis.client.consumer.ConsumerConfig;
 import com.taobao.metamorphosis.client.consumer.MessageConsumer;
 import com.taobao.metamorphosis.client.consumer.MessageListener;
+import com.taobao.metamorphosis.client.consumer.SimpleFetchManager;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 
@@ -30,6 +32,7 @@ public class OneProducerTenConsumerOneGroupTest extends BaseMetaTest {
 
     @Test
     public void sendConsume() throws Exception {
+        SimpleFetchManager.setMessageIdCache(new ConcurrentLRUHashMap());
         this.createProducer();
         this.producer.publish(this.topic);
         List<MetaMessageSessionFactory> sessionFactories = new ArrayList<MetaMessageSessionFactory>();
