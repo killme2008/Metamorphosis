@@ -23,6 +23,17 @@ public class ConcurrentLRUHashMap<K, V> {
     }
 
 
+    public int size() {
+        this.lock.lock();
+        try {
+            return this.innerMap.size();
+        }
+        finally {
+            this.lock.unlock();
+        }
+    }
+
+
     public ConcurrentLRUHashMap(int capacity) {
         this.innerMap = new LRUHashMap<K, V>(capacity, true);
         this.lock = new ReentrantLock();
