@@ -47,6 +47,7 @@ public class SimpleFetchManagerUnitTest {
     private InnerConsumer consumer;
 
 
+
     @Before
     public void setUp() {
         this.consumerConfig = new ConsumerConfig();
@@ -54,6 +55,7 @@ public class SimpleFetchManagerUnitTest {
         EasyMock.makeThreadSafe(this.consumer, true);
         this.fetchManager = new SimpleFetchManager(this.consumerConfig, this.consumer);
         this.fetchManager.resetFetchState();
+        this.fetchManager.setMessageIdCache(new ConcurrentLRUHashMap());
         // this.fetchManager.startFetchRunner();
     }
 

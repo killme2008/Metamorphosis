@@ -79,10 +79,12 @@ public class SimpleFetchManager implements FetchManager {
      * @param newCache
      */
     public static void setMessageIdCache(MessageIdCache newCache) {
-        if (newCache == null) {
-            throw new IllegalArgumentException("Null message id cache.");
-        }
         messageIdCache = newCache;
+    }
+
+
+    MessageIdCache getMessageIdCache() {
+        return messageIdCache;
     }
 
 
@@ -472,7 +474,12 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private boolean isProcessed(final Long id, String group) {
-            return messageIdCache.get(this.cacheKey(id, group)) != null;
+            if (messageIdCache != null) {
+                return messageIdCache.get(this.cacheKey(id, group)) != null;
+            }
+            else {
+                return false;
+            }
         }
 
 
@@ -482,7 +489,9 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private void markProcessed(final Long msgId, String group) {
-            messageIdCache.put(this.cacheKey(msgId, group), PROCESSED);
+            if (messageIdCache != null) {
+                messageIdCache.put(this.cacheKey(msgId, group), PROCESSED);
+            }
         }
 
 
