@@ -502,10 +502,10 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                         log.warn("unexpected exception occured while try rebalancing", e);
                         done = false;
                     }
-                    log.info("end rebalancing consumer " + this.consumerIdString + " try #" + i);
+                    log.warn("end rebalancing consumer " + this.consumerIdString + " try #" + i);
 
                     if (done) {
-                        log.info("rebalance success.");
+                        log.warn("rebalance success.");
                         return true;
                     }
                     else {
@@ -559,7 +559,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     }
                     else {
                         log.error("Could not find broker for broker id " + partition.getBrokerId()
-                                + ", it should not happen.");
+                            + ", it should not happen.");
                     }
                 }
             }
