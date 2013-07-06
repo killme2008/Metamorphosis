@@ -38,6 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.IZkStateListener;
 import org.I0Itec.zkclient.ZkClient;
+import org.I0Itec.zkclient.exception.ZkNoNodeException;
 import org.I0Itec.zkclient.exception.ZkNodeExistsException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -227,6 +228,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         else {
             for (int i = 0; i < MAX_N_RETRIES; i++) {
                 // 注册consumer id
+                ZkUtils.makeSurePersistentPathExists(this.zkClient, dirs.consumerRegistryDir);
                 ZkUtils.createEphemeralPathExpectConflict(this.zkClient, dirs.consumerRegistryDir + "/"
                         + loadBalanceListener.consumerIdString, topicString);
                 // 监视同一个分组的consumer列表是否有变化
@@ -596,6 +598,11 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 log.warn("maybe other consumer is rebalancing now," + e.getMessage());
                 return false;
             }
+            catch (final ZkNoNodeException e) {
+                // 多个consumer同时在负载均衡时,可能会到达这里 -- wuhua
+                log.warn("maybe other consumer is rebalancing now," + e.getMessage());
+                return false;
+            }
 
             final Map<String, List<String>> partitionsPerTopicMap =
                     this.getPartitionStringsForTopics(myConsumerPerTopicMap);
@@ -884,6 +891,9 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         protected Map<String, List<String>> getConsumersPerTopic(final String group) throws Exception, NoNodeException {
             final List<String> consumers =
                     ZkUtils.getChildren(ConsumerZooKeeper.this.zkClient, this.dirs.consumerRegistryDir);
+            if (consumers == null) {
+                return Collections.emptyMap();
+            }
             final Map<String, List<String>> consumersPerTopicMap = new HashMap<String, List<String>>();
             for (final String consumer : consumers) {
                 final List<String> topics = this.getTopics(consumer);// 多个consumer同时在负载均衡时,这里可能会抛出NoNodeException，--wuhua
@@ -926,7 +936,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          */
         protected List<String> getTopics(final String consumerId) throws Exception {
             final String topicsString =
-                    ZkUtils.readDataMaybeNull(ConsumerZooKeeper.this.zkClient, this.dirs.consumerRegistryDir + "/"
+                    ZkUtils.readData(ConsumerZooKeeper.this.zkClient, this.dirs.consumerRegistryDir + "/"
                             + consumerId);
             if (StringUtils.isBlank(topicsString)) {
                 return Collections.emptyList();

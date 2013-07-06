@@ -66,6 +66,12 @@ public class Cluster {
         if (set.size() == 1) {
             return (Broker) set.toArray()[0];
         }
+        // prefer master.
+        for (Broker broker : set) {
+            if (!broker.isSlave()) {
+                return broker;
+            }
+        }
         return (Broker) set.toArray()[random.nextInt(set.size())];
     }
 
