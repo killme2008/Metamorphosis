@@ -35,6 +35,7 @@ import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
 import com.taobao.metamorphosis.client.RemotingClientWrapper;
+import com.taobao.metamorphosis.client.consumer.ConsumerZooKeeper.ZKLoadRebalanceListener;
 import com.taobao.metamorphosis.client.consumer.SimpleFetchManager.FetchRequestRunner;
 import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
 import com.taobao.metamorphosis.client.producer.ProducerZooKeeper;
@@ -97,7 +98,6 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
     private RejectConsumptionHandler rejectConsumptionHandler;
 
 
-
     public SimpleMessageConsumer(final MetaMessageSessionFactory messageSessionFactory,
             final RemotingClientWrapper remotingClient, final ConsumerConfig consumerConfig,
             final ConsumerZooKeeper consumerZooKeeper, final ProducerZooKeeper producerZooKeeper,
@@ -115,7 +115,7 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         this.fetchManager = new SimpleFetchManager(consumerConfig, this);
         this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         this.loadBalanceStrategy = loadBalanceStrategy;
-        //Use local recover policy by default.
+        // Use local recover policy by default.
         this.rejectConsumptionHandler = new LocalRecoverPolicy(this.recoverStorageManager);
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -185,10 +185,10 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         return this.subscribe(topic, maxSize, messageListener, null);
     }
 
+
     @Override
     public MessageConsumer subscribe(final String topic, final int maxSize, final MessageListener messageListener,
-            ConsumerMessageFilter filter)
-                    throws MetaClientException {
+            ConsumerMessageFilter filter) throws MetaClientException {
         this.checkState();
         if (StringUtils.isBlank(topic)) {
             throw new IllegalArgumentException("Blank topic");
@@ -321,11 +321,21 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         boolean success = false;
         try {
             final long currentOffset = fetchRequest.getOffset();
+            final String serverUrl = fetchRequest.getBroker().getZKString();
+            if (!this.remotingClient.isConnected(serverUrl)) {
+                // Try to heal the connection.
+                ZKLoadRebalanceListener listener =
+                        this.consumerZooKeeper.getBrokerConnectionListener(this.fetchManager);
+                if (listener.oldBrokerSet.contains(fetchRequest.getBroker())) {
+                    this.remotingClient.connectWithRef(serverUrl, listener);
+                }
+                return null;
+            }
+
             final GetCommand getCmd =
                     new GetCommand(fetchRequest.getTopic(), this.consumerConfig.getGroup(),
                         fetchRequest.getPartition(), currentOffset, fetchRequest.getMaxSize(),
                         OpaqueGenerator.getNextOpaque());
-            final String serverUrl = fetchRequest.getBroker().getZKString();
             final ResponseCommand response = this.remotingClient.invokeToGroup(serverUrl, getCmd, timeout, timeUnit);
             if (response instanceof DataCommand) {
                 final DataCommand dataCmd = (DataCommand) response;
@@ -408,10 +418,12 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         return this.fetch(new FetchRequest(broker, 0, topicPartitionRegInfo, maxSize), timeout, timeUnit);
     }
 
+
     @Override
     public RejectConsumptionHandler getRejectConsumptionHandler() {
         return this.rejectConsumptionHandler;
     }
+
 
     @Override
     public void setRejectConsumptionHandler(RejectConsumptionHandler rejectConsumptionHandler) {
@@ -420,6 +432,7 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         }
         this.rejectConsumptionHandler = rejectConsumptionHandler;
     }
+
 
     @Override
     public ConsumerConfig getConsumerConfig() {
@@ -434,37 +447,36 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
     }
 
     /**
-     * Created with IntelliJ IDEA.
-     * User: dennis (xzhuang@avos.com)
-     * Date: 13-2-5
+     * Created with IntelliJ IDEA. User: dennis (xzhuang@avos.com) Date: 13-2-5
      * Time: ÉÏÎç11:29
      */
     public static class DropPolicy implements RejectConsumptionHandler {
         @Override
         public void rejectConsumption(Message message, MessageConsumer messageConsumer) {
-            //Drop the message.
+            // Drop the message.
         }
     }
 
     /**
-     * Created with IntelliJ IDEA.
-     * User: dennis (xzhuang@avos.com)
-     * Date: 13-2-5
+     * Created with IntelliJ IDEA. User: dennis (xzhuang@avos.com) Date: 13-2-5
      * Time: ÉÏÎç11:25
      */
     public static class LocalRecoverPolicy implements RejectConsumptionHandler {
         private final RecoverManager recoverManager;
         static final Log log = LogFactory.getLog(LocalRecoverPolicy.class);
 
+
         public LocalRecoverPolicy(RecoverManager recoverManager) {
             this.recoverManager = recoverManager;
         }
+
 
         @Override
         public void rejectConsumption(Message message, MessageConsumer messageConsumer) {
             try {
                 this.recoverManager.append(messageConsumer.getConsumerConfig().getGroup(), message);
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 log.error("Append message to local recover manager failed", e);
             }
         }
