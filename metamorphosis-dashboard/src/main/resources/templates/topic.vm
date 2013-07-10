@@ -1,7 +1,9 @@
 <div id="query-pending-msgs" class="form-search">
+  <form autocomplete="on" autofill="on">
 	<legend>Query pending messages for topic <strong>$topic.topic</strong> by consumer group:</legend>
-	<input placeholder="Consumer group" type="text" name= "group" class="input-medium search-query" value="$!group">
+	<input placeholder="Consumer group" type="text" name="group"  class="input-medium search-query" value="$!group">
 	<button class="btn">Query</button>
+  </form>
 </div>
 <br />
 <div>
@@ -122,6 +124,11 @@
 		var group = $("#query-pending-msgs input").val();
 	    var url = "#topics/$topic.topic?group=" + group
 	    window.location.href = url;
+    });
+	$("#query-pending-msgs input").keyup(function(event){
+       if(event.keyCode == 13){
+          $("#query-pending-msgs button").click();
+       }
     });
   	$("#group-stats-table tr td button").on("click", function(e) {
 	    var partition = $(e.target).attr ("partition");
