@@ -130,6 +130,7 @@
           $("#query-pending-msgs button").click();
        }
     });
+	$("#query-pending-msgs input").focus();
   	$("#group-stats-table tr td button").on("click", function(e) {
 	    var partition = $(e.target).attr ("partition");
 	    var group = $("#consumer_group").val ();
