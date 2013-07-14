@@ -27,6 +27,10 @@ MetaQ的淘宝版本已经发展到2.0乃至3.0版本，设计原则发生了变
 
 因为github不再提供下载服务，因此请前往[googlecode](http://code.google.com/p/meta-queue/downloads/list)下载。
 
+或者从我的个人网站下载，请下载后自行对照md5checksum:
+
+[http://fnil.net/downloads/index.html](http://fnil.net/downloads/index.html)
+
 #更多
 
 参见[wiki](https://github.com/killme2008/Metamorphosis/wiki)。
