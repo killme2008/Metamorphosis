@@ -1,6 +1,7 @@
 ![Logo](http://photo.yupoo.com/killme2008/CLRQoBA9/medish.jpg)
 
 #新闻
+* MetaQ 1.4.6.1发布。[更新日志](https://github.com/killme2008/Metamorphosis/wiki/ReleaseNotes)
 * MetaQ 1.4.5.1发布。[更新日志](https://github.com/killme2008/Metamorphosis/wiki/ReleaseNotes)
 * MetaQ 1.4.5发布。[更新日志](https://github.com/killme2008/Metamorphosis/wiki/ReleaseNotes)
 * Meta-ruby 0.1 released: a ruby client for metaq. [SOURCE](https://github.com/killme2008/Metamorphosis/tree/master/contrib/ruby/meta-ruby)

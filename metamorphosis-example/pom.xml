@@ -37,17 +37,17 @@
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client</artifactId>
-			<version>1.4.6-SNAPSHOT</version>
+			<version>1.4.6.1</version>
 		</dependency>
 	    <dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-storm-spout</artifactId>
-			<version>1.4.6-SNAPSHOT</version>
+			<version>1.4.6.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client-extension</artifactId>
-			<version>1.4.6-SNAPSHOT</version>
+			<version>1.4.6.1</version>
 		</dependency>
 		<dependency>
             <groupId>org.springframework</groupId>
