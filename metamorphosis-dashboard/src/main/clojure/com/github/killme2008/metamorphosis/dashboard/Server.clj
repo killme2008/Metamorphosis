@@ -1,6 +1,6 @@
 (ns com.github.killme2008.metamorphosis.dashboard.Server
   (:import [com.taobao.metamorphosis.server.utils MetaConfig]
-           [com.taobao.metamorphosis.server.assembly MetaMorphosisBroker]
+           [com.taobao.metamorphosis.server.assembly MetaMorphosisBroker EmbedZookeeperServer]
            [com.taobao.metamorphosis.utils ZkUtils$ZKConfig])
   (:gen-class
    :methods [[start [com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker] org.eclipse.jetty.server.Server]])
@@ -25,6 +25,7 @@
         _     (.loadFromFile config "dev/server.ini")
         broker (MetaMorphosisBroker. config)
         server (com.github.killme2008.metamorphosis.dashboard.Server.)]
+    (-> (EmbedZookeeperServer/getInstance) (.start))
     (.start broker)
     (-start server broker)))
 
