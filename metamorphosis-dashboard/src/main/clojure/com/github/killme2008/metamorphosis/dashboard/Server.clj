@@ -25,7 +25,7 @@
         _     (.loadFromFile config "dev/server.ini")
         broker (MetaMorphosisBroker. config)
         server (com.github.killme2008.metamorphosis.dashboard.Server.)]
-    (-> (EmbedZookeeperServer/getInstance) (.start))
+    ;;(-> (EmbedZookeeperServer/getInstance) (.start))
     (.start broker)
     (-start server broker)))
 
