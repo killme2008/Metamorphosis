@@ -147,6 +147,7 @@ public class SimpleMessageConsumerUnitTest {
         final MessageIterator messageIterator = new MessageIterator(topic, data);
 
         this.producerZooKeeper.publishTopic(topic, this.consumer);
+        EasyMock.expect(this.remotingClient.isConnected(url)).andReturn(true);
         EasyMock.expectLastCall();
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
@@ -196,6 +197,7 @@ public class SimpleMessageConsumerUnitTest {
 
         this.producerZooKeeper.publishTopic(topic, this.consumer);
         EasyMock.expectLastCall();
+        EasyMock.expect(this.remotingClient.isConnected(url)).andReturn(true);
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url,
@@ -225,6 +227,7 @@ public class SimpleMessageConsumerUnitTest {
 
         this.producerZooKeeper.publishTopic(topic, this.consumer);
         EasyMock.expectLastCall();
+        EasyMock.expect(this.remotingClient.isConnected(url)).andReturn(true);
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url,
