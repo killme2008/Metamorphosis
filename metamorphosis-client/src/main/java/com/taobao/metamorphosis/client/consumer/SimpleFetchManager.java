@@ -140,12 +140,12 @@ public class SimpleFetchManager implements FetchManager {
 
             }
         }
-        // // 等待所有任务结束
-        // if (this.requestQueue != null) {
-        // while (this.requestQueue.size() != this.fetchRequestCount) {
-        // Thread.sleep(50);
-        // }
-        // }
+        // 等待所有任务结束
+        if (this.requestQueue != null) {
+            while (this.requestQueue.size() != this.fetchRequestCount) {
+                Thread.sleep(50);
+            }
+        }
         this.fetchRequestCount = 0;
     }
 
@@ -323,9 +323,7 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private void reAddFetchRequest2Queue(final FetchRequest request) {
-            if (!this.stopped) {
-                SimpleFetchManager.this.addFetchRequest(request);
-            }
+            SimpleFetchManager.this.addFetchRequest(request);
         }
 
 
@@ -585,10 +583,8 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private void ackRequest(final FetchRequest request, final MessageIterator it, final boolean ack) {
-            if (!this.stopped) {
-                long msgId = it.getPrevMessage() != null ? it.getPrevMessage().getId() : -1;
-                request.setOffset(request.getOffset() + it.getOffset(), msgId, ack);
-            }
+            long msgId = it.getPrevMessage() != null ? it.getPrevMessage().getId() : -1;
+            request.setOffset(request.getOffset() + it.getOffset(), msgId, ack);
             this.addRequst(request);
         }
 
