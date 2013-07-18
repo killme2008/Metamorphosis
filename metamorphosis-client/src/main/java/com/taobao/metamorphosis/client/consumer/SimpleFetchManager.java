@@ -121,6 +121,18 @@ public class SimpleFetchManager implements FetchManager {
     @Override
     public void stopFetchRunner() throws InterruptedException {
         this.shutdown = true;
+        this.interruptRunners();
+        // 等待所有任务结束
+        if (this.requestQueue != null) {
+            while (this.requestQueue.size() < this.fetchRequestCount) {
+                this.interruptRunners();
+            }
+        }
+        this.fetchRequestCount = 0;
+    }
+
+
+    private void interruptRunners() {
         // 中断所有任务
         if (this.fetchThreads != null) {
             for (int i = 0; i < this.fetchThreads.length; i++) {
@@ -128,8 +140,8 @@ public class SimpleFetchManager implements FetchManager {
                 FetchRequestRunner runner = this.requestRunners[i];
                 if (thread != null) {
                     runner.shutdown();
-                    thread.interrupt();
                     runner.interruptExecutor();
+                    thread.interrupt();
                     try {
                         thread.join(100);
                     }
@@ -140,18 +152,12 @@ public class SimpleFetchManager implements FetchManager {
 
             }
         }
-        // 等待所有任务结束
-        if (this.requestQueue != null) {
-            while (this.requestQueue.size() != this.fetchRequestCount) {
-                Thread.sleep(50);
-            }
-        }
-        this.fetchRequestCount = 0;
     }
 
 
     @Override
     public void resetFetchState() {
+        this.fetchRequestCount = 0;
         this.requestQueue = new FetchRequestQueue();
         this.fetchThreads = new Thread[this.consumerConfig.getFetchRunnerCount()];
         this.requestRunners = new FetchRequestRunner[this.consumerConfig.getFetchRunnerCount()];
@@ -159,9 +165,8 @@ public class SimpleFetchManager implements FetchManager {
             FetchRequestRunner runner = new FetchRequestRunner();
             this.requestRunners[i] = runner;
             this.fetchThreads[i] = new Thread(runner);
-            this.fetchThreads[i].setName(this.consumerConfig.getGroup() + "Fetch-Runner-" + i);
+            this.fetchThreads[i].setName(this.consumerConfig.getGroup() + "-fetch-Runner-" + i);
         }
-
     }
 
 

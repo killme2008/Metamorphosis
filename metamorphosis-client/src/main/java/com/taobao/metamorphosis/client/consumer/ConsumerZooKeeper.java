@@ -578,7 +578,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                 }
             }
             // 重新启动fetch线程
-            log.info("Starting fetch runners");
+            log.warn("Starting fetch runners");
             this.oldBrokerSet = newBrokers;
             this.fetchManager.startFetchRunner();
         }
