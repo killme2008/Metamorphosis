@@ -296,7 +296,7 @@ public class SlaveConsumerZooKeeperUnitTest {
     private void mockConnect(final String url) throws NotifyRemotingException, InterruptedException {
         this.remotingClient.connectWithRef(EasyMock.eq(url), EasyMock.anyObject());
         EasyMock.expectLastCall();
-        this.remotingClient.awaitReadyInterrupt(url, 10000);
+        this.remotingClient.awaitReadyInterrupt(url, 4000);
         EasyMock.expectLastCall();
     }
 
