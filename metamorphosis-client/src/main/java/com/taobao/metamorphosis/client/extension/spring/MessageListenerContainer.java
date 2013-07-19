@@ -268,7 +268,8 @@ public class MessageListenerContainer implements InitializingBean, DisposableBea
      * 
      * @param listeners
      */
-    public void setSubscribers(Map<MetaqTopic, ? extends DefaultMessageListener<?>> subscribers) {
+    @SuppressWarnings("unchecked")
+    public void setSubscribers(Map subscribers) {
         this.subscribers = subscribers;
     }
 
