@@ -527,16 +527,13 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     Byte evt = this.rebalanceEvents.take();
                     if (evt != null) {
                         this.dropDuplicatedEvents();
-                        // wait a moment.
-                        Thread.sleep(ConsumerZooKeeper.this.zkConfig.zkSyncTimeMs / 10);
-                        this.dropDuplicatedEvents();
                         this.syncedRebalance();
                     }
                 }
                 catch (InterruptedException e) {
                     // continue;
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     log.error("Rebalance failed.", e);
                 }
             }
@@ -546,8 +543,13 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
         private void dropDuplicatedEvents() {
             Byte evt = null;
+            int count = 0;
             while ((evt = this.rebalanceEvents.poll()) != null) {
                 // poll out duplicated events.
+                count++;
+            }
+            if (count > 0) {
+                log.info("Drop " + count + " duplicated rebalance events");
             }
         }
 
@@ -633,14 +635,28 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             }
 
             for (Broker newOne : newBrokers) {
-                ConsumerZooKeeper.this.remotingClient.connectWithRef(newOne.getZKString(), this);
-                try {
-                    ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(newOne.getZKString(), 10000);
-                    log.warn("Connected to " + newOne.getZKString());
+                int times = 0;
+                NotifyRemotingException ne = null;
+                while (times++ < 3) {
+                    ConsumerZooKeeper.this.remotingClient.connectWithRef(newOne.getZKString(), this);
+                    try {
+                        ConsumerZooKeeper.this.remotingClient.awaitReadyInterrupt(newOne.getZKString(), 4000);
+                        log.warn("Connected to " + newOne.getZKString());
+                        break;
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Remoting client is interrupted", e);
+                    }
+                    catch (NotifyRemotingException e) {
+                        times++;
+                        ne = e;
+                        continue;
+                    }
                 }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Remoting client is interrupted", e);
+                if (ne != null) {
+                    // Throw it to do rebalancing.
+                    throw ne;
                 }
             }
             // 重新启动fetch线程
