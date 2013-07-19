@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -82,6 +82,7 @@ public class SlaveConsumerZooKeeper extends ConsumerZooKeeper {
                         final ZKLoadRebalanceListener loadBalanceListener =
                                 new SlaveZKLoadRebalanceListener(fetchManager, dirs, consumerUUIDString,
                                     consumerConfig, offsetStorage, topicSubcriberRegistry, loadBalanceStrategy);
+                        loadBalanceListener.start();
                         return SlaveConsumerZooKeeper.this.registerConsumerInternal(loadBalanceListener);
                     }
 

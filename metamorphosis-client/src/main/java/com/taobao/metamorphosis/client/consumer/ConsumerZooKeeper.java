@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -127,6 +129,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             if (futureTask != null) {
                 final ZKLoadRebalanceListener listener = futureTask.get();
                 if (listener != null) {
+                    listener.stop();
                     // 提交offsets
                     listener.commitOffsets();
                     this.zkClient.unsubscribeStateChanges(new ZKSessionExpireListenner(listener));
@@ -144,11 +147,12 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     // 删除临时节点
                     ZkUtils.deletePath(this.zkClient, listener.dirs.consumerRegistryDir + "/"
                             + listener.consumerIdString);
+
                 }
             }
         }
         catch (final InterruptedException e) {
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
             log.error("Interrupted when unRegisterConsumer", e);
         }
         catch (final Exception e) {
@@ -178,6 +182,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                         final ZKLoadRebalanceListener loadBalanceListener =
                                 new ZKLoadRebalanceListener(fetchManager, dirs, consumerUUIDString, consumerConfig,
                                     offsetStorage, topicSubcriberRegistry, loadBalanceStrategy);
+                        loadBalanceListener.start();
                         return ConsumerZooKeeper.this.registerConsumerInternal(loadBalanceListener);
                     }
 
@@ -376,7 +381,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
      * @author dennis<killme2008@gmail.com>
      * 
      */
-    public class ZKLoadRebalanceListener implements IZkChildListener {
+    public class ZKLoadRebalanceListener implements IZkChildListener, Runnable {
         private final ZKGroupDirs dirs;
 
         private final String group;
@@ -408,6 +413,10 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
         private final FetchManager fetchManager;
 
+        private final Thread rebalanceThread;
+
+        private volatile boolean stopped = false;
+
         Set<Broker> oldBrokerSet = new HashSet<Broker>();
         private Cluster oldCluster = new Cluster();
 
@@ -425,6 +434,24 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             this.offsetStorage = offsetStorage;
             this.topicSubcriberRegistry = topicSubcriberRegistry;
             this.loadBalanceStrategy = loadBalanceStrategy;
+            this.rebalanceThread = new Thread(this);
+        }
+
+
+        public void start() {
+            this.rebalanceThread.start();
+        }
+
+
+        public void stop() {
+            this.stopped = true;
+            this.rebalanceThread.interrupt();
+            try {
+                this.rebalanceThread.join(500);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
 
 
@@ -482,14 +509,50 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             return this.offsetStorage.load(topic, this.consumerConfig.getGroup(), partition);
         }
 
+        private final BlockingQueue<Byte> rebalanceEvents = new ArrayBlockingQueue<Byte>(10);
+
+        private final Byte REBALANCE_EVT = (byte) 1;
+
 
         @Override
         public void handleChildChange(final String parentPath, final List<String> currentChilds) throws Exception {
-            this.syncedRebalance();
+            this.rebalanceEvents.put(this.REBALANCE_EVT);
         }
 
 
-        boolean syncedRebalance() throws Exception {
+        @Override
+        public void run() {
+            while (!this.stopped) {
+                try {
+                    Byte evt = this.rebalanceEvents.take();
+                    if (evt != null) {
+                        this.dropDuplicatedEvents();
+                        // wait a moment.
+                        Thread.sleep(ConsumerZooKeeper.this.zkConfig.zkSyncTimeMs / 10);
+                        this.dropDuplicatedEvents();
+                        this.syncedRebalance();
+                    }
+                }
+                catch (InterruptedException e) {
+                    // continue;
+                }
+                catch (Exception e) {
+                    log.error("Rebalance failed.", e);
+                }
+            }
+
+        }
+
+
+        private void dropDuplicatedEvents() {
+            Byte evt = null;
+            while ((evt = this.rebalanceEvents.poll()) != null) {
+                // poll out duplicated events.
+            }
+        }
+
+
+        boolean syncedRebalance() throws InterruptedException, Exception {
             this.rebalanceLock.lock();
             try {
                 for (int i = 0; i < MAX_N_RETRIES; i++) {
@@ -497,6 +560,9 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     boolean done;
                     try {
                         done = this.rebalance();
+                    }
+                    catch (InterruptedException e) {
+                        throw e;
                     }
                     catch (final Throwable e) {
                         // 发生了预料之外的异常,都重试一下,
@@ -584,7 +650,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         }
 
 
-        boolean rebalance() throws Exception {
+        boolean rebalance() throws InterruptedException, Exception {
 
             final Map<String/* topic */, String/* consumerId */> myConsumerPerTopicMap =
                     this.getConsumerPerTopic(this.consumerIdString);
@@ -732,8 +798,8 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          * @param consumerThreadId
          * @return
          */
-        protected boolean ownPartition(final ZKGroupTopicDirs topicDirs, final String partition,
-                final String topic, final String consumerThreadId) throws Exception {
+        protected boolean ownPartition(final ZKGroupTopicDirs topicDirs, final String partition, final String topic,
+                final String consumerThreadId) throws Exception {
             final String partitionOwnerPath = topicDirs.consumerOwnerDir + "/" + partition;
             try {
                 ZkUtils.createEphemeralPathExpectConflict(ConsumerZooKeeper.this.zkClient, partitionOwnerPath,
@@ -936,8 +1002,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
          */
         protected List<String> getTopics(final String consumerId) throws Exception {
             final String topicsString =
-                    ZkUtils.readData(ConsumerZooKeeper.this.zkClient, this.dirs.consumerRegistryDir + "/"
-                            + consumerId);
+                    ZkUtils.readData(ConsumerZooKeeper.this.zkClient, this.dirs.consumerRegistryDir + "/" + consumerId);
             if (StringUtils.isBlank(topicsString)) {
                 return Collections.emptyList();
             }
