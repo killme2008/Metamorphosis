@@ -36,7 +36,7 @@
     (apply render (str "templates/" tpl) vs)))
 
 (defn-  index [req]
-  (render-tpl req "index.vm" :broker_id (with-broker (.getMetaConfig) (.getBrokerId))))
+  (render-tpl req "index.vm" :broker_id (with-broker (.getMetaConfig) (.getBrokerId)) :version (with-broker (.getStatsManager) (.getVersion))))
 
 (defn- instance []
   {:start (u/pretty-time (with-broker (.getStatsManager) (.getStartupTimestamp)))
