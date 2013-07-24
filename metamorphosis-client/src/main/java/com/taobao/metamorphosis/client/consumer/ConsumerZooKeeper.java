@@ -790,8 +790,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
         private void closeOldBrokersConnections() throws NotifyRemotingException {
             for (Broker old : this.oldBrokerSet) {
-                // ConsumerZooKeeper.this.remotingClient.closeWithRef(old.getZKString(),
-                // this, false);
+                ConsumerZooKeeper.this.remotingClient.closeWithRef(old.getZKString(), this, false);
                 log.warn("Closed " + old.getZKString());
             }
         }
