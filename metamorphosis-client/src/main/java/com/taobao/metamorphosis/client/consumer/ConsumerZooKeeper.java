@@ -702,6 +702,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     this.fetchManager.stopFetchRunner();
                     // closed all connections to old brokers.
                     this.closeOldBrokersConnections();
+                    this.commitOffsets();
                     this.updateFetchRunner(cluster);
                     this.oldCluster = cluster;
                 }
@@ -789,7 +790,8 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
 
         private void closeOldBrokersConnections() throws NotifyRemotingException {
             for (Broker old : this.oldBrokerSet) {
-                ConsumerZooKeeper.this.remotingClient.closeWithRef(old.getZKString(), this, false);
+                // ConsumerZooKeeper.this.remotingClient.closeWithRef(old.getZKString(),
+                // this, false);
                 log.warn("Closed " + old.getZKString());
             }
         }
