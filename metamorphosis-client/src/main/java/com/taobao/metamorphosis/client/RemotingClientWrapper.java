@@ -123,14 +123,13 @@ public class RemotingClientWrapper implements RemotingClient {
     }
 
 
-    public void closeWithRef(final String url, Object ref, final boolean allowReconnect) throws NotifyRemotingException {
-        final Set<Object> refs = this.refsCache.get(url);
+    public synchronized void closeWithRef(final String url, Object ref, final boolean allowReconnect)
+            throws NotifyRemotingException {
+        final Set<Object> refs = this.getReferences(url);
         if (refs != null) {
-            synchronized (refs) {
-                refs.remove(ref);
-                if (refs.isEmpty() || this.isOnlyMe(refs)) {
-                    this.remotingClient.close(url, allowReconnect);
-                }
+            refs.remove(ref);
+            if (refs.isEmpty() || this.isOnlyMe(refs)) {
+                this.remotingClient.close(url, allowReconnect);
             }
         }
     }
@@ -147,15 +146,13 @@ public class RemotingClientWrapper implements RemotingClient {
         "metaq.client.loopback.connection.enable", "false"));
 
 
-    public void connectWithRef(String url, final int connCount, Object ref) throws NotifyRemotingException {
+    public synchronized void connectWithRef(String url, final int connCount, Object ref) throws NotifyRemotingException {
         if (ENABLE_LOOPBACK_CONNECTION) {
             url = this.tryGetLoopbackURL(url);
         }
         final Set<Object> refs = this.getReferences(url);
-        synchronized (refs) {
-            this.remotingClient.connect(url, connCount);
-            refs.add(ref);
-        }
+        this.remotingClient.connect(url, connCount);
+        refs.add(ref);
     }
 
 
