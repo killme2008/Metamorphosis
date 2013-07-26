@@ -1,5 +1,5 @@
 <div id="query-pending-msgs" class="form-search">
-  <form autocomplete="on" autofill="on">
+  <form autocomplete="on" autofill="on" onsubmit="return false;">
 	<legend>Query pending messages for topic <strong>$topic.topic</strong> by consumer group:</legend>
 	<input placeholder="Consumer group" type="text" name="group"  class="input-medium search-query" value="$!group">
 	<button class="btn">Query</button>

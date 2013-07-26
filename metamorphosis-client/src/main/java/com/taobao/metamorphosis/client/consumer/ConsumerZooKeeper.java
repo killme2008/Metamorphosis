@@ -702,6 +702,7 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
                     this.fetchManager.stopFetchRunner();
                     // closed all connections to old brokers.
                     this.closeOldBrokersConnections();
+                    this.commitOffsets();
                     this.updateFetchRunner(cluster);
                     this.oldCluster = cluster;
                 }

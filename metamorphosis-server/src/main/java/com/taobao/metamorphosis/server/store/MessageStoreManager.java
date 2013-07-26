@@ -317,7 +317,7 @@ public class MessageStoreManager implements Service {
         log.warn("Begin to scan data path:" + dir.getAbsolutePath());
         final long start = System.currentTimeMillis();
         final File[] ls = dir.listFiles();
-        int nThreads = Runtime.getRuntime().availableProcessors() + 1;
+        int nThreads = Runtime.getRuntime().availableProcessors() + 2;
         ExecutorService executor = Executors.newFixedThreadPool(nThreads);
         int count = 0;
         List<Callable<MessageStore>> tasks = new ArrayList<Callable<MessageStore>>();
@@ -354,6 +354,7 @@ public class MessageStoreManager implements Service {
                     else {
                         this.loadStores(tasks);
                     }
+                    tasks.clear();
                 }
             }
         }
@@ -384,7 +385,6 @@ public class MessageStoreManager implements Service {
                 throw new IllegalStateException(e);
             }
         }
-        tasks.clear();
     }
 
 
@@ -409,7 +409,6 @@ public class MessageStoreManager implements Service {
                 throw ThreadUtils.launderThrowable(e);
             }
         }
-        tasks.clear();
     }
 
 

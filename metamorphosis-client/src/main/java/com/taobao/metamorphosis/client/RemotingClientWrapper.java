@@ -129,9 +129,34 @@ public class RemotingClientWrapper implements RemotingClient {
         if (refs != null) {
             refs.remove(ref);
             if (refs.isEmpty() || this.isOnlyMe(refs)) {
-                this.remotingClient.close(url, allowReconnect);
+                int times = 0;
+                while (times++ < 3) {
+                    try {
+                        this.remotingClient.close(url, allowReconnect);
+                        this.remotingClient.awaitClosed(url, 5000);
+                        break;
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    catch (TimeoutException e) {
+                        // ignore
+                    }
+                }
             }
         }
+    }
+
+
+    @Override
+    public void awaitClosed(String arg0, long arg1) throws InterruptedException, TimeoutException {
+        this.remotingClient.awaitClosed(arg0, arg1);
+    }
+
+
+    @Override
+    public void awaitClosed(String arg0) throws InterruptedException, TimeoutException {
+        this.remotingClient.awaitClosed(arg0);
     }
 
 

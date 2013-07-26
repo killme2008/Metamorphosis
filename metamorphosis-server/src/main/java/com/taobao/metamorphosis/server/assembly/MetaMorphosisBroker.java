@@ -148,6 +148,8 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
 
     public MetaMorphosisBroker(final MetaConfig metaConfig) {
         super();
+        this.shutdownHook = new ShutdownHook();
+        Runtime.getRuntime().addShutdownHook(this.shutdownHook);
         this.metaConfig = metaConfig;
         this.remotingServer = newRemotingServer(metaConfig);
         this.executorsManager = new ExecutorsManager(metaConfig);
@@ -174,8 +176,6 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         this.brokerProcessor =
                 new TransactionalCommandProcessor(metaConfig, this.storeManager, this.idWorker, next, transactionStore,
                     this.statsManager);
-        this.shutdownHook = new ShutdownHook();
-        Runtime.getRuntime().addShutdownHook(this.shutdownHook);
         MetaMBeanServer.registMBean(this, null);
     }
 
@@ -301,7 +301,12 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         }
 
         if (!this.runShutdownHook && this.shutdownHook != null) {
-            Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+            try {
+                Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+            }
+            catch (Exception e) {
+                // ignore
+            }
         }
 
         this.brokerProcessor.dispose();
