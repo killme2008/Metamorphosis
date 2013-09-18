@@ -6,3 +6,5 @@ target/
 *.pyc
 build/
 .log
+bin/
+obj/
