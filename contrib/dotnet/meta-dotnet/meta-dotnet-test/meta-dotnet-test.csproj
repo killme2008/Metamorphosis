@@ -8,10 +8,11 @@
     <ProjectGuid>{7F219011-D872-424A-8AE3-C0CD479D24CD}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>meta_dotnet_test</RootNamespace>
-    <AssemblyName>meta-dotnet-test</AssemblyName>
+    <RootNamespace>Metaq</RootNamespace>
+    <AssemblyName>MetaqTest</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -45,6 +46,15 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\meta-dotnet\meta-dotnet.csproj">
+      <Project>{45EC9E79-4473-4C9C-89CF-F5B3E8B161B0}</Project>
+      <Name>meta-dotnet</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

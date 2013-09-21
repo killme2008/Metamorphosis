@@ -8,8 +8,8 @@
     <ProjectGuid>{45EC9E79-4473-4C9C-89CF-F5B3E8B161B0}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>meta_dotnet</RootNamespace>
-    <AssemblyName>meta-dotnet</AssemblyName>
+    <RootNamespace>Metaq</RootNamespace>
+    <AssemblyName>Metaq</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="log4net">
+      <HintPath>..\..\lib\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -38,11 +41,22 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="ZooKeeperNet">
+      <HintPath>..\..\lib\ZooKeeperNet.dll</HintPath>
+    </Reference>
+    <Reference Include="ZooKeeperNet.Recipes">
+      <HintPath>..\..\lib\ZooKeeperNet.Recipes.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="client\Producer.cs" />
+    <Compile Include="cluster\Broker.cs" />
+    <Compile Include="cluster\Partition.cs" />
+    <Compile Include="Message.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
