@@ -14,11 +14,11 @@ namespace Metaq
             Console.WriteLine(Message.byteArry2String(Message.pack(3)));
 
             Console.WriteLine("====>test encode message:");
-            Message message = Message.create("meta_test", "hello");
+            Message message = Message.create("test", "hello");
             Console.WriteLine(Message.byteArry2String(message.encode(1,99)));
 
             Console.WriteLine("====>test encode message:");
-            Message message1 = Message.create("meta_test", "hello", "AAA");
+            Message message1 = Message.create("test", "hello", "AAA");
             Console.WriteLine(Message.byteArry2String(message1.encode(1, 99)));
 
             Producer producer = new Producer();
