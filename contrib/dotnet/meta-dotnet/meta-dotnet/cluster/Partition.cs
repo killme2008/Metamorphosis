@@ -20,7 +20,7 @@ namespace Metaq.cluster
             return this.brokerId == other.brokerId && this.partition == other.partition;
         }
 
-        public string ToString()
+        override public string ToString()
         {
             return string.Format("{0}-{1}",brokerId,partition);
         }

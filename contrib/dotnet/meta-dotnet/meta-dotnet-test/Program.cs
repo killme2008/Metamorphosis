@@ -18,12 +18,14 @@ namespace Metaq
             Console.WriteLine(Message.byteArry2String(message.encode(1,99)));
 
             Console.WriteLine("====>test encode message:");
-            Message message1 = Message.create("test", "hello", "AAA");
+            Message message1 = Message.create("test", "hello1", "AAA");
             Console.WriteLine(Message.byteArry2String(message1.encode(1, 99)));
 
-            Producer producer = new Producer();
-            producer.send(message);
-
+            Producer producer = new Producer("127.0.0.1:2181", "test");
+            producer.Send(message);
+            producer.Send(message1);
+            producer.Close();
+             
             Console.ReadKey();
         }
     }

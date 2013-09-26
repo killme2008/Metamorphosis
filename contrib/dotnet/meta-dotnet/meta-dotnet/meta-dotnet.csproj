@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="client\Producer.cs" />
+    <Compile Include="client\ZKClient.cs" />
     <Compile Include="cluster\Broker.cs" />
     <Compile Include="cluster\Partition.cs" />
     <Compile Include="Message.cs" />

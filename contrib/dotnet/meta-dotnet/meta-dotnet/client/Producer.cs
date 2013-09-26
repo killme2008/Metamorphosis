@@ -4,50 +4,65 @@ using System.Linq;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using Metaq.cluster;
 
 namespace Metaq.client
 {
     public class Producer
     {
-        public void send(Message message)
+        ZKClient zk;
+        Socket socket;
+        String host = "127.0.0.1";
+        int port = 8123;
+        public Producer(string zkconfig, string topic)
         {
+            zk = new ZKClient(zkconfig);
+            zk.push(topic);
+            Broker broker = zk.findBroker();
+            if (broker != null)
+            {
+                string[] uri = broker.brokerUri.Split(':');
+                host = uri[0];
+                port = Convert.ToInt32(uri[1]);
+            }
 
-            byte[] data = new byte[4096];
-            IPHostEntry gist = Dns.GetHostByName("localhost");
-            //得到所访问的网址的IP地址
-            IPAddress ip = gist.AddressList[0];
-            IPEndPoint ipEnd = new IPEndPoint(ip, 8123);
-            //使用tcp协议 stream类型 （IPV4）
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
-                socket.Connect(ipEnd);
+                socket.Connect(host, port);
             }
             catch (SocketException e)
             {
                 Console.Write(e.ToString());
-                return;
             }
 
+        }
+
+        public void Send(Message message)
+        {
+
+            byte[] data = new byte[4096];
+
             byte[] ms = message.encode(0,1);
-            //发送
+            
             socket.Send(ms);
             int recv = 0;
             string result = "";
             //do
             {
                 recv = socket.Receive(data);
-                //如果请求的页面meta中指定了页面的encoding为gb2312则需要使用对应的Encoding来对字节进行转换
-                //list.Text += (Encoding.UTF8.GetString(data, 0, recv));
                 result += (Encoding.UTF8.GetString(data, 0, recv));
             } //while (recv != 0);
 
             Console.WriteLine(result);
-        
-            //禁用上次的发送和接受
+           
+        }
+
+        public void Close()
+        {
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
-
+            zk.Close();
         }
     }
 }
