@@ -45,6 +45,22 @@ public class FetchRequest implements Delayed {
     private Broker broker;
     private int retries = 0;
     private long tmpOffset;
+    private FetchRequestQueue refQueue;
+
+
+    public TopicPartitionRegInfo getTopicPartitionRegInfo() {
+        return this.topicPartitionRegInfo;
+    }
+
+
+    public FetchRequestQueue getRefQueue() {
+        return this.refQueue;
+    }
+
+
+    public void setRefQueue(FetchRequestQueue refQueue) {
+        this.refQueue = refQueue;
+    }
 
 
     /**
@@ -69,7 +85,7 @@ public class FetchRequest implements Delayed {
     public void increaseMaxSize() {
         if (this.maxSize > MessageUtils.MAX_READ_BUFFER_SIZE) {
             log.warn("警告：maxSize超过最大限制" + MessageUtils.MAX_READ_BUFFER_SIZE
-                    + "Bytes，请设置环境变量-Dnotify.remoting.max_read_buffer_size超过此限制");
+                + "Bytes，请设置环境变量-Dnotify.remoting.max_read_buffer_size超过此限制");
             return;
         }
         this.maxSize = 2 * this.maxSize;
@@ -198,7 +214,12 @@ public class FetchRequest implements Delayed {
         }
         final FetchRequest other = (FetchRequest) o;
         final long sub = this.delayTimeStamp - other.delayTimeStamp;
-        return sub <= 0 ? -1 : 1;
+        if (sub == 0) {
+            return 0;
+        }
+        else {
+            return sub < 0 ? -1 : 1;
+        }
     }
 
 
@@ -229,7 +250,7 @@ public class FetchRequest implements Delayed {
             // 对topicPartitionRegInfo加锁，防止提交到zk不一致
             synchronized (this.topicPartitionRegInfo) {
                 this.topicPartitionRegInfo.getOffset().set(offset);
-                if (msgId > 0) {
+                if (msgId != -1) {
                     this.topicPartitionRegInfo.setMessageId(msgId);
                 }
                 // 有变更，需要更新到storage

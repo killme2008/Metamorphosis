@@ -21,9 +21,11 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import com.taobao.metamorphosis.AbstractBrokerPlugin;
+import com.taobao.metamorphosis.gregor.Constants;
 import com.taobao.metamorphosis.network.SyncCommand;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
+import com.taobao.metamorphosis.server.utils.TopicConfig;
 import com.taobao.metamorphosis.utils.NamedThreadFactory;
 
 
@@ -56,6 +58,10 @@ public class GregorSlaveBroker extends AbstractBrokerPlugin {
     @Override
     public void init(final MetaMorphosisBroker metaMorphosisBroker, final Properties props) {
         final MetaConfig metaConfig = metaMorphosisBroker.getMetaConfig();
+        // Added slave status topic for master to check it.
+        TopicConfig topicConfig = new TopicConfig(Constants.TEST_SLAVE_TOPIC, metaConfig);
+        topicConfig.setNumPartitions(1);
+        metaConfig.addTopic(Constants.TEST_SLAVE_TOPIC, topicConfig);
         // slave不注册到zk,强制
         metaMorphosisBroker.getBrokerZooKeeper().getZkConfig().zkEnable = false;
         this.orderedPutExecutor =
@@ -65,7 +71,8 @@ public class GregorSlaveBroker extends AbstractBrokerPlugin {
                 new GregorCommandProcessor(metaMorphosisBroker.getStoreManager(),
                     metaMorphosisBroker.getExecutorsManager(), metaMorphosisBroker.getStatsManager(),
                     metaMorphosisBroker.getRemotingServer(), metaMorphosisBroker.getMetaConfig(),
-                    metaMorphosisBroker.getIdWorker(), metaMorphosisBroker.getBrokerZooKeeper());
+                    metaMorphosisBroker.getIdWorker(), metaMorphosisBroker.getBrokerZooKeeper(),
+                    metaMorphosisBroker.getConsumerFilterManager());
         // 强制设置processor
         metaMorphosisBroker.setBrokerProcessor(processor);
         final SyncProcessor syncProcessor = new SyncProcessor(processor, this.orderedPutExecutor);

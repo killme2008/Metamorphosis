@@ -17,6 +17,8 @@
  */
 package com.taobao.metamorphosis.network;
 
+import java.util.Arrays;
+
 import com.taobao.gecko.core.buffer.IoBuffer;
 
 
@@ -89,6 +91,13 @@ public class SyncCommand extends PutCommand {
             return false;
         }
         return true;
+    }
+
+
+    @Override
+    public String toString() {
+        return "SyncCommand [msgId=" + this.msgId + ", data=" + Arrays.toString(this.data) + ", partition="
+                + this.partition + ", flag=" + this.flag + ", checkSum=" + this.checkSum + "]";
     }
 
 }

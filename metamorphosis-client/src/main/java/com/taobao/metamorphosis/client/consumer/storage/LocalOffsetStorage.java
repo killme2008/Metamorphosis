@@ -20,9 +20,9 @@ package com.taobao.metamorphosis.client.consumer.storage;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,13 +49,14 @@ import com.taobao.metamorphosis.utils.JSONUtils;
  * 
  */
 public class LocalOffsetStorage implements OffsetStorage {
-    private String filePath;
-
     static final Log log = LogFactory.getLog(LocalOffsetStorage.class);
 
     private final Map<String/* group */, List<TopicPartitionRegInfo>> groupInfoMap =
             new HashMap<String, List<TopicPartitionRegInfo>>();
-    private final FileChannel channel;
+
+    private final AtomicLong counter = new AtomicLong();
+
+    private final String filePath;
 
 
     public LocalOffsetStorage() throws IOException {
@@ -63,6 +65,7 @@ public class LocalOffsetStorage implements OffsetStorage {
 
 
     public LocalOffsetStorage(final String filePath) throws IOException {
+        this.filePath = filePath;
         final File file = new File(filePath);
         if (file.exists()) {
             this.loadGroupInfo(file);
@@ -70,7 +73,7 @@ public class LocalOffsetStorage implements OffsetStorage {
         else {
             file.createNewFile();
         }
-        this.channel = new RandomAccessFile(file, "rw").getChannel();
+
     }
 
 
@@ -128,7 +131,9 @@ public class LocalOffsetStorage implements OffsetStorage {
 
     private void close(final Closeable closeable) {
         try {
-            closeable.close();
+            if (closeable != null) {
+                closeable.close();
+            }
         }
         catch (final IOException e) {
             // ignore
@@ -138,7 +143,7 @@ public class LocalOffsetStorage implements OffsetStorage {
 
     @Override
     public void close() {
-        this.close(this.channel);
+        // do nothing.
     }
 
 
@@ -148,17 +153,35 @@ public class LocalOffsetStorage implements OffsetStorage {
             return;
         }
         this.groupInfoMap.put(group, (List<TopicPartitionRegInfo>) infoList);
+        FileOutputStream out = null;
+        FileChannel channel = null;
         try {
             final String json = JSONUtils.serializeObject(this.groupInfoMap);
-            this.channel.position(0);
+            // write to temp file
+            File tmpFile = new File(this.filePath + ".tmp." + this.counter.incrementAndGet());
+            out = new FileOutputStream(tmpFile);
+            channel = out.getChannel();
             final ByteBuffer buf = ByteBuffer.wrap(json.getBytes());
             while (buf.hasRemaining()) {
-                this.channel.write(buf);
+                channel.write(buf);
             }
-            this.channel.truncate(this.channel.position());
+            this.close(channel);
+            this.close(out);
+            // rename temp file to target file.
+            synchronized (this) {
+                if (!tmpFile.renameTo(new File(this.filePath))) {
+                    throw new IOException("Could not rename temp file to " + this.filePath);
+                }
+            }
         }
         catch (final Exception e) {
             log.error("commitOffset failed ", e);
+        }
+        finally {
+            if (channel != null && channel.isOpen()) {
+                this.close(channel);
+            }
+            this.close(out);
         }
 
     }

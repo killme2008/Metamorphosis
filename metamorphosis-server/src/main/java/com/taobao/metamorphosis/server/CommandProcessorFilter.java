@@ -150,8 +150,9 @@ public class CommandProcessorFilter implements CommandProcessor {
 
 
     @Override
-    public TransactionId[] getPreparedTransactions(final SessionContext context) throws Exception {
-        return this.next.getPreparedTransactions(context);
+    public TransactionId[] getPreparedTransactions(final SessionContext context, final String uniqueQualifier)
+            throws Exception {
+        return this.next.getPreparedTransactions(context, uniqueQualifier);
     }
 
 

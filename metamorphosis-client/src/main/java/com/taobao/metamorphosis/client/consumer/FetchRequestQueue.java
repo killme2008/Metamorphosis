@@ -37,61 +37,99 @@ class FetchRequestQueue {
     private final Lock lock = new ReentrantLock();
     private final Condition available = this.lock.newCondition();
 
+    /**
+     * Thread designated to wait for the element at the head of the queue. This
+     * variant of the Leader-Follower pattern
+     * (http://www.cs.wustl.edu/~schmidt/POSA/POSA2/) serves to minimize
+     * unnecessary timed waiting. When a thread becomes the leader, it waits
+     * only for the next delay to elapse, but other threads await indefinitely.
+     * The leader thread must signal some other thread before returning from
+     * take() or poll(...), unless some other thread becomes leader in the
+     * interim. Whenever the head of the queue is replaced with an element with
+     * an earlier expiration time, the leader field is invalidated by being
+     * reset to null, and some waiting thread, but not necessarily the current
+     * leader, is signalled. So waiting threads must be prepared to acquire and
+     * lose leadership while waiting.
+     */
+    private Thread leader = null;
+
 
     public FetchRequest take() throws InterruptedException {
-        this.lock.lockInterruptibly();
+        final Lock lock = this.lock;
+        lock.lockInterruptibly();
         try {
             for (;;) {
-                final FetchRequest first = this.queue.peek();
+                FetchRequest first = this.queue.peek();
                 if (first == null) {
                     this.available.await();
                 }
                 else {
-                    final long delay = first.getDelay(TimeUnit.NANOSECONDS);
-                    if (delay > 0) {
-                        final long tl = this.available.awaitNanos(delay);
+                    long delay = first.getDelay(TimeUnit.NANOSECONDS);
+                    if (delay <= 0) {
+                        return this.queue.poll();
+                    }
+                    else if (this.leader != null) {
+                        this.available.await();
                     }
                     else {
-                        final FetchRequest x = this.queue.poll();
-                        assert x != null;
-                        if (this.queue.size() != 0) {
-                            this.available.signalAll(); // wake up other takers
+                        Thread thisThread = Thread.currentThread();
+                        this.leader = thisThread;
+                        try {
+                            this.available.awaitNanos(delay);
                         }
-                        return x;
-
+                        finally {
+                            if (this.leader == thisThread) {
+                                this.leader = null;
+                            }
+                        }
                     }
                 }
             }
         }
         finally {
-            this.lock.unlock();
+            if (this.leader == null && this.queue.peek() != null) {
+                this.available.signal();
+            }
+            lock.unlock();
         }
     }
 
 
-    public void offer(final FetchRequest request) {
-        this.lock.lock();
+    public void offer(FetchRequest e) {
+        final Lock lock = this.lock;
+        lock.lock();
         try {
-            final FetchRequest first = this.queue.peek();
-            this.queue.offer(request);
+            /**
+             * A request is not referenced by this queue,so we don't want to add
+             * it.
+             */
+            if (e.getRefQueue() != null && e.getRefQueue() != this) {
+                return;
+            }
+            // Reference to request.
+            e.setRefQueue(this);
+            this.queue.offer(e);
             Collections.sort(this.queue);
-            if (first == null || request.compareTo(first) < 0) {
-                this.available.signalAll();
+            // Leader is changed.
+            if (this.queue.peek() == e) {
+                this.leader = null;
+                this.available.signal();
             }
         }
         finally {
-            this.lock.unlock();
+            lock.unlock();
         }
     }
 
 
     public int size() {
-        this.lock.lock();
+        final Lock lock = this.lock;
+        lock.lock();
         try {
             return this.queue.size();
         }
         finally {
-            this.lock.unlock();
+            lock.unlock();
         }
     }
 

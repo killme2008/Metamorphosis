@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis;
 
@@ -23,6 +23,7 @@ import java.util.Properties;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.github.killme2008.metamorphosis.dashboard.Server;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 
@@ -40,32 +41,42 @@ public class EnhancedBroker {
 
     private final BrokerPlugins brokerPlugins;
 
+    private org.eclipse.jetty.server.Server jettyServer;
+
 
     public void start() {
         // 先启动meta,然后启动Plugins
         this.broker.start();
         this.brokerPlugins.start();
+        Server dashboradHttpServer = new Server();
+        this.jettyServer = dashboradHttpServer.start(this.broker);
     }
 
 
     public void stop() {
+        try {
+            this.jettyServer.stop();
+        }
+        catch (Exception e) {
+            log.error("Stop dashboard http server failed", e);
+        }
         this.brokerPlugins.stop();
         this.broker.stop();
     }
 
 
     public EnhancedBroker(final MetaConfig metaConfig, final Map<String/*
-                                                                        * plugin
-                                                                        * name
-                                                                        */, Properties> pluginsInfo) {
+     * plugin
+     * name
+     */, Properties> pluginsInfo) {
         this.broker = new MetaMorphosisBroker(metaConfig);
-        this.brokerPlugins = new BrokerPlugins(pluginsInfo, broker);
-        this.brokerPlugins.init(broker, null);
+        this.brokerPlugins = new BrokerPlugins(pluginsInfo, this.broker);
+        this.brokerPlugins.init(this.broker, null);
     }
 
 
     public MetaMorphosisBroker getBroker() {
-        return broker;
+        return this.broker;
     }
 
 }

@@ -18,6 +18,8 @@
 package com.taobao.metamorphosis.client.consumer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +38,7 @@ public class ConsumerConfigUnitTest {
 
     @Before
     public void setUp() {
-        this.consumerConfig = new ConsumerConfig(group);
+        this.consumerConfig = new ConsumerConfig(this.group);
 
     }
 
@@ -46,6 +48,16 @@ public class ConsumerConfigUnitTest {
         assertEquals(0, this.consumerConfig.getOffset());
         this.consumerConfig.setConsumeFromMaxOffset();
         assertEquals(Long.MAX_VALUE, this.consumerConfig.getOffset());
+        assertFalse(this.consumerConfig.isAlwaysConsumeFromMaxOffset());
+    }
+
+
+    @Test
+    public void testSetAlwaysConsumeFromMaxOffset() {
+        assertEquals(0, this.consumerConfig.getOffset());
+        this.consumerConfig.setConsumeFromMaxOffset(true);
+        assertEquals(Long.MAX_VALUE, this.consumerConfig.getOffset());
+        assertTrue(this.consumerConfig.isAlwaysConsumeFromMaxOffset());
     }
 
 }

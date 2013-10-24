@@ -2,12 +2,19 @@
 	<parent>
 		<artifactId>metamorphosis-all</artifactId>
 		<groupId>com.taobao.metamorphosis</groupId>
-		<version>1.4.4-SNAPSHOT</version>
+		<version>1.4.6.3-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>metamorphosis-client</artifactId>
 	<name>metamorphosis-client v${project.version}</name>
 	<packaging>jar</packaging>
+	<repositories>
+		<repository>
+    	    <id>springsource-repo</id>
+    	    <name>SpringSource Repository</name>
+   		    <url>http://repo.springsource.org/release</url>
+		</repository>
+	</repositories>
 
 	<build>
 		<plugins>
@@ -69,5 +76,11 @@
 			<artifactId>mysql-connector-java</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+ 		    <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>3.2.3.RELEASE</version>
+            <scope>provided</scope>
+        </dependency> 
 	</dependencies>
 </project>

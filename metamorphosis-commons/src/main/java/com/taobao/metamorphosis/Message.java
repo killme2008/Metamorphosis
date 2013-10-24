@@ -43,6 +43,8 @@ public class Message implements Serializable {
     // added by dennis<killme2008@gmail.com>,2012-06-14
     private transient boolean readOnly;
 
+    private transient boolean rollbackOnly = false;
+
 
     void setId(final long id) {
         this.id = id;
@@ -66,6 +68,22 @@ public class Message implements Serializable {
     }
 
 
+    boolean isRollbackOnly() {
+        return this.rollbackOnly;
+    }
+
+
+    /**
+     * Set message to be in rollback only state.The state is transient,it's only
+     * valid in current message instance.
+     * 
+     * @since 1.4.5
+     */
+    public void setRollbackOnly() {
+        this.rollbackOnly = true;
+    }
+
+
     /**
      * Returns whether the message is readonly.
      * 
@@ -79,7 +97,8 @@ public class Message implements Serializable {
 
     /**
      * Set the message to be readonly,but metamorphosis client and server could
-     * modify message's id,flag,partition.
+     * modify message's id,flag,partition.The readonly state is transient,it
+     * will not be persist in broker.
      * 
      * @since 1.4.4
      * @param readOnly
@@ -253,7 +272,6 @@ public class Message implements Serializable {
 
 
     void setPartition(final Partition partition) {
-        this.checkState();
         this.partition = partition;
     }
 

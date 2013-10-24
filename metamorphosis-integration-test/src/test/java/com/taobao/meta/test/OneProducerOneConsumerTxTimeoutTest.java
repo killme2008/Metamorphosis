@@ -16,9 +16,9 @@ import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.client.XAMessageSessionFactory;
 import com.taobao.metamorphosis.client.XAMetaMessageSessionFactory;
-import com.taobao.metamorphosis.client.consumer.MessageIterator;
 import com.taobao.metamorphosis.client.producer.SendResult;
 import com.taobao.metamorphosis.client.producer.XAMessageProducer;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 
 
 /**
@@ -39,7 +39,6 @@ public class OneProducerOneConsumerTxTimeoutTest extends BaseMetaTest {
     @Before
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         this.sessionFactory = new XAMetaMessageSessionFactory(metaClientConfig);
         this.startServer("server1");
         System.out.println("before run");
@@ -54,8 +53,9 @@ public class OneProducerOneConsumerTxTimeoutTest extends BaseMetaTest {
 
             final byte[] data = "hello world".getBytes();
             final Message msg = new Message(this.topic, data);
+            final String uniqueQualifier = "testTxTimeout";
             final XAResource xares = ((XAMessageProducer) this.producer).getXAResource();
-            final Xid xid = XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet());
+            final Xid xid = XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet(), uniqueQualifier);
             // 设置事务超时为2秒
             xares.setTransactionTimeout(2);
             xares.start(xid, XAResource.TMNOFLAGS);

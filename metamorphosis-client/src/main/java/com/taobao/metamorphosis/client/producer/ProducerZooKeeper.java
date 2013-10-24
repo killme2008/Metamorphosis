@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -44,6 +46,7 @@ import com.taobao.metamorphosis.client.ZkClientChangedListener;
 import com.taobao.metamorphosis.cluster.Partition;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.utils.MetaZookeeper;
+import com.taobao.metamorphosis.utils.ThreadUtils;
 import com.taobao.metamorphosis.utils.ZkUtils;
 
 
@@ -85,6 +88,61 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
             this.oldTopicPartitionMap = oldTopicPartitionMap;
         }
 
+    }
+
+    /**
+     * When producer broker list is changed, it will notify the this listener.
+     * 
+     * @author apple
+     * 
+     */
+    public static interface BrokerChangeListener {
+        /**
+         * called when broker list changed.
+         * 
+         * @param topic
+         */
+        public void brokersChanged(String topic);
+    }
+
+    private final ConcurrentHashMap<String, CopyOnWriteArraySet<BrokerChangeListener>> brokerChangeListeners =
+            new ConcurrentHashMap<String, CopyOnWriteArraySet<BrokerChangeListener>>();
+
+
+    public void onBrokerChange(String topic, BrokerChangeListener listener) {
+        CopyOnWriteArraySet<BrokerChangeListener> set = this.getListenerList(topic);
+        set.add(listener);
+    }
+
+
+    public void deregisterBrokerChangeListener(String topic, BrokerChangeListener listener) {
+        CopyOnWriteArraySet<BrokerChangeListener> set = this.getListenerList(topic);
+        set.remove(listener);
+    }
+
+
+    public void notifyBrokersChange(String topic) {
+        for (final BrokerChangeListener listener : this.getListenerList(topic)) {
+            try {
+                listener.brokersChanged(topic);
+            }
+            catch (Exception e) {
+                log.error("Notify brokers changed failed", e);
+            }
+        }
+    }
+
+
+    private CopyOnWriteArraySet<BrokerChangeListener> getListenerList(String topic) {
+        CopyOnWriteArraySet<BrokerChangeListener> set = this.brokerChangeListeners.get(topic);
+        if (set == null) {
+            set = new CopyOnWriteArraySet<ProducerZooKeeper.BrokerChangeListener>();
+            CopyOnWriteArraySet<BrokerChangeListener> oldSet = this.brokerChangeListeners.putIfAbsent(topic, set);
+            if (oldSet != null) {
+                set = oldSet;
+            }
+        }
+        return set;
     }
 
     final class BrokerConnectionListener implements IZkChildListener {
@@ -132,44 +190,33 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
 
                 log.warn("Begin receiving broker changes for topic " + this.topic + ",broker ids:"
                         + newTopicPartitionMap);
+                final boolean changed = !this.brokersInfo.oldBrokerStringMap.equals(newBrokerStringMap);
+
+                // Close old brokers;
+                for (final Map.Entry<Integer, String> oldEntry : this.brokersInfo.oldBrokerStringMap.entrySet()) {
+                    final String oldBrokerString = oldEntry.getValue();
+                    ProducerZooKeeper.this.remotingClient.closeWithRef(oldBrokerString, this, false);
+                    log.warn("Closed " + oldBrokerString);
+                }
                 // Connect to new brokers
                 for (final Map.Entry<Integer, String> newEntry : newBrokerStringMap.entrySet()) {
-                    final Integer newBrokerId = newEntry.getKey();
                     final String newBrokerString = newEntry.getValue();
-                    // 新的有，旧的没有，创建
-                    if (!this.brokersInfo.oldBrokerStringMap.containsKey(newBrokerId)) {
-                        ProducerZooKeeper.this.remotingClient.connect(newBrokerString);
-                        ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                        log.warn("Connect to " + newBrokerString);
+                    ProducerZooKeeper.this.remotingClient.connectWithRef(newBrokerString, this);
+                    try {
+                        ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString, 10000);
                     }
-                }
-                // Close removed brokers.
-                for (final Map.Entry<Integer, String> oldEntry : this.brokersInfo.oldBrokerStringMap.entrySet()) {
-                    final Integer oldBrokerId = oldEntry.getKey();
-                    final String oldBrokerString = oldEntry.getValue();
-                    final String newBrokerString = newBrokerStringMap.get(oldBrokerId);
-                    // 新旧都有
-                    if (newBrokerStringMap.containsKey(oldBrokerId)) {
-                        // 判断内容是否变化
-                        if (!newBrokerString.equals(oldBrokerString)) {
-                            log.warn("Close " + oldBrokerString + ",connect to " + newBrokerString);
-                            ProducerZooKeeper.this.remotingClient.connect(newBrokerString);
-                            ProducerZooKeeper.this.remotingClient.awaitReadyInterrupt(newBrokerString);
-                            ProducerZooKeeper.this.remotingClient.close(oldBrokerString, false);
-                        }
-                        else {
-                            // ignore
-                        }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("Connecting to broker is interrupted", e);
                     }
-                    else {
-                        // 新的没有，旧的有，关闭
-                        ProducerZooKeeper.this.remotingClient.close(oldBrokerString, false);
-                        log.warn("Close " + oldBrokerString);
-                    }
+                    log.warn("Connected to " + newBrokerString);
                 }
 
                 // Set the new brokers info.
                 this.brokersInfo = new BrokersInfo(newBrokerStringMap, newTopicPartitionMap);
+                if (changed) {
+                    ProducerZooKeeper.this.notifyBrokersChange(this.topic);
+                }
                 log.warn("End receiving broker changes for topic " + this.topic);
             }
             finally {
@@ -259,14 +306,14 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
             try {
                 return task.get();
             }
-            catch (final Exception e) {
-                log.error("获取BrokerConnectionListener失败", e);
-                return null;
+            catch (final ExecutionException e) {
+                throw ThreadUtils.launderThrowable(e.getCause());
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }
-        else {
-            return null;
-        }
+        return null;
     }
 
 
@@ -324,6 +371,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
      */
     Partition selectPartition(final String topic, final Message msg, final PartitionSelector selector,
             final String serverUrl) throws MetaClientException {
+        boolean oldReadOnly = msg.isReadOnly();
         try {
             msg.setReadOnly(true);
             final BrokerConnectionListener brokerConnectionListener = this.getBrokerConnectionListener(topic);
@@ -346,7 +394,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
             }
         }
         finally {
-            msg.setReadOnly(false);
+            msg.setReadOnly(oldReadOnly);
         }
     }
 
@@ -407,6 +455,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
      */
     public Partition selectPartition(final String topic, final Message message,
             final PartitionSelector partitionSelector) throws MetaClientException {
+        boolean oldReadOnly = message.isReadOnly();
         try {
             message.setReadOnly(true);
             if (this.metaClientConfig.getServerUrl() != null) {
@@ -422,7 +471,7 @@ public class ProducerZooKeeper implements ZkClientChangedListener {
             }
         }
         finally {
-            message.setReadOnly(false);
+            message.setReadOnly(oldReadOnly);
         }
     }
 

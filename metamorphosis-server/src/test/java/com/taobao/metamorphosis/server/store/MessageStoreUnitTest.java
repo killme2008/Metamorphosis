@@ -71,7 +71,7 @@ public class MessageStoreUnitTest {
         this.metaConfig = new MetaConfig();
         this.metaConfig.setDataPath(tmpPath);
         final PutCommand cmd1 = new PutCommand(this.topic, this.partition, "hello".getBytes(), null, 0, 0);
-        this.metaConfig.setUnflushThreshold(0);
+        this.metaConfig.setUnflushThreshold(1);
         // 限制存10个消息就roll文件
         this.metaConfig.setMaxSegmentSize(MessageUtils.makeMessageBuffer(1, cmd1).capacity() * MSG_COUNT);
         this.idWorker = new IdWorker(0);

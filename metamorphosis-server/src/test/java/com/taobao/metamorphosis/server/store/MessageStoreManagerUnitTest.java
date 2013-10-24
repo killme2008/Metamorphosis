@@ -24,6 +24,10 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+
+import junit.framework.Assert;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -144,6 +148,63 @@ public class MessageStoreManagerUnitTest {
         this.metaConfig.getTopicConfigMap().put("MessageStoreManagerUnitTest", topicConfig);
         assertEquals(9999, this.messageStoreManager.getNumPartitions("MessageStoreManagerUnitTest"));
         assertEquals(9999, this.messageStoreManager.getNumPartitions("MessageStoreManagerUnitTest"));
+    }
+
+
+    @Test
+    public void testInit() throws Exception {
+        this.testInit0(false);
+    }
+
+
+    @Test
+    public void testInitInParallel() throws Exception {
+        this.testInit0(true);
+    }
+
+
+    private void testInit0(boolean inParallel) throws IOException, InterruptedException {
+        final String topic = "MessageStoreManagerUnitTest";
+        IdWorker idWorker = new IdWorker(0);
+        final TopicConfig topicConfig = new TopicConfig(topic, this.metaConfig);
+        topicConfig.setNumPartitions(10);
+        this.metaConfig.getTopicConfigMap().put("MessageStoreManagerUnitTest", topicConfig);
+        this.metaConfig.setLoadMessageStoresInParallel(inParallel);
+        for (int i = 0; i < 10; i++) {
+            final MessageStore store = this.messageStoreManager.getMessageStore(topic, i);
+            Assert.assertNull(store);
+        }
+        final CountDownLatch latch = new CountDownLatch(1000);
+        for (int i = 0; i < 10; i++) {
+            final MessageStore store = this.messageStoreManager.getOrCreateMessageStore(topic, i);
+            for (int j = 0; j < 100; j++) {
+                final PutCommand cmd = new PutCommand(topic, i, new byte[1024], null, 0, 0);
+                final long id = idWorker.nextId();
+                store.append(id, cmd, new AppendCallback() {
+
+                    @Override
+                    public void appendComplete(Location location) {
+                        if (location == Location.InvalidLocaltion) {
+                            throw new IllegalStateException();
+                        }
+                        latch.countDown();
+
+                    }
+                });
+            }
+        }
+        latch.await();
+        for (int i = 0; i < 10; i++) {
+            final MessageStore store = this.messageStoreManager.getMessageStore(topic, i);
+            Assert.assertNotNull(store);
+        }
+        this.messageStoreManager.dispose();
+        this.messageStoreManager = new MessageStoreManager(this.metaConfig, null);
+        this.messageStoreManager.init();
+        for (int i = 0; i < 10; i++) {
+            final MessageStore store = this.messageStoreManager.getMessageStore(topic, i);
+            Assert.assertNotNull(store);
+        }
     }
 
 

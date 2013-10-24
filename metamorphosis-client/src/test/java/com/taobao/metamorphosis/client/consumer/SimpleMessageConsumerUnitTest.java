@@ -37,6 +37,7 @@ import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
 import com.taobao.metamorphosis.client.producer.ProducerZooKeeper;
 import com.taobao.metamorphosis.cluster.Broker;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.network.BooleanCommand;
 import com.taobao.metamorphosis.network.DataCommand;
@@ -47,16 +48,16 @@ import com.taobao.metamorphosis.network.OffsetCommand;
 
 public class SimpleMessageConsumerUnitTest {
 
-    private SimpleMessageConsumer consumer;
-    private ConsumerZooKeeper consumerZooKeeper;
-    private ProducerZooKeeper producerZooKeeper;
-    private OffsetStorage offsetStorage;
-    private IMocksControl mocksControl;
-    private ConsumerConfig consumerConfig;
-    private SubscribeInfoManager subscribeInfoManager;
-    private RecoverStorageManager recoverStorageManager;
-    private RemotingClientWrapper remotingClient;
-    private LoadBalanceStrategy loadBalanceStrategy;
+    protected SimpleMessageConsumer consumer;
+    protected ConsumerZooKeeper consumerZooKeeper;
+    protected ProducerZooKeeper producerZooKeeper;
+    protected OffsetStorage offsetStorage;
+    protected IMocksControl mocksControl;
+    protected ConsumerConfig consumerConfig;
+    protected SubscribeInfoManager subscribeInfoManager;
+    protected RecoverStorageManager recoverStorageManager;
+    protected RemotingClientWrapper remotingClient;
+    protected LoadBalanceStrategy loadBalanceStrategy;
 
 
     @Before
@@ -102,7 +103,7 @@ public class SimpleMessageConsumerUnitTest {
         };
         final ConcurrentHashMap<String/* topic */, SubscriberInfo> topicSubcriberRegistry =
                 new ConcurrentHashMap<String, SubscriberInfo>();
-        topicSubcriberRegistry.put(topic, new SubscriberInfo(messageListener, maxSize));
+        topicSubcriberRegistry.put(topic, new SubscriberInfo(messageListener, null, maxSize));
         this.consumerZooKeeper.registerConsumer(this.consumerConfig, this.consumer.getFetchManager(),
             topicSubcriberRegistry, this.offsetStorage, this.loadBalanceStrategy);
         EasyMock.expectLastCall();
@@ -146,6 +147,7 @@ public class SimpleMessageConsumerUnitTest {
         final MessageIterator messageIterator = new MessageIterator(topic, data);
 
         this.producerZooKeeper.publishTopic(topic, this.consumer);
+        EasyMock.expect(this.remotingClient.isConnected(url)).andReturn(true);
         EasyMock.expectLastCall();
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
@@ -195,6 +197,7 @@ public class SimpleMessageConsumerUnitTest {
 
         this.producerZooKeeper.publishTopic(topic, this.consumer);
         EasyMock.expectLastCall();
+        EasyMock.expect(this.remotingClient.isConnected(url)).andReturn(true);
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url,
@@ -224,6 +227,7 @@ public class SimpleMessageConsumerUnitTest {
 
         this.producerZooKeeper.publishTopic(topic, this.consumer);
         EasyMock.expectLastCall();
+        EasyMock.expect(this.remotingClient.isConnected(url)).andReturn(true);
         EasyMock.expect(this.producerZooKeeper.selectBroker(topic, partition)).andReturn(url);
         EasyMock.expect(
             this.remotingClient.invokeToGroup(url,

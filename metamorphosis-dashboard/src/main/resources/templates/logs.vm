@@ -1,0 +1,13 @@
+<div class="mini-layout">
+#foreach ($log in $logs)
+  $log <br/>
+#end
+</div>
+<script type="text/javascript">
+  function refresh (){
+     if(window.location.href.match(/#logging$/)){
+       window.location.reload ();
+     }
+  };
+  setTimeout(refresh, 1500);
+</script>

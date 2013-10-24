@@ -20,6 +20,7 @@ package com.taobao.metamorphosis.server.stats;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -121,6 +122,11 @@ public class StatsManager implements Service {
             }
         }
         this.legalTopicPatSet = set;
+    }
+
+
+    public long getStartupTimestamp() {
+        return this.startupTimestamp;
     }
 
 
@@ -248,27 +254,203 @@ public class StatsManager implements Service {
         }
     }
 
+    public static class TopicStats {
+        private final String topic;
+        private final TopicConfig topicConfig;
+        private final long messageCount;
+        private final long messageBytes;
+        private String puts = "NO";
+        private String gets = "NO";
+        private String getMissed = "NO";
+        private String putFailed = "NO";
+        private int partitions;
 
-    private void appendTopicsInfo(final StringBuilder sb) {
-        final Map<String/* topic */, ConcurrentHashMap<Integer/* partition */, MessageStore>> stores =
-                this.messageStoreManager.getMessageStores();
-        for (final Map.Entry<String, ConcurrentHashMap<Integer/* partition */, MessageStore>> entry : stores.entrySet()) {
-            final String topic = entry.getKey();
-            final ConcurrentHashMap<Integer/* partition */, MessageStore> subMap = entry.getValue();
+
+        public TopicStats(String topic, int partitions, TopicConfig topicConfig, long messageCount, long messageBytes,
+                String realTimePut, String realTimeGet, String realTimeGetMissed, String realTimePutFailed) {
+            super();
+            this.topic = topic;
+            this.partitions = partitions;
+            this.topicConfig = topicConfig;
+            this.messageCount = messageCount;
+            this.messageBytes = messageBytes;
+            if (realTimePut != null) {
+                this.puts = realTimePut;
+            }
+            if (realTimeGet != null) {
+                this.gets = realTimeGet;
+            }
+            if (realTimeGetMissed != null) {
+                this.getMissed = realTimeGetMissed;
+            }
+            if (realTimePutFailed != null) {
+                this.putFailed = realTimePutFailed;
+            }
+        }
+
+
+        public int getPartitions() {
+            return this.partitions;
+        }
+
+
+        public void setPartitions(int partitions) {
+            this.partitions = partitions;
+        }
+
+
+        public String getTopic() {
+            return this.topic;
+        }
+
+
+        public TopicConfig getTopicConfig() {
+            return this.topicConfig;
+        }
+
+
+        public long getMessageCount() {
+            return this.messageCount;
+        }
+
+
+        public String getAvgMsgSize() {
+            if (this.messageCount == 0) {
+                return "N/A";
+            }
+            else {
+                return String.valueOf(Math.round((double) this.getMessageBytes() / this.getMessageCount()));
+            }
+        }
+
+
+        public long getMessageBytes() {
+            return this.messageBytes;
+        }
+
+
+        public String getPuts() {
+            return this.puts;
+        }
+
+
+        public void setPuts(String put) {
+            this.puts = put;
+        }
+
+
+        public String getGets() {
+            return this.gets;
+        }
+
+
+        public void setGets(String get) {
+            this.gets = get;
+        }
+
+
+        public String getGetMissed() {
+            return this.getMissed;
+        }
+
+
+        public void setGetMissed(String getMissed) {
+            this.getMissed = getMissed;
+        }
+
+
+        public String getPutFailed() {
+            return this.putFailed;
+        }
+
+
+        public void setPutFailed(String putFailed) {
+            this.putFailed = putFailed;
+        }
+
+
+        @Override
+        public String toString() {
+            return "TopicStats [topic=" + this.topic + ", topicConfig=" + this.topicConfig + ", messageCount="
+                    + this.messageCount + ", messageBytes=" + this.messageBytes + ", puts=" + this.puts + ", gets="
+                    + this.gets + ", getMissed=" + this.getMissed + ", putFailed=" + this.putFailed + ", partitions="
+                    + this.partitions + "]";
+        }
+
+    }
+
+
+    public TopicStats getTopicStats(String topic) {
+        final ConcurrentHashMap<Integer/* partition */, MessageStore> subMap =
+                this.messageStoreManager.getMessageStores().get(topic);
+        if (subMap != null) {
             long sum = 0;
+            long bytes = 0;
             int partitionCount = 0;
             if (subMap != null) {
                 partitionCount = subMap.size();
                 for (final MessageStore msgStore : subMap.values()) {
                     if (msgStore != null) {
                         sum += msgStore.getMessageCount();
+                        bytes += msgStore.getSizeInBytes();
                     }
                 }
             }
             TopicConfig topicConfig = this.metaConfig.getTopicConfig(topic);
-            this.append(sb, topic, "partitions", partitionCount, "message_count", sum, "accept_publish",
-                topicConfig.isAcceptPublish(), "accept_subscribe", topicConfig.isAcceptSubscribe());
+            TopicStats stats =
+                    new TopicStats(topic, partitionCount, topicConfig, sum, bytes,
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.CMD_PUT, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.CMD_GET, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.GET_MISS, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.PUT_FAILED, topic));
+            return stats;
         }
+        else {
+            return null;
+        }
+    }
+
+
+    public List<TopicStats> getTopicsStats() {
+        List<TopicStats> result = new ArrayList<StatsManager.TopicStats>();
+        final Map<String/* topic */, ConcurrentHashMap<Integer/* partition */, MessageStore>> stores =
+                this.messageStoreManager.getMessageStores();
+        for (final Map.Entry<String, ConcurrentHashMap<Integer/* partition */, MessageStore>> entry : stores.entrySet()) {
+            final String topic = entry.getKey();
+            final ConcurrentHashMap<Integer/* partition */, MessageStore> subMap = entry.getValue();
+            long sum = 0;
+            long bytes = 0;
+            int partitionCount = 0;
+            if (subMap != null) {
+                partitionCount = subMap.size();
+                for (final MessageStore msgStore : subMap.values()) {
+                    if (msgStore != null) {
+                        sum += msgStore.getMessageCount();
+                        bytes += msgStore.getSizeInBytes();
+                    }
+                }
+            }
+            TopicConfig topicConfig = this.metaConfig.getTopicConfig(topic);
+            TopicStats stats =
+                    new TopicStats(topic, partitionCount, topicConfig, sum, bytes,
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.CMD_PUT, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.CMD_GET, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.GET_MISS, topic),
+                        this.realTimeStat.getGroupedRealTimeStatResult(StatConstants.PUT_FAILED, topic));
+            result.add(stats);
+        }
+        return result;
+    }
+
+
+    private void appendTopicsInfo(final StringBuilder sb) {
+        for (TopicStats stats : this.getTopicsStats()) {
+            this.append(sb, stats.getTopic(), "partitions", stats.getPartitions(), "message_count", stats
+                .getMessageCount(), "message_bytes", stats.getMessageBytes(), "accept_publish", stats.getTopicConfig()
+                .isAcceptPublish(), "accept_subscribe", stats.getTopicConfig().isAcceptSubscribe());
+        }
+        final Map<String/* topic */, ConcurrentHashMap<Integer/* partition */, MessageStore>> stores =
+                this.messageStoreManager.getMessageStores();
         List<String> configTopics = this.metaConfig.getTopics();
         for (String topic : configTopics) {
             if (!stores.containsKey(topic)) {

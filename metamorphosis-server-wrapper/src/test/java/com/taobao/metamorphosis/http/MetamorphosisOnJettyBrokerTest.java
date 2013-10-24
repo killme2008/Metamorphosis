@@ -46,7 +46,6 @@ public class MetamorphosisOnJettyBrokerTest {
     @BeforeClass
     public static void setUp() throws IOException {
         final MetaConfig metaConfig = new MetaConfig();
-        metaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         metaConfig.setBrokerId(100);
         metaConfig.setHostName("localhost");
         metaConfig.setServerPort(8199);

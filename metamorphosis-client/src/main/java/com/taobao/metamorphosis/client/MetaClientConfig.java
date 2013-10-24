@@ -31,16 +31,6 @@ public class MetaClientConfig implements Serializable {
     protected String serverUrl;
 
     /**
-     * 从diamond获取zk配置的dataId，默认为"metamorphosis.zkConfig"
-     */
-    protected String diamondZKDataId = DiamondUtils.DEFAULT_ZK_DATAID;
-
-    /**
-     * 从diamond获取zk配置的group，默认为DEFAULT_GROUP
-     */
-    protected String diamondZKGroup = "DEFAULT_GROUP";// Constants.DEFAULT_GROUP;
-
-    /**
      * 从diamond获取partitions配置的dataId，默认为"metamorphosis.partitions"
      * */
     private final String diamondPartitionsDataId = DiamondUtils.DEFAULT_PARTITIONS_DATAID;
@@ -80,30 +70,6 @@ public class MetaClientConfig implements Serializable {
     }
 
 
-    @Deprecated
-    public String getDiamondZKDataId() {
-        return this.diamondZKDataId;
-    }
-
-
-    @Deprecated
-    public void setDiamondZKDataId(final String diamondZKDataId) {
-        this.diamondZKDataId = diamondZKDataId;
-    }
-
-
-    @Deprecated
-    public String getDiamondZKGroup() {
-        return this.diamondZKGroup;
-    }
-
-
-    @Deprecated
-    public void setDiamondZKGroup(final String diamondZKGroup) {
-        this.diamondZKGroup = diamondZKGroup;
-    }
-
-
     public ZKConfig getZkConfig() {
         return this.zkConfig;
     }
@@ -117,6 +83,66 @@ public class MetaClientConfig implements Serializable {
             throw new IllegalArgumentException("Empty zookeeper servers");
         }
         this.zkConfig = zkConfig;
+    }
+
+
+    public String getZkRoot() {
+        return this.zkConfig.getZkRoot();
+    }
+
+
+    public void setZkRoot(String zkRoot) {
+        this.zkConfig.setZkRoot(zkRoot);
+    }
+
+
+    public boolean isZkEnable() {
+        return this.zkConfig.isZkEnable();
+    }
+
+
+    public void setZkEnable(boolean zkEnable) {
+        this.zkConfig.setZkEnable(zkEnable);
+    }
+
+
+    public String getZkConnect() {
+        return this.zkConfig.getZkConnect();
+    }
+
+
+    public void setZkConnect(String zkConnect) {
+        this.zkConfig.setZkConnect(zkConnect);
+    }
+
+
+    public int getZkSessionTimeoutMs() {
+        return this.zkConfig.getZkSessionTimeoutMs();
+    }
+
+
+    public void setZkSessionTimeoutMs(int zkSessionTimeoutMs) {
+        this.zkConfig.setZkSessionTimeoutMs(zkSessionTimeoutMs);
+    }
+
+
+    public int getZkConnectionTimeoutMs() {
+        return this.zkConfig.getZkConnectionTimeoutMs();
+    }
+
+
+    public void setZkConnectionTimeoutMs(int zkConnectionTimeoutMs) {
+        this.zkConfig.setZkConnectionTimeoutMs(zkConnectionTimeoutMs);
+    }
+
+
+    public int getZkSyncTimeMs() {
+        return this.zkConfig.getZkSyncTimeMs();
+    }
+
+
+    public void setZkSyncTimeMs(int zkSyncTimeMs) {
+        this.zkConfig.setZkSyncTimeMs(zkSyncTimeMs);
     }
 
 
@@ -159,6 +185,84 @@ public class MetaClientConfig implements Serializable {
 
     public Properties getPartitionsInfo() {
         return this.partitionsInfo;
+    }
+
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (this.diamondPartitionsDataId == null ? 0 : this.diamondPartitionsDataId.hashCode());
+        result = prime * result + (this.diamondPartitionsGroup == null ? 0 : this.diamondPartitionsGroup.hashCode());
+        result = prime * result + (this.partitionsInfo == null ? 0 : this.partitionsInfo.hashCode());
+        result =
+                prime * result + (int) (this.recoverMessageIntervalInMills ^ this.recoverMessageIntervalInMills >>> 32);
+        result = prime * result + this.recoverThreadCount;
+        result = prime * result + (this.serverUrl == null ? 0 : this.serverUrl.hashCode());
+        result = prime * result + (this.zkConfig == null ? 0 : this.zkConfig.hashCode());
+        return result;
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (this.getClass() != obj.getClass()) {
+            return false;
+        }
+        MetaClientConfig other = (MetaClientConfig) obj;
+        if (this.diamondPartitionsDataId == null) {
+            if (other.diamondPartitionsDataId != null) {
+                return false;
+            }
+        }
+        else if (!this.diamondPartitionsDataId.equals(other.diamondPartitionsDataId)) {
+            return false;
+        }
+        if (this.diamondPartitionsGroup == null) {
+            if (other.diamondPartitionsGroup != null) {
+                return false;
+            }
+        }
+        else if (!this.diamondPartitionsGroup.equals(other.diamondPartitionsGroup)) {
+            return false;
+        }
+        if (this.partitionsInfo == null) {
+            if (other.partitionsInfo != null) {
+                return false;
+            }
+        }
+        else if (!this.partitionsInfo.equals(other.partitionsInfo)) {
+            return false;
+        }
+        if (this.recoverMessageIntervalInMills != other.recoverMessageIntervalInMills) {
+            return false;
+        }
+        if (this.recoverThreadCount != other.recoverThreadCount) {
+            return false;
+        }
+        if (this.serverUrl == null) {
+            if (other.serverUrl != null) {
+                return false;
+            }
+        }
+        else if (!this.serverUrl.equals(other.serverUrl)) {
+            return false;
+        }
+        if (this.zkConfig == null) {
+            if (other.zkConfig != null) {
+                return false;
+            }
+        }
+        else if (!this.zkConfig.equals(other.zkConfig)) {
+            return false;
+        }
+        return true;
     }
 
 }

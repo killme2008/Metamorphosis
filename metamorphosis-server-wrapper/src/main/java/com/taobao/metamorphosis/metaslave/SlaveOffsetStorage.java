@@ -61,7 +61,15 @@ public class SlaveOffsetStorage implements OffsetStorage {
 
     @Override
     public void close() {
-        // do nothing
+        final String masterServerUrl = this.slaveZooKeeper.getMasterServerUrl();
+        try {
+            if (!StringUtils.isBlank(masterServerUrl)) {
+                this.remotingClient.closeWithRef(masterServerUrl, this, true);
+            }
+        }
+        catch (NotifyRemotingException e) {
+            // ignore;
+        }
     }
 
 
@@ -123,10 +131,9 @@ public class SlaveOffsetStorage implements OffsetStorage {
         }
         try {
             final BooleanCommand resp =
-                    (BooleanCommand) this.remotingClient.invokeToGroup(masterServerUrl,
- new OffsetCommand(topic,
-                        this.broker.getMetaConfig().getSlaveConfig().getSlaveGroup(), partition.getPartition(),
-                            0, OpaqueGenerator.getNextOpaque()));
+                    (BooleanCommand) this.remotingClient.invokeToGroup(masterServerUrl, new OffsetCommand(topic,
+                        this.broker.getMetaConfig().getSlaveConfig().getSlaveGroup(), partition.getPartition(), 0,
+                        OpaqueGenerator.getNextOpaque()));
 
             final String resultStr = resp.getErrorMsg();
 
@@ -157,7 +164,7 @@ public class SlaveOffsetStorage implements OffsetStorage {
 
     private void connectServer(final String serverUrl) throws NetworkException, InterruptedException {
         try {
-            this.remotingClient.connect(serverUrl);
+            this.remotingClient.connectWithRef(serverUrl, this);
             this.remotingClient.awaitReadyInterrupt(serverUrl, 5000);
             // 5秒钟连接不上则认为服务端没起来
             // ,打断查询

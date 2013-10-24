@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+	<meta charset="utf-8">
+	<link href="css/bootstrap.css" rel="stylesheet">
+	<link href="css/cluster.css" rel="stylesheet">
+	<link href="css/docs.css" rel="stylesheet">
+	<link rel="shortcut icon" href="img/metaq-32.ico">
+	<script type="text/javascript" src="js/jquery-1.9.1.min.js"></script>
+	<script type="text/javascript" src="js/jquery.ba-bbq.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap.js"></script>
+	<script type="text/javascript" src="js/metaq.js"></script>
+</script>
+<title>MetaQ admin $!version -- Broker-$!broker_id</title>
+</head>
+<body>
+  <div class="container-fluid">
+	<div><img src="img/metaq-logo.png"/></div>
+	<div class="row-fluid">
+	  <div class="span3 bs-docs-sidebar">
+		<ul class="nav nav-list bs-docs-sidenav">
+		  <li><a href="#dashboard"><i class="icon-chevron-right"></i>Dashboard</a></li>
+		  <li><a href="#logging"><i class="icon-chevron-right"></i>Logging</a></li>
+		  <li><a href="#cluster"><i class="icon-chevron-right"></i>Cluster</a></li>
+		  <li><a href="#java-properties"><i class="icon-chevron-right"></i>Java properties</a></li>
+		  <li><a href="#thread-dump"><i class="icon-chevron-right"></i>Thread Dump</a></li>
+		  <li><a href="#config"><i class="icon-chevron-right"></i>Broker config</a></li>
+		  <li><a href="#topics"><i class="icon-chevron-right"></i>Topics</a></li>
+		  <li><a href="#stats"><i class="icon-chevron-right"></i>Statstics</a></li>
+        </ul>
+	  </div>
+	  <div class="span8" id="main-content">
+		<!--Body content-->
+	  </div>
+	</div>
+  </div>
+   <!-- Footer
+    ================================================== -->
+    <footer class="footer">
+      <div class="container">
+		<p>Powered by <a href= "http://clojure.org">clojure</a>. </p<>
+		<p>Authors: <a href= "http://fnil.net"> Dennis Zhuang</a>. </p>
+        <ul class="footer-links">
+          <li><a href="https://github.com/killme2008/Metamorphosis">Project</a></li>
+          <li class="muted">&middot;</li>
+          <li><a href="https://github.com/killme2008/Metamorphosis/wiki">Documents</a></li>
+        </ul>
+      </div>
+    </footer>
+</body>
+</html>

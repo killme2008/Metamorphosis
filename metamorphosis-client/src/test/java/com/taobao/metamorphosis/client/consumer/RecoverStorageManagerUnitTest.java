@@ -79,7 +79,7 @@ public class RecoverStorageManagerUnitTest {
             public Executor getExecutor() {
                 return null;
             }
-        });
+        }, null);
         for (int i = 0; i < 100; i++) {
             final Message msg2 = new Message("test", ("hello" + i).getBytes());
             MessageAccessor.setId(msg2, i);
@@ -118,7 +118,7 @@ public class RecoverStorageManagerUnitTest {
             public Executor getExecutor() {
                 return null;
             }
-        });
+        }, null);
         for (int i = 0; i < 100; i++) {
             final Message msg2 = new Message("test", ("hello" + i).getBytes());
             MessageAccessor.setId(msg2, i);

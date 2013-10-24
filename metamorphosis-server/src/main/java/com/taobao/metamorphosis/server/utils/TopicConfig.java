@@ -17,6 +17,9 @@
  */
 package com.taobao.metamorphosis.server.utils;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.taobao.metamorphosis.utils.Config;
 
 
@@ -38,6 +41,17 @@ public class TopicConfig extends Config {
     private boolean acceptPublish = true;
     private boolean acceptSubscribe = true;
     private boolean stat;
+    private Map<String/* group name */, String/* class name */> filterClassNames = new HashMap<String, String>();
+
+
+    public final void addFilterClass(String group, String className) {
+        this.filterClassNames.put(group, className);
+    }
+
+
+    public final String getFilterClass(String group) {
+        return this.filterClassNames.get(group);
+    }
 
 
     public TopicConfig(final String topic, final MetaConfig metaConfig) {
@@ -55,7 +69,8 @@ public class TopicConfig extends Config {
 
 
     public TopicConfig(String topic, int unflushThreshold, int unflushInterval, String dataPath, String deleteWhen,
-            String deletePolicy, int numPartitions, boolean acceptPublish, boolean acceptSubscribe, boolean stat) {
+            String deletePolicy, int numPartitions, boolean acceptPublish, boolean acceptSubscribe, boolean stat,
+            Map<String/* group name */, String/* class name */> filterClassNames) {
         super();
         this.topic = topic;
         this.unflushThreshold = unflushThreshold;
@@ -67,13 +82,15 @@ public class TopicConfig extends Config {
         this.acceptPublish = acceptPublish;
         this.acceptSubscribe = acceptSubscribe;
         this.stat = stat;
+        this.filterClassNames = filterClassNames;
     }
 
 
     @Override
     public TopicConfig clone() {
         return new TopicConfig(this.topic, this.unflushThreshold, this.unflushInterval, this.dataPath, this.deleteWhen,
-            this.deletePolicy, this.numPartitions, this.acceptPublish, this.acceptSubscribe, this.stat);
+            this.deletePolicy, this.numPartitions, this.acceptPublish, this.acceptSubscribe, this.stat,
+            this.filterClassNames);
     }
 
 
@@ -172,6 +189,11 @@ public class TopicConfig extends Config {
     }
 
 
+    public void setUnflushInterval(final int unflushInterval) {
+        this.unflushInterval = unflushInterval;
+    }
+
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -181,6 +203,7 @@ public class TopicConfig extends Config {
         result = prime * result + (this.dataPath == null ? 0 : this.dataPath.hashCode());
         result = prime * result + (this.deletePolicy == null ? 0 : this.deletePolicy.hashCode());
         result = prime * result + (this.deleteWhen == null ? 0 : this.deleteWhen.hashCode());
+        result = prime * result + (this.filterClassNames == null ? 0 : this.filterClassNames.hashCode());
         result = prime * result + this.numPartitions;
         result = prime * result + (this.stat ? 1231 : 1237);
         result = prime * result + (this.topic == null ? 0 : this.topic.hashCode());
@@ -232,6 +255,14 @@ public class TopicConfig extends Config {
         else if (!this.deleteWhen.equals(other.deleteWhen)) {
             return false;
         }
+        if (this.filterClassNames == null) {
+            if (other.filterClassNames != null) {
+                return false;
+            }
+        }
+        else if (!this.filterClassNames.equals(other.filterClassNames)) {
+            return false;
+        }
         if (this.numPartitions != other.numPartitions) {
             return false;
         }
@@ -256,18 +287,13 @@ public class TopicConfig extends Config {
     }
 
 
-    public void setUnflushInterval(final int unflushInterval) {
-        this.unflushInterval = unflushInterval;
-    }
-
-
     @Override
     public String toString() {
         return "TopicConfig [topic=" + this.topic + ", unflushThreshold=" + this.unflushThreshold
                 + ", unflushInterval=" + this.unflushInterval + ", dataPath=" + this.dataPath + ", deleteWhen="
                 + this.deleteWhen + ", deletePolicy=" + this.deletePolicy + ", numPartitions=" + this.numPartitions
                 + ", acceptPublish=" + this.acceptPublish + ", acceptSubscribe=" + this.acceptSubscribe + ", stat="
-                + this.stat + "]";
+                + this.stat + ", filterClassNames=" + this.filterClassNames + "]";
     }
 
 }

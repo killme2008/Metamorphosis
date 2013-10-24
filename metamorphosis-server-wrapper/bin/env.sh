@@ -21,6 +21,9 @@ BROKER_JVM_ARGS="-Xmx512m -Xms512m -server -Dmeta.home=$meta_home -cp $CLASSPATH
 #Tools jvm args,you don't have to modify this at all.
 TOOLS_JVM_ARGS="-Xmx128m -Xms128m -Dmeta.home=$meta_home -cp $CLASSPATH "
 
+#whether to enable http endpoints
+export enableHttp=false
+
 if [ -z "$BROKER_ARGS" ]; then
   export BROKER_ARGS="$BROKER_JVM_ARGS -Dlog4j.configuration=file:$BASE_DIR/bin/log4j.properties"
 fi

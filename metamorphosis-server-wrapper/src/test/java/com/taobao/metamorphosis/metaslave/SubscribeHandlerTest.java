@@ -48,7 +48,6 @@ public class SubscribeHandlerTest {
     @Before
     public void setup() throws Exception {
         this.metaConfig = new MetaConfig();
-        this.metaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         this.metaConfig.setBrokerId(this.brokerId);
         this.metaConfig.setHostName("localhost");
         this.metaConfig.setServerPort(8199);

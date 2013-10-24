@@ -1,0 +1,106 @@
+<div class="row-fluid">
+  <div class="row">
+	<div class= "span6 mini-layout">
+	  <h5>Instance</h5>
+	  <table class="table ">
+		<tr>
+		  <td>Startup</td>
+		  <td>$instance.start</td>
+		</tr>
+		<tr>
+		  <td>Host</td>
+		  <td>$instance.host</td>
+		</tr>
+		<tr>
+		  <td>Data</td>
+		  <td>$instance.data</td>
+		</tr>
+		<tr>
+		  <td>Transaction log</td>
+		  <td>$instance.data_log</td>
+		</tr>
+		<tr>
+		  <td>CWD</td>
+		  <td>$instance.cwd</td>
+		</tr>
+	  </table>
+	</div>
+	<div class= "span6 mini-layout">
+	  <h5>System</h5>
+	  <table class="table ">
+		<tr>
+		  <td>Physical memory</td>
+		  <td>$system.sys_memory</td>
+		</tr>
+		<tr>
+		  <td>Physical memory used</td>
+		  <td>$system.sys_memory_used</td>
+		</tr>
+		<tr>
+		  <td>Swap space</td>
+		  <td>$system.swap_space</td>
+		</tr>
+		<tr>
+		  <td>Swap space used</td>
+		  <td>$system.ss_used</td>
+		</tr>
+		<tr>
+		  <td>Maximum file descriptors</td>
+		  <td>$system.fdc</td>
+		</tr>
+		<tr>
+		  <td>Opened file descriptors</td>
+		  <td>$system.fdc_used</td>
+		</tr>
+		<tr>
+		  <td>Maximum JVM memory</td>
+		  <td>$system.jvm_memory_max</td>
+		</tr>
+		<tr>
+		  <td>Current total JVM memory</td>
+		  <td>$system.jvm_memory_total</td>
+		</tr>
+		<tr>
+		  <td>JVM memory used</td>
+		  <td>$system.jvm_memory_used</td>
+		</tr>
+	  </table>
+	</div>
+  </div>
+  <div class="row">
+	<div class= "span6 mini-layout" >
+	  <h5>JVM</h5>
+	  <table class="table ">
+		<tr>
+		  <td>Runtime</td>
+		  <td>$jvm.runtime</td>
+		</tr>
+		<tr>
+		  <td>Args</td>
+		  <td>$jvm.args</td>
+		</tr>
+		<tr>
+		  <td>Processors</td>
+		  <td>$jvm.processors</td>
+		</tr>
+	  </table>
+	</div>
+	<div class= "span6 mini-layout">
+	  <h5>Broker</h5>
+	  <table class="table ">
+		<tr>
+		  <td>Broker Id</td>
+		  <td>$version.id</td>
+		</tr>
+		<tr>
+		  <td>Broker URI</td>
+		  <td>$version.uri</td>
+		</tr>
+		<tr>
+		  <td>Version</td>
+		  <td>$version.metaq</td>
+		</tr>
+	  </table>
+	</div>
+  </div>
+</div>

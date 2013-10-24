@@ -38,6 +38,7 @@ import com.taobao.metamorphosis.network.TransactionCommand;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.CommandProcessor;
 import com.taobao.metamorphosis.server.exception.MetamorphosisServerStartupException;
+import com.taobao.metamorphosis.server.filter.ConsumerFilterManager;
 import com.taobao.metamorphosis.server.network.GetProcessor;
 import com.taobao.metamorphosis.server.network.OffsetProcessor;
 import com.taobao.metamorphosis.server.network.PutProcessor;
@@ -80,6 +81,7 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
     private final MetaConfig metaConfig;
     private final IdWorker idWorker;
     private final BrokerZooKeeper brokerZooKeeper;
+    private final ConsumerFilterManager consumerFilterManager;
 
     private CommandProcessor brokerProcessor;
     static final Log log = LogFactory.getLog(MetaMorphosisBroker.class);
@@ -124,6 +126,11 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
     }
 
 
+    public ConsumerFilterManager getConsumerFilterManager() {
+        return this.consumerFilterManager;
+    }
+
+
     public IdWorker getIdWorker() {
         return this.idWorker;
     }
@@ -141,6 +148,8 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
 
     public MetaMorphosisBroker(final MetaConfig metaConfig) {
         super();
+        this.shutdownHook = new ShutdownHook();
+        Runtime.getRuntime().addShutdownHook(this.shutdownHook);
         this.metaConfig = metaConfig;
         this.remotingServer = newRemotingServer(metaConfig);
         this.executorsManager = new ExecutorsManager(metaConfig);
@@ -148,9 +157,6 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         this.storeManager = new MessageStoreManager(metaConfig, this.newDeletePolicy(metaConfig));
         this.statsManager = new StatsManager(this.metaConfig, this.storeManager, this.remotingServer);
         this.brokerZooKeeper = new BrokerZooKeeper(metaConfig);
-        final BrokerCommandProcessor next =
-                new BrokerCommandProcessor(this.storeManager, this.executorsManager, this.statsManager,
-                    this.remotingServer, metaConfig, this.idWorker, this.brokerZooKeeper);
         JournalTransactionStore transactionStore = null;
         try {
             transactionStore = new JournalTransactionStore(metaConfig.getDataLogPath(), this.storeManager, metaConfig);
@@ -158,11 +164,18 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         catch (final Exception e) {
             throw new MetamorphosisServerStartupException("Initializing transaction store failed", e);
         }
+        try {
+            this.consumerFilterManager = new ConsumerFilterManager(metaConfig);
+        }
+        catch (final Exception e) {
+            throw new MetamorphosisServerStartupException("Initializing ConsumerFilterManager failed", e);
+        }
+        final BrokerCommandProcessor next =
+                new BrokerCommandProcessor(this.storeManager, this.executorsManager, this.statsManager,
+                    this.remotingServer, metaConfig, this.idWorker, this.brokerZooKeeper, this.consumerFilterManager);
         this.brokerProcessor =
                 new TransactionalCommandProcessor(metaConfig, this.storeManager, this.idWorker, next, transactionStore,
                     this.statsManager);
-        this.shutdownHook = new ShutdownHook();
-        Runtime.getRuntime().addShutdownHook(this.shutdownHook);
         MetaMBeanServer.registMBean(this, null);
     }
 
@@ -288,10 +301,17 @@ public class MetaMorphosisBroker implements MetaMorphosisBrokerMBean {
         }
 
         if (!this.runShutdownHook && this.shutdownHook != null) {
-            Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+            try {
+                Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+            }
+            catch (Exception e) {
+                // ignore
+            }
         }
 
         this.brokerProcessor.dispose();
+
+        EmbedZookeeperServer.getInstance().stop();
 
         log.info("Stop metamorphosis server successfully");
 

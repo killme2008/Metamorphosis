@@ -30,6 +30,7 @@ import com.taobao.metamorphosis.transaction.XATransactionId;
  * 
  */
 public class XIDGenerator {
+    public static final String UNIQUE_QUALIFIER = "unique-qualifier";
     private final static Random rand = new Random();
 
 
@@ -40,10 +41,16 @@ public class XIDGenerator {
     }
 
 
-    public static XATransactionId createXID(final int formatId) {
+    public static XATransactionId createXID(final int formatId, String uniqueQualifier) {
         final byte[] branchQualifier = randomBytes();
         final byte[] globalTransactionId = randomBytes();
-        final XATransactionId xid = new XATransactionId(formatId, branchQualifier, globalTransactionId);
+        final XATransactionId xid =
+                new XATransactionId(formatId, branchQualifier, globalTransactionId, uniqueQualifier);
         return xid;
+    }
+
+
+    public static XATransactionId createXID(final int formatId) {
+        return createXID(formatId, UNIQUE_QUALIFIER);
     }
 }

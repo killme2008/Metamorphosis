@@ -86,7 +86,7 @@ public class IdWorker {
 
 
     private long timeGen() {
-        return System.currentTimeMillis();
+        return System.nanoTime() / 1000000;
     }
 
 }

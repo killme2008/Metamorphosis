@@ -75,12 +75,12 @@ public abstract class BaseMetaTest {
         this.consumer = this.sessionFactory.createConsumer(new ConsumerConfig());
     }
 
+    MetaClientConfig metaClientConfig;
 
     @Before
     public void setUp() throws Exception {
-        final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
-        this.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
+        this.metaClientConfig = new MetaClientConfig();
+        this.sessionFactory = new MetaMessageSessionFactory(this.metaClientConfig);
         this.startServer("server1");
         System.out.println("before run");
     }
@@ -102,6 +102,7 @@ public abstract class BaseMetaTest {
     protected MetaMorphosisBroker startServer(final String name, final boolean isClearConsumerInfo,
             final boolean isCleanData) throws Exception {
         final MetaConfig metaConfig = this.metaConfig(name);
+        metaConfig.setDashboardHttpPort(metaConfig.getServerPort() - 20);
         if (isCleanData) {
             Utils.clearDataDir(metaConfig);
         }
@@ -132,7 +133,6 @@ public abstract class BaseMetaTest {
         for (final TopicConfig topicConfig : metaConfig.getTopicConfigMap().values()) {
             topicConfig.setDataPath(metaConfig.getDataPath());
         }
-        metaConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         return metaConfig;
     }
 
@@ -146,6 +146,7 @@ public abstract class BaseMetaTest {
             if (!result.isSuccess()) {
                 throw new RuntimeException("Send message failed:" + result.getErrorMessage());
             }
+            System.out.println(i);
             this.messages.add(msg);
         }
     }

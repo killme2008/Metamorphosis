@@ -198,12 +198,14 @@ public class TransactionProcessorUnitTest {
     @Test
     public void testRecoverTransaction() throws Exception {
         final String sessionId = "test";
-        final TransactionInfo info = new TransactionInfo(null, sessionId, TransactionType.RECOVER);
+        String uniqueQualifier = "unique-qualifier";
+        final TransactionInfo info = new TransactionInfo(null, sessionId, TransactionType.RECOVER, uniqueQualifier);
         final TransactionCommand tc = new TransactionCommand(info, 1);
         final TransactionId[] ids = this.generateIds();
         final String resultString = this.generateIdsString(ids);
         this.mockSessionContext(SessionContextHolder.GLOBAL_SESSION_KEY, sessionId);
-        EasyMock.expect(this.commandProcessor.getPreparedTransactions(new SessionContextImpl("test", this.conn)))
+        EasyMock.expect(
+            this.commandProcessor.getPreparedTransactions(new SessionContextImpl("test", this.conn), uniqueQualifier))
             .andReturn(ids);
 
         this.conn.response(new BooleanCommand(HttpStatus.Success, resultString, 1));
@@ -217,11 +219,13 @@ public class TransactionProcessorUnitTest {
     @Test
     public void testHandleException() throws Exception {
         final String sessionId = "test";
-        final TransactionInfo info = new TransactionInfo(null, sessionId, TransactionType.RECOVER);
+        String uniqueQualifier = "unique-qualifier";
+        final TransactionInfo info = new TransactionInfo(null, sessionId, TransactionType.RECOVER, uniqueQualifier);
         final TransactionCommand tc = new TransactionCommand(info, 1);
         this.mockSessionContext(SessionContextHolder.GLOBAL_SESSION_KEY, sessionId);
 
-        EasyMock.expect(this.commandProcessor.getPreparedTransactions(new SessionContextImpl("test", this.conn)))
+        EasyMock.expect(
+            this.commandProcessor.getPreparedTransactions(new SessionContextImpl("test", this.conn), uniqueQualifier))
             .andThrow(new RuntimeException("just for test"));
 
         this.conn.response(new BooleanCommand(HttpStatus.InternalServerError, "just for test", 1));

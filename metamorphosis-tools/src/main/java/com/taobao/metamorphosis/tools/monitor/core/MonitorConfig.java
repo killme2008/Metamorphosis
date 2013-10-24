@@ -62,12 +62,12 @@ public class MonitorConfig {
 
     private List<String> mobileList = Collections.emptyList();
     public List<Group> getGroupList() {
-		return groupList;
+		return this.groupList;
 	}
 
 
 	public List<MetaServer> getMetaServerList() {
-		return metaServerList;
+		return this.metaServerList;
 	}
 
 	private List<Group> groupList = Collections.emptyList();
@@ -77,10 +77,6 @@ public class MonitorConfig {
 //            new ConcurrentHashMap<GroupTopicPair, List<String>>();
 //    private final Map<GroupTopicPair, List<String>> groupAlertMobile =
 //            new ConcurrentHashMap<GroupTopicPair, List<String>>();
-
-    private String diamondZKDataId;
-
-    private String diamondZKGroup;
 
     private long sendTimeout = 10000L;
 
@@ -93,7 +89,7 @@ public class MonitorConfig {
     private long statsProbCycleTime = 12 * 60 * 1000;
 
     private int systemProbCycleTime = 2;// 单位为分钟
-    private Set<String> filterTopicList = new HashSet<String>();
+    private final Set<String> filterTopicList = new HashSet<String>();
 
     
 
@@ -155,7 +151,7 @@ public class MonitorConfig {
 	private void populateFilterTopicConfig(Ini iniConfig) {
 		final Section filterTopicConf = iniConfig.get("filterTopic");
 		if(!StringUtils.isBlank(filterTopicConf.get("topic"))){
-			filterTopicList.addAll(Arrays.asList(filterTopicConf.get("topic").split(",")));
+			this.filterTopicList.addAll(Arrays.asList(filterTopicConf.get("topic").split(",")));
 		}
 	}
 
@@ -177,9 +173,9 @@ public class MonitorConfig {
                 newGroupList.add(group);
             }
         }
-        if(!groupList.equals(newGroupList)){
-        	groupList.clear();
-        	groupList = newGroupList;
+        if(!this.groupList.equals(newGroupList)){
+        	this.groupList.clear();
+        	this.groupList = newGroupList;
         }
 	}
 
@@ -198,16 +194,16 @@ public class MonitorConfig {
             	metaServer.setCluster(section.get("cluster"));
             	metaServer.setHostIp(section.get("hostIp"));
             	metaServer.setHostName(section.get("hostName"));
-            	metaServer.setJmxPort(getInt(section, "jmxPort"));
-            	metaServer.setServerPort(getInt(section,"serverPort"));
-            	metaServer.setStatus(getInt(section,"status"));
-            	metaServer.setBrokeId(getInt(section,"brokeId"));
+            	metaServer.setJmxPort(this.getInt(section, "jmxPort"));
+            	metaServer.setServerPort(this.getInt(section,"serverPort"));
+            	metaServer.setStatus(this.getInt(section,"status"));
+            	metaServer.setBrokeId(this.getInt(section,"brokeId"));
             	newMetaServerList.add(metaServer);
             }
         }
-        if(!metaServerList.equals(newMetaServerList)){
-        	metaServerList.clear();
-        	metaServerList = newMetaServerList;
+        if(!this.metaServerList.equals(newMetaServerList)){
+        	this.metaServerList.clear();
+        	this.metaServerList = newMetaServerList;
         	//构造serverUrlList serverUrlList
 //    		serverUrlList.clear();
 //    		serverUrlList = newServerUrlList;
@@ -295,14 +291,6 @@ public class MonitorConfig {
             this.jmxPort = Integer.parseInt(sysConf.get("jmxPort"));
         }
 
-        if (!StringUtils.isBlank(sysConf.get("diamondZKDataId"))) {
-            this.diamondZKDataId = sysConf.get("diamondZKDataId");
-        }
-
-        if (!StringUtils.isBlank(sysConf.get("diamondZKGroup"))) {
-            this.diamondZKGroup = sysConf.get("diamondZKGroup");
-        }
-
         if (!StringUtils.isBlank(sysConf.get("loginUser"))) {
             this.loginUser = sysConf.get("loginUser");
         }
@@ -326,9 +314,9 @@ public class MonitorConfig {
 				String[] offsetItemArr = offsetItem.split(":");
 				newTopicOffsetMaxGapMap.put(offsetItemArr[0], Integer.parseInt(offsetItemArr[1]));
 			}
-            if(!topicOffsetMaxGapMap.equals(newTopicOffsetMaxGapMap)){
-            	topicOffsetMaxGapMap.clear();
-            	topicOffsetMaxGapMap = newTopicOffsetMaxGapMap;
+            if(!this.topicOffsetMaxGapMap.equals(newTopicOffsetMaxGapMap)){
+            	this.topicOffsetMaxGapMap.clear();
+            	this.topicOffsetMaxGapMap = newTopicOffsetMaxGapMap;
             }
         }
 	}
@@ -376,7 +364,7 @@ public class MonitorConfig {
 
 
     static List<String> parseWW(String property, String string) throws IOException {
-        if ((!string.startsWith("[") || !string.endsWith("]"))) {
+        if (!string.startsWith("[") || !string.endsWith("]")) {
             throw new IOException("解析字符串错误:" + property);
         }
         List<String> list = Arrays.asList(StringUtils.split(string.substring(1, string.length() - 1), "|"));
@@ -440,12 +428,6 @@ public class MonitorConfig {
     static private MetaClientConfig metaClientConfigOf(String serverUrl, MonitorConfig monitorConfig) {
         MetaClientConfig metaClientConfig = new MetaClientConfig();
         metaClientConfig.setServerUrl(serverUrl);
-        if (!StringUtils.isBlank(monitorConfig.getDiamondZKDataId())) {
-            metaClientConfig.setDiamondZKDataId(monitorConfig.getDiamondZKDataId());
-        }
-        if (!StringUtils.isBlank(monitorConfig.getDiamondZKGroup())) {
-            metaClientConfig.setDiamondZKGroup(monitorConfig.getDiamondZKGroup());
-        }
         return metaClientConfig;
     }
 
@@ -458,17 +440,6 @@ public class MonitorConfig {
 //    public void setServerUrlList(List<String> serverUrlList) {
 //        this.serverUrlList = serverUrlList;
 //    }
-
-
-    public String getDiamondZKDataId() {
-        return this.diamondZKDataId;
-    }
-
-
-    public String getDiamondZKGroup() {
-        return this.diamondZKGroup;
-    }
-
 
     public long getSendTimeout() {
         return this.sendTimeout;
@@ -612,7 +583,7 @@ public class MonitorConfig {
     }
 
     public Set<String> getFilterTopicList() {
-		return filterTopicList;
+		return this.filterTopicList;
 	}
 
     public void setLoginUser(String loginUser) {
@@ -680,7 +651,7 @@ public class MonitorConfig {
     }
     
     public int getOffsetMaxGap() {
-		return offsetMaxGap;
+		return this.offsetMaxGap;
 	}
 
 
@@ -689,10 +660,10 @@ public class MonitorConfig {
 	}
 	
 	public Map<String, Integer> getTopicOffsetMaxGapMap() {
-		return topicOffsetMaxGapMap;
+		return this.topicOffsetMaxGapMap;
 	}
 	public int getZkMaxOverStep() {
-		return zkMaxOverStep;
+		return this.zkMaxOverStep;
 	}
 
 
@@ -705,18 +676,6 @@ public class MonitorConfig {
 		this.topicOffsetMaxGapMap = topicOffsetMaxGapMap;
 	}
     
-    private int getInt(final Section section, final String key, final int defaultValue) {
-        final String value = section.get(key);
-        if (StringUtils.isBlank(value)) {
-            return defaultValue;
-        }
-        else {
-            final Long rt = (Long) AviatorEvaluator.execute(value);
-            return rt.intValue();
-        }
-    }
-
-
     private int getInt(final Section section, final String key) {
         final String value = section.get(key);
         if (StringUtils.isBlank(value)) {
@@ -725,18 +684,6 @@ public class MonitorConfig {
         else {
             final Long rt = (Long) AviatorEvaluator.execute(value);
             return rt.intValue();
-        }
-    }
-
-
-    private long getLong(final Section section, final String key) {
-        final String value = section.get(key);
-        if (StringUtils.isBlank(value)) {
-            throw new NullPointerException("Blank value for " + key);
-        }
-        else {
-            final Long rt = (Long) AviatorEvaluator.execute(value);
-            return rt.longValue();
         }
     }
 

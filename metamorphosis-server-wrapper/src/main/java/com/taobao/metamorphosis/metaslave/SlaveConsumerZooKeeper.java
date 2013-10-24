@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -82,6 +82,7 @@ public class SlaveConsumerZooKeeper extends ConsumerZooKeeper {
                         final ZKLoadRebalanceListener loadBalanceListener =
                                 new SlaveZKLoadRebalanceListener(fetchManager, dirs, consumerUUIDString,
                                     consumerConfig, offsetStorage, topicSubcriberRegistry, loadBalanceStrategy);
+                        loadBalanceListener.start();
                         return SlaveConsumerZooKeeper.this.registerConsumerInternal(loadBalanceListener);
                     }
 
@@ -153,7 +154,7 @@ public class SlaveConsumerZooKeeper extends ConsumerZooKeeper {
 
 
         @Override
-        protected boolean processPartition(final ZKGroupTopicDirs topicDirs, final String partition,
+        protected boolean ownPartition(final ZKGroupTopicDirs topicDirs, final String partition,
                 final String topic, final String consumerThreadId) throws Exception {
             // 不owner partition,以免其他slave不能订阅
 

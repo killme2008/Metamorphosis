@@ -19,6 +19,7 @@ package com.taobao.metamorphosis.client.consumer;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 
@@ -31,11 +32,12 @@ public class SubscribeInfoManager {
 
 
     public void subscribe(final String topic, final String group, final int maxSize,
-            final MessageListener messageListener) throws MetaClientException {
+            final MessageListener messageListener, final ConsumerMessageFilter consumerMessageFilter)
+                    throws MetaClientException {
         final ConcurrentHashMap<String, SubscriberInfo> topicSubsriberRegistry = this.getTopicSubscriberRegistry(group);
         SubscriberInfo info = topicSubsriberRegistry.get(topic);
         if (info == null) {
-            info = new SubscriberInfo(messageListener, maxSize);
+            info = new SubscriberInfo(messageListener, consumerMessageFilter, maxSize);
             final SubscriberInfo oldInfo = topicSubsriberRegistry.putIfAbsent(topic, info);
             if (oldInfo != null) {
                 throw new MetaClientException("Topic=" + topic + " has been subscribered by group " + group);

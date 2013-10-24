@@ -27,6 +27,7 @@ import com.taobao.metamorphosis.network.SyncCommand;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.assembly.BrokerCommandProcessor;
 import com.taobao.metamorphosis.server.assembly.ExecutorsManager;
+import com.taobao.metamorphosis.server.filter.ConsumerFilterManager;
 import com.taobao.metamorphosis.server.network.PutCallback;
 import com.taobao.metamorphosis.server.network.SessionContext;
 import com.taobao.metamorphosis.server.stats.StatsManager;
@@ -55,8 +56,9 @@ public class GregorCommandProcessor extends BrokerCommandProcessor implements Sy
 
     public GregorCommandProcessor(final MessageStoreManager storeManager, final ExecutorsManager executorsManager,
             final StatsManager statsManager, final RemotingServer remotingServer, final MetaConfig metaConfig,
-            final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper) {
-        super(storeManager, executorsManager, statsManager, remotingServer, metaConfig, idWorker, brokerZooKeeper);
+            final IdWorker idWorker, final BrokerZooKeeper brokerZooKeeper, ConsumerFilterManager consumerFilterManager) {
+        super(storeManager, executorsManager, statsManager, remotingServer, metaConfig, idWorker, brokerZooKeeper,
+            consumerFilterManager);
     }
 
 
@@ -70,8 +72,9 @@ public class GregorCommandProcessor extends BrokerCommandProcessor implements Sy
                 log.warn("Can not put message to partition " + request.getPartition() + " for topic="
                         + request.getTopic() + ",it was closed");
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, "Partition["
-                            + partitionString + "] has been closed", request.getOpaque()));
+                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, this.genErrorMessage(request.getTopic(),
+                        request.getPartition()) + "Detail:Partition[" + partitionString + "] has been closed", request
+                        .getOpaque()));
                 }
                 return;
             }
@@ -88,7 +91,9 @@ public class GregorCommandProcessor extends BrokerCommandProcessor implements Sy
             this.statsManager.statsPutFailed(request.getTopic(), partitionString, 1);
             log.error("Put message failed", e);
             if (cb != null) {
-                cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, e.getMessage(), request.getOpaque()));
+                cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, this.genErrorMessage(
+                    request.getTopic(), request.getPartition())
+                    + "Detail:" + e.getMessage(), request.getOpaque()));
             }
         }
     }

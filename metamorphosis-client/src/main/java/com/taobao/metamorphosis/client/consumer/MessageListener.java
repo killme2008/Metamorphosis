@@ -31,12 +31,12 @@ import com.taobao.metamorphosis.Message;
  */
 public interface MessageListener {
     /**
-     * 接收到消息列表，只有messages不为空并且不为null的情况下会触发此方法
+     * 接收到消息，只有messages不为空并且不为null的情况下会触发此方法
      * 
      * @param messages
      *            TODO 拼写错误，应该是单数，暂时将错就错吧
      */
-    public void recieveMessages(Message message);
+    public void recieveMessages(Message message) throws InterruptedException;
 
 
     /**

@@ -1,0 +1,28 @@
+<table class= "table table-bordered">
+  <caption><h3>Topics (Only contains data) </h3></caption>
+  <thead>
+	<tr>
+	  <th>Topic (Click for detail) </th>
+	  <th>Partitions</th>
+	  <th>Messages Number</th>
+	  <th>Messages Bytes</th>
+	  <th>Average Size (Byte) </th>
+	  <th>Accept Pub</th>
+	  <th>Accept Sub</th>
+	</tr>
+  </thead>
+  <tbody>
+	#foreach ($stats in $topics)
+	<tr>
+	  <td><a href="#topics/$stats.topic">$stats.topic</a></td>
+	  <td>$stats.partitions</td>
+	  <td>$stats.messageCount</td>
+	  <td>$stats.messageBytes</td>
+	  <td>$stats.avgMsgSize</td>
+	  <td>$stats.topicConfig.acceptPublish</td>
+	  <td>$stats.topicConfig.acceptSubscribe</td>
+	</tr>
+	#end
+  </tbody>
+</table>
+

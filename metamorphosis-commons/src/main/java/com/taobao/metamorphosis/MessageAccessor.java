@@ -38,6 +38,11 @@ public class MessageAccessor {
     }
 
 
+    public static boolean isRollbackOnly(Message message) {
+        return message.isRollbackOnly();
+    }
+
+
     public static int getFlag(Message message) {
         return message.getFlag();
     }

@@ -3,7 +3,7 @@
 	<parent>
 		<artifactId>metamorphosis-all</artifactId>
 		<groupId>com.taobao.metamorphosis</groupId>
-		<version>1.4.4-SNAPSHOT</version>
+		<version>1.4.6.3-SNAPSHOT</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -35,12 +35,10 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -56,18 +54,16 @@
 			<artifactId>log4j</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.zookeeper</groupId>
-			<artifactId>zookeeper</artifactId>
-			<version>3.3.2</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-client</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
 			<artifactId>metamorphosis-commons</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.taobao.metamorphosis</groupId>
+			<artifactId>metamorphosis-dashboard</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.taobao.metamorphosis</groupId>
@@ -92,9 +88,7 @@
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-server</artifactId>
-			<version>7.4.5.v20110725</version>
-			<type>jar</type>
-			<scope>compile</scope>
+			<version>7.6.1.v20120215</version>
 		</dependency>
 		<dependency>
 			<groupId>httpunit</groupId>

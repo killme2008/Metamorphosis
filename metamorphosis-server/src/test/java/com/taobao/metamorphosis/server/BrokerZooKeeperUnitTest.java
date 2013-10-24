@@ -22,6 +22,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.Map;
+
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkNodeExistsException;
 import org.junit.After;
@@ -31,6 +33,7 @@ import org.junit.Test;
 import com.taobao.metamorphosis.network.RemotingUtils;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.server.utils.SlaveConfig;
+import com.taobao.metamorphosis.utils.JSONUtils;
 import com.taobao.metamorphosis.utils.ZkUtils;
 
 
@@ -43,7 +46,6 @@ public class BrokerZooKeeperUnitTest {
     @Before
     public void setUp() {
         MetaConfig metaConfig = new MetaConfig();
-        metaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         this.brokerZooKeeper = new BrokerZooKeeper(metaConfig);
         this.client = this.brokerZooKeeper.getZkClient();
     }
@@ -55,7 +57,7 @@ public class BrokerZooKeeperUnitTest {
         assertFalse(ZkUtils.pathExists(this.client, path));
         this.brokerZooKeeper.registerBrokerInZk();
         assertTrue(ZkUtils.pathExists(this.client, path));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123", ZkUtils.readData(this.client, path));
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123", ZkUtils.readData(this.client, path));
         // register twice
         try {
             this.brokerZooKeeper.registerBrokerInZk();
@@ -109,7 +111,7 @@ public class BrokerZooKeeperUnitTest {
         assertFalse(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), path));
         this.slaveBrokerZooKeeper.registerBrokerInZk();
         assertTrue(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), path));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123",
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123",
             ZkUtils.readData(this.slaveBrokerZooKeeper.getZkClient(), path));
         // register twice
         try {
@@ -137,9 +139,15 @@ public class BrokerZooKeeperUnitTest {
         assertTrue(ZkUtils.pathExists(this.client, subPath));
         assertEquals("1", ZkUtils.readData(this.client, path));
 
-        assertEquals("{\"numParts\":1,\"broker\":\"0-m\"}", ZkUtils.readData(this.client, pubPath));
-        assertEquals("{\"numParts\":1,\"broker\":\"0-m\"}", ZkUtils.readData(this.client, subPath));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-m\"}"),
+            JSONUtils.deserializeObject(ZkUtils.readData(this.client, pubPath), Map.class));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-m\"}"),
+            JSONUtils.deserializeObject(ZkUtils.readData(this.client, subPath), Map.class));
+    }
 
+
+    private Object deserializeMap(String s) throws Exception {
+        return JSONUtils.deserializeObject(s, Map.class);
     }
 
 
@@ -158,8 +166,10 @@ public class BrokerZooKeeperUnitTest {
         assertTrue(ZkUtils.pathExists(this.client, pubPath));
         assertTrue(ZkUtils.pathExists(this.client, subPath));
         assertEquals("1", ZkUtils.readData(this.client, path));
-        assertEquals("{\"numParts\":1,\"broker\":\"0-s0\"}", ZkUtils.readData(this.client, pubPath));
-        assertEquals("{\"numParts\":1,\"broker\":\"0-s0\"}", ZkUtils.readData(this.client, subPath));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-s0\"}"),
+            this.deserializeMap(ZkUtils.readData(this.client, pubPath)));
+        assertEquals(this.deserializeMap("{\"numParts\":1,\"broker\":\"0-s0\"}"),
+            this.deserializeMap(ZkUtils.readData(this.client, subPath)));
 
     }
 
@@ -183,7 +193,7 @@ public class BrokerZooKeeperUnitTest {
 
         // slave注册信息还存在
         assertTrue(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), slaveBrokerPath));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123",
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123",
             ZkUtils.readData(this.slaveBrokerZooKeeper.getZkClient(), slaveBrokerPath));
         assertTrue(ZkUtils.pathExists(this.slaveBrokerZooKeeper.getZkClient(), slaveTopicPath));
         assertEquals("1", ZkUtils.readData(this.slaveBrokerZooKeeper.getZkClient(), slaveTopicPath));
@@ -209,7 +219,7 @@ public class BrokerZooKeeperUnitTest {
 
         // master注册信息还存在
         assertTrue(ZkUtils.pathExists(this.brokerZooKeeper.getZkClient(), masterBrokerPath));
-        assertEquals("meta://" + RemotingUtils.getLocalAddress() + ":8123",
+        assertEquals("meta://" + RemotingUtils.getLocalHost() + ":8123",
             ZkUtils.readData(this.brokerZooKeeper.getZkClient(), masterBrokerPath));
         assertTrue(ZkUtils.pathExists(this.brokerZooKeeper.getZkClient(), masterTopicPath));
         assertEquals("1", ZkUtils.readData(this.brokerZooKeeper.getZkClient(), masterTopicPath));
@@ -252,7 +262,6 @@ public class BrokerZooKeeperUnitTest {
 
     private BrokerZooKeeper createSlaveBrokerZooKeeper() {
         MetaConfig slaveMetaConfig = new MetaConfig();
-        slaveMetaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         slaveMetaConfig.setSlaveConfig(new SlaveConfig(0));
         this.slaveBrokerZooKeeper = new BrokerZooKeeper(slaveMetaConfig);
         return this.slaveBrokerZooKeeper;

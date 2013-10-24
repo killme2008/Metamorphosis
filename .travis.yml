@@ -1,0 +1,5 @@
+language: java
+jdk:
+   - oraclejdk7
+before_script: ./scripts/ci/start_zk.sh
+after_script:  ./scripts/ci/stop_zk.sh

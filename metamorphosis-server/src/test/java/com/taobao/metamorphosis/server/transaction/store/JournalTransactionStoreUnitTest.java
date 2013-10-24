@@ -33,6 +33,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
 import com.taobao.metamorphosis.Message;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.server.store.FileMessageSet;

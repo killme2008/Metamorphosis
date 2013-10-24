@@ -28,17 +28,19 @@ import com.taobao.metamorphosis.network.ByteUtils;
 import com.taobao.metamorphosis.network.PutCommand;
 
 
-public class MessageUtils {
+public final class MessageUtils {
 
-    public static class DecodedMessage {
+    public final static class DecodedMessage {
         public final int newOffset;
         public final Message message;
+        public final ByteBuffer buf;
 
 
-        public DecodedMessage(final int newOffset, final Message message) {
+        public DecodedMessage(final int newOffset, final Message message, final ByteBuffer buf) {
             super();
             this.newOffset = newOffset;
             this.message = message;
+            this.buf = buf;
         }
 
     }
@@ -58,7 +60,7 @@ public class MessageUtils {
      * @param req
      * @return
      */
-    public static ByteBuffer makeMessageBuffer(final long msgId, final PutCommand req) {
+    public static final ByteBuffer makeMessageBuffer(final long msgId, final PutCommand req) {
         // message length + checksum + id +flag + data
         final ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 8 + 4 + req.getData().length);
         buffer.putInt(req.getData().length);
@@ -79,7 +81,7 @@ public class MessageUtils {
     }
 
 
-    public static ByteBuffer makeMessageBuffer(final List<Long> msgIds, final List<PutCommand> reqs) {
+    public static final ByteBuffer makeMessageBuffer(final List<Long> msgIds, final List<PutCommand> reqs) {
         if (msgIds == null || reqs == null) {
             throw new IllegalArgumentException("Null id list or request list");
         }
@@ -114,7 +116,7 @@ public class MessageUtils {
      * @return
      * @throws InvalidMessageException
      */
-    public static DecodedMessage decodeMessage(final String topic, final byte[] data, final int offset)
+    public static final DecodedMessage decodeMessage(final String topic, final byte[] data, final int offset)
             throws InvalidMessageException {
         final ByteBuffer buf = ByteBuffer.wrap(data, offset, HEADER_LEN);
         final int msgLen = buf.getInt();
@@ -149,7 +151,8 @@ public class MessageUtils {
         MessageAccessor.setFlag(msg, flag);
         msg.setAttribute(attribute);
         MessageAccessor.setId(msg, id);
-        return new DecodedMessage(payLoadOffset + payLoadLen, msg);
+        return new DecodedMessage(payLoadOffset + payLoadLen, msg, ByteBuffer.wrap(data, offset, payLoadOffset
+            + payLoadLen - offset));
     }
 
 
@@ -159,7 +162,7 @@ public class MessageUtils {
      * @param msg
      * @param checksum
      */
-    public static void vailidateMessage(final int offset, final int msgLen, final int checksum, final byte[] data)
+    public static final void vailidateMessage(final int offset, final int msgLen, final int checksum, final byte[] data)
             throws InvalidMessageException {
         if (checksum != CheckSum.crc32(data, offset, msgLen)) {
             throw new InvalidMessageException("Invalid message");
@@ -167,7 +170,7 @@ public class MessageUtils {
     }
 
 
-    public static int getInt(final int offset, final byte[] data) {
+    public static final int getInt(final int offset, final byte[] data) {
         return ByteBuffer.wrap(data, offset, 4).getInt();
     }
 
@@ -191,7 +194,7 @@ public class MessageUtils {
      * @param message
      * @return
      */
-    public static byte[] encodePayload(final Message message) {
+    public final static byte[] encodePayload(final Message message) {
         final byte[] payload = message.getData();
         final String attribute = message.getAttribute();
         byte[] attrData = null;

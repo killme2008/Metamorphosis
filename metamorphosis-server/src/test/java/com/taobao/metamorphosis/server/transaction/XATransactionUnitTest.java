@@ -45,8 +45,9 @@ public class XATransactionUnitTest extends TransactionUnitTest {
     public void setUp() {
         super.setUp();
         this.processor = EasyMock.createMock(CommandProcessor.class);
-        this.xid = XIDGenerator.createXID(100);
+        this.xid = XIDGenerator.createXID(100, "test");
         this.tx = new XATransaction(this.processor, this.transactionStore, (XATransactionId) this.xid);
+        assertEquals("test", this.tx.getUniqueQualifier());
     }
 
 

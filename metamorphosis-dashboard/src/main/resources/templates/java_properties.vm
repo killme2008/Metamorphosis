@@ -1,0 +1,9 @@
+<table class= "table table-bordered table-hover table-striped">
+  #foreach ($name in $props.stringPropertyNames())
+  <tr>
+	<td>$name</td>
+	<td>$props.getProperty($name)</td>
+  </tr>
+  #end
+</table>
+

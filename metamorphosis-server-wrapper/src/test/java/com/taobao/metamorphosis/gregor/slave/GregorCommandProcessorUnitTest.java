@@ -128,7 +128,7 @@ public class GregorCommandProcessorUnitTest {
 
             @Override
             public Object answer() throws Throwable {
-                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(new Location(offset, 1024));
+                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(Location.create(offset, 1024));
                 return null;
             }
 
@@ -154,12 +154,16 @@ public class GregorCommandProcessorUnitTest {
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final BooleanCommand expectResp =
-                new BooleanCommand(HttpStatus.InternalServerError, "put message failed", request.getOpaque());
+                new BooleanCommand(
+                    HttpStatus.InternalServerError,
+                    "Put message to [broker 'meta://localhost:8123'] [partition 'GregorCommandProcessorUnitTest-1'] failed.",
+                    request.getOpaque());
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectResp.equals(resp)) {
                     throw new RuntimeException();
                 }
@@ -177,6 +181,7 @@ public class GregorCommandProcessorUnitTest {
             }
 
         });
+        EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");
         this.mocksControl.replay();
         this.commandProcessor.processSyncCommand(request, this.sessionContext, cb);
         this.mocksControl.verify();
@@ -199,12 +204,16 @@ public class GregorCommandProcessorUnitTest {
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final BooleanCommand expectResp =
-                new BooleanCommand(HttpStatus.InternalServerError, "Mock exception", request.getOpaque());
+                new BooleanCommand(
+                    HttpStatus.InternalServerError,
+                    "Put message to [broker 'meta://localhost:8123'] [partition 'GregorCommandProcessorUnitTest-1'] failed.Detail:Mock exception",
+                    request.getOpaque());
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectResp.equals(resp)) {
                     throw new RuntimeException();
                 }
@@ -221,6 +230,7 @@ public class GregorCommandProcessorUnitTest {
             }
 
         });
+        EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");
         this.mocksControl.replay();
         this.commandProcessor.processSyncCommand(request, this.sessionContext, cb);
         this.mocksControl.verify();

@@ -60,11 +60,9 @@ public class JMXClient {
     private final JMXServiceURL address;
     private JMXConnector jmxConnector;
     private MBeanServerConnection mbs;
-    // private boolean sslStub;
-    private boolean sslRegistry;
     private RMIServer stub = null;
-	private AtomicBoolean closed = new AtomicBoolean(false);
-	private AtomicInteger referenceCount = new AtomicInteger(0);
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicInteger referenceCount = new AtomicInteger(0);
 
     private static Map<String, JMXClient> cache = Collections.synchronizedMap(new HashMap<String, JMXClient>());
 
@@ -83,7 +81,7 @@ public class JMXClient {
             cache.put(key, jmxClient);
         }
         jmxClient.increaseReferece();
-log.error("=============referenceCount:"+jmxClient.referenceCount.get());        
+        log.debug("=============referenceCount:" + jmxClient.referenceCount.get());
         return jmxClient;
     }
 
@@ -93,17 +91,17 @@ log.error("=============referenceCount:"+jmxClient.referenceCount.get());
     }
 
     private int increaseReferece(){
-    	return this.referenceCount.incrementAndGet();
+        return this.referenceCount.incrementAndGet();
     }
-    
+
     private int decreaseReferece(){
-    	
-    	int count = this.referenceCount.decrementAndGet();
-    	if(count<0){
-    		this.referenceCount.set(0);
-    	}
-log.error("=============referenceCount:"+this.referenceCount.get());
-    	return this.referenceCount.get();
+
+        int count = this.referenceCount.decrementAndGet();
+        if(count<0){
+            this.referenceCount.set(0);
+        }
+        log.debug("=============referenceCount:" + this.referenceCount.get());
+        return this.referenceCount.get();
     }
 
     private JMXClient(String hostName, int port, String userName, String password) throws JMXClientException {
@@ -124,7 +122,7 @@ log.error("=============referenceCount:"+this.referenceCount.get());
 
     public Object invoke(ObjectName name, String operationName, Object[] params, String[] signature)
             throws JMXClientException {
-    	tryReconnect();
+        this.tryReconnect();
         try {
             return this.mbs.invoke(name, operationName, params, signature);
         }
@@ -146,9 +144,9 @@ log.error("=============referenceCount:"+this.referenceCount.get());
 
 
     public ObjectInstance queryMBeanForOne(ObjectName name) {
-    	Set<ObjectInstance> mBeans = null;
+        Set<ObjectInstance> mBeans = null;
         try {
-        	tryReconnect();
+            this.tryReconnect();
             mBeans = this.mbs.queryMBeans(name, null);
         }
         catch (Exception e) {
@@ -163,8 +161,8 @@ log.error("=============referenceCount:"+this.referenceCount.get());
 
 
     public Set<ObjectInstance> queryMBeans(ObjectName name, QueryExp query) throws JMXClientException {
-    	tryReconnect();
-    	try {
+        this.tryReconnect();
+        try {
             return this.mbs.queryMBeans(name, query);
         }
         catch (IOException e) {
@@ -174,8 +172,8 @@ log.error("=============referenceCount:"+this.referenceCount.get());
 
 
     public Object getAttribute(ObjectName name, String attribute) throws JMXClientException {
-    	tryReconnect();
-    	try {
+        this.tryReconnect();
+        try {
             return this.mbs.getAttribute(name, attribute);
         }
         catch (Exception e) {
@@ -194,24 +192,24 @@ log.error("=============referenceCount:"+this.referenceCount.get());
 
 
     public void close() {
-    	if (this.decreaseReferece()!=0) {
-			return;
-		}
-    	
-    	if (closed.compareAndSet(false, true)) {
-    		this.stub = null;
-    		if (this.jmxConnector != null) {
-    			try {
-    				this.jmxConnector.close();
-    				
-    			}
-    			catch (IOException e) {
-    				// ignore
-    			}
-    		}
-    		cache.remove(getKey(this.hostName, this.port, this.userName, this.password));
-log.error("=================jmx closed!");    		
-		}
+        if (this.decreaseReferece()!=0) {
+            return;
+        }
+
+        if (this.closed.compareAndSet(false, true)) {
+            this.stub = null;
+            if (this.jmxConnector != null) {
+                try {
+                    this.jmxConnector.close();
+
+                }
+                catch (IOException e) {
+                    // ignore
+                }
+            }
+            cache.remove(getKey(this.hostName, this.port, this.userName, this.password));
+            log.debug("=================jmx closed!");
+        }
 
     }
 
@@ -221,9 +219,9 @@ log.error("=================jmx closed!");
     }
 
     synchronized private void tryReconnect() throws JMXClientException{
-    	if(this.closed.compareAndSet(true, false)){
-    		connect();
-    	}
+        if(this.closed.compareAndSet(true, false)){
+            this.connect();
+        }
     }
 
     private void connect() throws JMXClientException {
@@ -268,7 +266,6 @@ log.error("=================jmx closed!");
             catch (NotBoundException nbe) {
                 throw (IOException) new IOException(nbe.getMessage()).initCause(nbe);
             }
-            this.sslRegistry = true;
         }
         catch (IOException e) {
             registry = LocateRegistry.getRegistry(this.hostName, this.port);
@@ -278,7 +275,6 @@ log.error("=================jmx closed!");
             catch (NotBoundException nbe) {
                 throw (IOException) new IOException(nbe.getMessage()).initCause(nbe);
             }
-            this.sslRegistry = false;
         }
 
     }

@@ -14,6 +14,7 @@ import com.taobao.meta.test.Utils;
 import com.taobao.metamorphosis.EnhancedBroker;
 import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
+import com.taobao.metamorphosis.client.consumer.SimpleFetchManager;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 
 
@@ -32,7 +33,6 @@ public class HABaseMetaTest extends BaseMetaTest {
     @Override
     public void setUp() throws Exception {
         MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         super.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.log.info("before run");
     }
@@ -41,10 +41,12 @@ public class HABaseMetaTest extends BaseMetaTest {
     protected EnhancedBroker startSlaveServers(String name, boolean isClearConsumerInfo, boolean isClearMsg)
             throws Exception {
         MetaConfig metaConfig = this.metaConfig(name);
+        metaConfig.setDashboardHttpPort(metaConfig.getServerPort() - 20);
         Map<String, Properties> pluginsInfo = this.getSlaveProperties(name);
         if (isClearMsg) {
             Utils.clearDataDir(metaConfig);
         }
+        SimpleFetchManager.setMessageIdCache(null);
         EnhancedBroker broker = new EnhancedBroker(metaConfig, pluginsInfo);
         if (isClearConsumerInfo) {
             Utils.clearConsumerInfoInZk(broker.getBroker().getBrokerZooKeeper().getZkClient(), broker.getBroker()

@@ -81,8 +81,6 @@ public class SubscribeHandler implements SubscribeHandlerMBean {
         final MetaConfig metaConfig = this.broker.getMetaConfig();
 
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(metaConfig.getDiamondZKDataId());
-        metaClientConfig.setDiamondZKGroup(metaConfig.getDiamondZKGroup());
         metaClientConfig.setZkConfig(metaConfig.getZkConfig());
         this.sessionFactory = SlaveMetaMessageSessionFactory.create(metaClientConfig, metaConfig.getBrokerId());
         this.slaveOffsetStorage =

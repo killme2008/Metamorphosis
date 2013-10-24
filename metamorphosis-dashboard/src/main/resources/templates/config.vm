@@ -1,0 +1,36 @@
+<div class= "container">
+  <div>
+	<span>Last modified:&nbsp;$lastLoaded</span>
+	<textarea class="uneditable-textarea" rows= "23" cols= "140">$config</textarea>
+  </div>
+  <div>
+	<div class="alert">
+	  <a class="close" href="#">&times;</a>
+	  <span></span>
+	</div>
+	<p><button>Reload config</button></p>
+	<span class="label label-warning">Be careful,it will reload the config parameters from broker config file permanently.</span>
+  </div>
+  <script type="text/javascript">
+	$(function (){
+	  $(".alert a").bind("click", function(e) {
+          $(".alert").hide();
+	      return false;
+      });
+	  $("button").bind("click", function (){
+	    $.post("reload-config", {}, function(result){
+			$(".alert span").html(result+ "Trying to refresh page...");
+	        $(".alert").show();
+	        if (result.indexOf ("success")!=-1){
+	           setTimeout (function (){
+	             location.reload();
+	           },1000);
+            }
+		});
+	  });
+	  $(".alert").hide();
+	});
+  </script>
+</div>
+
+

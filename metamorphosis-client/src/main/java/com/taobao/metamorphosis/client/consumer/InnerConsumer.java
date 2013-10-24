@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.taobao.metamorphosis.Message;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.MetaClientException;
 
 
@@ -44,7 +46,7 @@ public interface InnerConsumer {
      * @throws InterruptedException
      */
     MessageIterator fetch(final FetchRequest fetchRequest, long timeout, TimeUnit timeUnit) throws MetaClientException,
-            InterruptedException;
+    InterruptedException;
 
 
     /**
@@ -54,6 +56,12 @@ public interface InnerConsumer {
      * @return
      */
     MessageListener getMessageListener(final String topic);
+
+
+    public ConsumerMessageFilter getMessageFilter(final String topic);
+
+
+    public ConsumerConfig getConsumerConfig();
 
 
     /**

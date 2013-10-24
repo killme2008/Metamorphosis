@@ -18,8 +18,11 @@
 package com.taobao.metamorphosis.gregor.master;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.easymock.IAnswer;
@@ -33,6 +36,9 @@ import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.gecko.service.Connection;
 import com.taobao.gecko.service.RemotingClient;
 import com.taobao.gecko.service.SingleRequestCallBackListener;
+import com.taobao.gecko.service.exception.NotifyRemotingException;
+import com.taobao.metamorphosis.Message;
+import com.taobao.metamorphosis.gregor.Constants;
 import com.taobao.metamorphosis.network.BooleanCommand;
 import com.taobao.metamorphosis.network.HttpStatus;
 import com.taobao.metamorphosis.network.PutCommand;
@@ -51,6 +57,7 @@ import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.IdWorker;
 import com.taobao.metamorphosis.utils.MessageFlagUtils;
+import com.taobao.metamorphosis.utils.MessageUtils;
 
 
 public class SamsaCommandProcessorUnitTest {
@@ -138,14 +145,15 @@ public class SamsaCommandProcessorUnitTest {
 
             @Override
             public Object answer() throws Throwable {
-                ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                .appendComplete(new Location(offset, 1024));
+                ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(Location
+                    .create(offset, 1024));
                 return null;
             }
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb,
+            this.commandProcessor.getSendToSlaveTimeoutInMills(), TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
@@ -206,6 +214,13 @@ public class SamsaCommandProcessorUnitTest {
 
     @Test
     public void testProcessPutRequestSlaveFailed() throws Exception {
+        this.testProcessPutCommandSlaveFailed0();
+        this.mocksControl.verify();
+
+    }
+
+
+    private void testProcessPutCommandSlaveFailed0() throws IOException, NotifyRemotingException, Exception {
         final int partition = 1;
         final int opaque = -1;
         final long offset = 1024L;
@@ -219,13 +234,17 @@ public class SamsaCommandProcessorUnitTest {
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(HttpStatus.InternalServerError, "Put message to slave failed", opaque);
+                new BooleanCommand(
+                    HttpStatus.InternalServerError,
+                    "Put message to [slave 'meta://localhost:8124'] [partition 'SamsaCommandProcessorUnitTest-1'] failed",
+                    opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectResp.equals(resp)) {
                     throw new RuntimeException();
                 }
@@ -239,14 +258,15 @@ public class SamsaCommandProcessorUnitTest {
 
             @Override
             public Object answer() throws Throwable {
-                ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                .appendComplete(new Location(offset, 1024));
+                ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(Location
+                    .create(offset, 1024));
                 return null;
             }
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb,
+            this.commandProcessor.getSendToSlaveTimeoutInMills(), TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
@@ -260,10 +280,10 @@ public class SamsaCommandProcessorUnitTest {
         });
         this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
+        // EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");;
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);
-        this.mocksControl.verify();
         assertEquals(1, this.statsManager.getCmdPutFailed());
         // Must be invoked
         assertTrue(invoked.get());
@@ -271,7 +291,7 @@ public class SamsaCommandProcessorUnitTest {
 
 
     @Test
-    public void testProcessPutRequest_SlaveFailed() throws Exception {
+    public void testProcessPutRequestMasterFailed() throws Exception {
         final int partition = 1;
         final int opaque = -1;
         final long offset = -1;
@@ -285,13 +305,17 @@ public class SamsaCommandProcessorUnitTest {
         EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final BooleanCommand expectResp =
-                new BooleanCommand(HttpStatus.InternalServerError, "Put message to master failed", opaque);
+                new BooleanCommand(
+                    HttpStatus.InternalServerError,
+                    "Put message to [master 'meta://localhost:8123'] [partition 'SamsaCommandProcessorUnitTest-1'] failed",
+                    opaque);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectResp.equals(resp)) {
                     throw new RuntimeException();
                 }
@@ -305,14 +329,15 @@ public class SamsaCommandProcessorUnitTest {
 
             @Override
             public Object answer() throws Throwable {
-                ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2])
-                .appendComplete(new Location(offset, 1024));
+                ((SamsaCommandProcessor.SyncAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(Location
+                    .create(offset, 1024));
                 return null;
             }
 
         });
         this.remotingClient.sendToGroup(this.slaveUrl, new SyncCommand(request.getTopic(), partition,
-            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb);
+            request.getData(), request.getFlag(), msgId, CheckSum.crc32(data), OpaqueGenerator.getNextOpaque()), apdcb,
+            this.commandProcessor.getSendToSlaveTimeoutInMills(), TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 
             @Override
@@ -325,6 +350,7 @@ public class SamsaCommandProcessorUnitTest {
         });
         this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
+        EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");
         this.mocksControl.replay();
         OpaqueGenerator.resetOpaque();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);
@@ -332,6 +358,44 @@ public class SamsaCommandProcessorUnitTest {
         assertEquals(1, this.statsManager.getCmdPutFailed());
         // Must be invoked
         assertTrue(invoked.get());
+    }
+
+
+    @Test
+    public void testProcessPutRequest_SlaveFailed_HealSlave() throws Exception {
+        this.commandProcessor.setSlaveContinuousFailureThreshold(1);
+        this.brokerZooKeeper.unregisterEveryThing();
+        EasyMock.expectLastCall();
+        final long msgId = 100000L;
+        EasyMock.expect(this.idWorker.nextId()).andReturn(msgId);
+        final String testTopic = Constants.TEST_SLAVE_TOPIC;
+        Message msg = new Message(testTopic, "test".getBytes());
+        // ·¢Íùslave
+        byte[] encodePayload = MessageUtils.encodePayload(msg);
+        int flag = 0;
+        int partition = 0;
+        // skip two messages.
+        OpaqueGenerator.getNextOpaque();
+        OpaqueGenerator.getNextOpaque();
+        // check if slave is ok.
+        final BooleanCommand expectResp = new BooleanCommand(HttpStatus.Success, msgId + " " + partition + " " + 0, -1);
+        SyncCommand command =
+                new SyncCommand(testTopic, partition, encodePayload, flag, msgId, CheckSum.crc32(encodePayload),
+                    OpaqueGenerator.getNextOpaque());
+        EasyMock.expect(
+            this.remotingClient.invokeToGroup(this.slaveUrl, command,
+                this.commandProcessor.getSendToSlaveTimeoutInMills(), TimeUnit.MILLISECONDS)).andReturn(expectResp);
+        OpaqueGenerator.resetOpaque();
+
+        this.brokerZooKeeper.reRegisterEveryThing();
+        EasyMock.expectLastCall();
+
+        assertNull(this.commandProcessor.getHealThread());
+        this.testProcessPutCommandSlaveFailed0();
+        Thread.sleep(2000);
+        this.mocksControl.verify();
+        assertNull(this.commandProcessor.getHealThread());
+        assertEquals(0, this.commandProcessor.getSlaveContinuousFailures().get());
     }
 
 }

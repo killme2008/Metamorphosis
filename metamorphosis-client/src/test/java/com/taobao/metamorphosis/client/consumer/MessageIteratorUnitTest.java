@@ -31,6 +31,7 @@ import org.junit.Test;
 
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.MessageAccessor;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.MessageUtils;

@@ -25,6 +25,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.transaction.xa.XAException;
@@ -53,6 +54,7 @@ import com.taobao.metamorphosis.utils.LongSequenceGenerator;
 
 
 public class TransactionContextUnitTest {
+    private static final String UNIQUE_QUALIFIER = XIDGenerator.UNIQUE_QUALIFIER;
     private TransactionContext context;
     private MockSession session;
     private RemotingClient remotingClient;
@@ -60,6 +62,8 @@ public class TransactionContextUnitTest {
     private IdGenerator idGenerator;
 
     private String sessionId;
+
+    private static final long DEFAULT_REQ_TIMEOUT = 5000L;
 
     static class MockSession implements TransactionSession {
         private final String sessionId;
@@ -93,7 +97,10 @@ public class TransactionContextUnitTest {
         this.remotingClient = EasyMock.createMock(RemotingClient.class);
         this.sessionId = this.idGenerator.generateId();
         this.session = new MockSession(this.sessionId);
-        this.context = new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0);
+        this.context =
+                new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0,
+                    DEFAULT_REQ_TIMEOUT);
+        this.context.setUniqueQualifier(UNIQUE_QUALIFIER);
         OpaqueGenerator.resetOpaque();
     }
 
@@ -106,12 +113,6 @@ public class TransactionContextUnitTest {
 
     private void verify() {
         EasyMock.verify(this.remotingClient);
-    }
-
-
-    private void reset() {
-        OpaqueGenerator.resetOpaque();
-        EasyMock.reset(this.remotingClient);
     }
 
 
@@ -161,7 +162,7 @@ public class TransactionContextUnitTest {
         this.context.setServerUrl(serverUrl);
         final XATransactionId id = XIDGenerator.createXID(1);
         this.context.setTransactionTimeout(3);
-        this.mockInvokeSuccess(serverUrl, new TransactionInfo(id, this.sessionId, TransactionType.BEGIN, 3), null);
+        this.mockInvokeSuccess(serverUrl, new TransactionInfo(id, this.sessionId, TransactionType.BEGIN, null, 3), null);
         // this.mockSend(serverUrl, new TransactionInfo(id, this.sessionId,
         // TransactionType.SET_TIMEOUT, 3));
         OpaqueGenerator.resetOpaque();
@@ -392,19 +393,23 @@ public class TransactionContextUnitTest {
 
     @Test
     public void testRecover() throws Exception {
-        final String serverUrl = "meta://localhost:8123";
-        this.mockIsConnected(serverUrl, true);
-        this.context.setServerUrl(serverUrl);
+        final String serverURL1 = "meta://localhost:8123";
+        final String serverURL2 = "meta://localhost:8124";
+        final XATransactionId id1 = XIDGenerator.createXID(1);
         final XATransactionId id2 = XIDGenerator.createXID(2);
         final XATransactionId id3 = XIDGenerator.createXID(3);
         final XATransactionId id4 = XIDGenerator.createXID(4);
 
-        this.mockInvokeSuccess(serverUrl, new TransactionInfo(null, this.sessionId, TransactionType.RECOVER),
-            id2.getTransactionKey() + "\r\n" + id3 + "\r\n" + id4);
+        this.mockInvokeSuccess(serverURL1, new TransactionInfo(null, this.sessionId, TransactionType.RECOVER),
+            id2.getTransactionKey() + "\r\n" + id3.getTransactionKey());
+        this.mockInvokeSuccess(serverURL2, new TransactionInfo(null, this.sessionId, TransactionType.RECOVER),
+            id1.getTransactionKey() + "\r\n" + id4.getTransactionKey());
         this.replay();
         OpaqueGenerator.resetOpaque();
+        this.context.setXareresourceURLs(new String[] { serverURL1, serverURL2 });
         final Xid[] xids = this.context.recover(XAResource.TMNOFLAGS);
-        assertEquals(3, xids.length);
+        assertEquals(4, xids.length);
+        this.assertContains(xids, id1);
         this.assertContains(xids, id2);
         this.assertContains(xids, id3);
         this.assertContains(xids, id4);
@@ -417,7 +422,8 @@ public class TransactionContextUnitTest {
         this.context.setServerUrl(serverUrl);
 
         final TransactionContext ctx2 =
-                new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0);
+                new TransactionContext(this.remotingClient, null, this.session, new LongSequenceGenerator(), 0,
+                    DEFAULT_REQ_TIMEOUT);
         ctx2.setServerUrl(serverUrl);
         assertTrue(this.context.isSameRM(ctx2));
         this.replay();
@@ -443,7 +449,7 @@ public class TransactionContextUnitTest {
     public void testRecoverBlank() throws Exception {
         final String serverUrl = "meta://localhost:8123";
         this.mockIsConnected(serverUrl, true);
-        this.context.setServerUrl(serverUrl);
+        this.context.setXareresourceURLs(new String[] { serverUrl });
 
         this.mockInvokeSuccess(serverUrl, new TransactionInfo(null, this.sessionId, TransactionType.RECOVER), null);
         this.replay();
@@ -474,16 +480,18 @@ public class TransactionContextUnitTest {
 
     private void mockInvokeSuccess(final String serverUrl, final TransactionInfo info, final String result)
             throws InterruptedException, TimeoutException, NotifyRemotingException {
-        EasyMock
-            .expect(
-                this.remotingClient.invokeToGroup(serverUrl,
-                    new TransactionCommand(info, OpaqueGenerator.getNextOpaque()))).andReturn(
-                new BooleanCommand(HttpStatus.Success, result, 0));
+        info.setUniqueQualifier(UNIQUE_QUALIFIER);
+        EasyMock.expect(
+            this.remotingClient.invokeToGroup(serverUrl, new TransactionCommand(info, OpaqueGenerator.getNextOpaque()),
+                DEFAULT_REQ_TIMEOUT, TimeUnit.MILLISECONDS)).andReturn(
+                    new BooleanCommand(HttpStatus.Success, result, 0));
     }
 
 
     private void mockSend(final String serverUrl, final TransactionInfo info) throws NotifyRemotingException {
-        this.remotingClient.sendToGroup(serverUrl, new TransactionCommand(info, OpaqueGenerator.getNextOpaque()));
+        info.setUniqueQualifier(UNIQUE_QUALIFIER);
+        this.remotingClient.sendToGroup(serverUrl, new TransactionCommand(info, OpaqueGenerator.getNextOpaque()),
+            TransactionContext.END_XA_TX_LISTENER, 5000, TimeUnit.MILLISECONDS);
         EasyMock.expectLastCall();
     }
 

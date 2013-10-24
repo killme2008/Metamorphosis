@@ -37,6 +37,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.taobao.common.store.Store;
+import com.taobao.gecko.core.util.ConcurrentHashSet;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaClientConfig;
 import com.taobao.metamorphosis.client.extension.storage.MessageStore;
@@ -78,7 +79,7 @@ public class RecoverStorageManager extends AbstractRecoverManager {
         this.threadPoolExecutor =
                 new ThreadPoolExecutor(metaClientConfig.getRecoverThreadCount(),
                     metaClientConfig.getRecoverThreadCount(), 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(
-                        100), new NamedThreadFactory("Recover-thread"), new ThreadPoolExecutor.CallerRunsPolicy());
+                            100), new NamedThreadFactory("Recover-thread"), new ThreadPoolExecutor.CallerRunsPolicy());
         // this.startRecover(metaClientConfig);
         this.makeDataDir();
         this.subscribeInfoManager = subscribeInfoManager;
@@ -161,6 +162,15 @@ public class RecoverStorageManager extends AbstractRecoverManager {
                         }
                         log.info("Recover topic=" + topic + "恢复消息" + count + "条");
                     }
+                    catch (InterruptedException e) {
+                        // receive messages is interrupted,we have to interrupt
+                        // all executors threads
+                        if (Thread.currentThread().isInterrupted()) {
+                            for (Thread thread : RecoverStorageManager.this.executorThreads) {
+                                thread.interrupt();
+                            }
+                        }
+                    }
                     catch (final Exception e) {
                         log.error("Recover message failed,topic=" + topic, e);
                     }
@@ -172,9 +182,11 @@ public class RecoverStorageManager extends AbstractRecoverManager {
 
     boolean wasFirst = true;
 
+    private final ConcurrentHashSet<Thread> executorThreads = new ConcurrentHashSet<Thread>();
+
 
     private void receiveMessage(final Store store, final byte[] key, final Message msg,
-            final MessageListener messageListener) {
+            final MessageListener messageListener) throws InterruptedException {
         if (messageListener == null) {
             // throw new
             // IllegalStateException("messageListener为null,可能是消费者还未创建,如果是第一次报错，后续没报错了请忽略");
@@ -190,7 +202,19 @@ public class RecoverStorageManager extends AbstractRecoverManager {
 
                     @Override
                     public void run() {
-                        RecoverStorageManager.this.notifyListener(store, key, msg, messageListener);
+                        Thread currentThread = Thread.currentThread();
+                        RecoverStorageManager.this.executorThreads.add(currentThread);
+                        try {
+                            try {
+                                RecoverStorageManager.this.notifyListener(store, key, msg, messageListener);
+                            }
+                            catch (InterruptedException e) {
+                                // Receive messages is interrrupted.
+                            }
+                        }
+                        finally {
+                            RecoverStorageManager.this.executorThreads.remove(currentThread);
+                        }
                     }
 
                 });
@@ -206,7 +230,7 @@ public class RecoverStorageManager extends AbstractRecoverManager {
 
 
     private void notifyListener(final Store store, final byte[] key, final Message msg,
-            final MessageListener messageListener) {
+            final MessageListener messageListener) throws InterruptedException {
         messageListener.recieveMessages(msg);
         try {
             store.remove(key);
@@ -233,6 +257,9 @@ public class RecoverStorageManager extends AbstractRecoverManager {
             }
         }
         this.threadPoolExecutor.shutdown();
+        for (Thread thread : this.executorThreads) {
+            thread.interrupt();
+        }
         this.scheduledExecutorService.shutdown();
     }
 

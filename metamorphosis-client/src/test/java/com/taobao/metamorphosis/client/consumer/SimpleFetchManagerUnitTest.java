@@ -18,6 +18,7 @@
 package com.taobao.metamorphosis.client.consumer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import java.nio.ByteBuffer;
@@ -33,6 +34,8 @@ import com.taobao.metamorphosis.MessageAccessor;
 import com.taobao.metamorphosis.client.consumer.SimpleFetchManager.FetchRequestRunner;
 import com.taobao.metamorphosis.cluster.Broker;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.network.PutCommand;
 import com.taobao.metamorphosis.utils.CheckSum;
 import com.taobao.metamorphosis.utils.MessageUtils;
@@ -44,6 +47,7 @@ public class SimpleFetchManagerUnitTest {
     private InnerConsumer consumer;
 
 
+
     @Before
     public void setUp() {
         this.consumerConfig = new ConsumerConfig();
@@ -51,6 +55,7 @@ public class SimpleFetchManagerUnitTest {
         EasyMock.makeThreadSafe(this.consumer, true);
         this.fetchManager = new SimpleFetchManager(this.consumerConfig, this.consumer);
         this.fetchManager.resetFetchState();
+        this.fetchManager.setMessageIdCache(new ConcurrentLRUHashMap());
         // this.fetchManager.startFetchRunner();
     }
 
@@ -87,6 +92,7 @@ public class SimpleFetchManagerUnitTest {
                 return null;
             }
         });
+        this.mockFilterAndGroup(topic);
 
         final FetchRequest newRequest =
                 new FetchRequest(broker, 0, new TopicPartitionRegInfo(topic, partition, offset + data.length, msgId),
@@ -102,6 +108,159 @@ public class SimpleFetchManagerUnitTest {
     }
 
 
+    @Test
+    public void testProcessRequestNormalWithFilter() throws Exception {
+
+        final String topic = "topic1";
+        final int maxSize = 1024;
+        final Partition partition = new Partition("0-0");
+        final long offset = 12;
+        final Broker broker = new Broker(0, "meta://localhost:0");
+        final int msgId = 1111;
+        final byte[] data =
+                MessageUtils.makeMessageBuffer(msgId,
+                    new PutCommand(topic, partition.getPartition(), "hello".getBytes(), null, 0, 0)).array();
+        final FetchRequest request =
+                new FetchRequest(broker, 0, new TopicPartitionRegInfo(topic, partition, offset), maxSize);
+
+        final FetchRequestRunner runner = this.fetchManager.new FetchRequestRunner();
+
+        EasyMock.expect(this.consumer.fetch(request, -1, null)).andReturn(new MessageIterator(topic, data));
+        final AtomicReference<Message> msg = new AtomicReference<Message>();
+        EasyMock.expect(this.consumer.getMessageListener(topic)).andReturn(new MessageListener() {
+
+            @Override
+            public void recieveMessages(final Message message) {
+                msg.set(message);
+            }
+
+
+            @Override
+            public Executor getExecutor() {
+                return null;
+            }
+        });
+        EasyMock.expect(this.consumer.getMessageFilter(topic)).andReturn(new ConsumerMessageFilter() {
+
+            @Override
+            public boolean accept(String group, Message message) {
+                return true;
+            }
+        });
+        EasyMock.expect(this.consumer.getConsumerConfig()).andReturn(new ConsumerConfig("test"));
+
+        final FetchRequest newRequest =
+                new FetchRequest(broker, 0, new TopicPartitionRegInfo(topic, partition, offset + data.length, msgId),
+                    maxSize);
+
+        EasyMock.replay(this.consumer);
+        runner.processRequest(request);
+        EasyMock.verify(this.consumer);
+        assertEquals("hello", new String(msg.get().getData()));
+        assertEquals(msgId, msg.get().getId());
+        assertEquals(topic, msg.get().getTopic());
+        assertEquals(newRequest, this.fetchManager.takeFetchRequest());
+    }
+
+
+    @Test
+    public void testProcessRequestWithMessageFilterNotAccept() throws Exception {
+
+        final String topic = "topic1";
+        final int maxSize = 1024;
+        final Partition partition = new Partition("0-0");
+        final long offset = 12;
+        final Broker broker = new Broker(0, "meta://localhost:0");
+        final int msgId = 1111;
+        final byte[] data =
+                MessageUtils.makeMessageBuffer(msgId,
+                    new PutCommand(topic, partition.getPartition(), "hello".getBytes(), null, 0, 0)).array();
+        final FetchRequest request =
+                new FetchRequest(broker, 0, new TopicPartitionRegInfo(topic, partition, offset), maxSize);
+
+        final FetchRequestRunner runner = this.fetchManager.new FetchRequestRunner();
+
+        EasyMock.expect(this.consumer.fetch(request, -1, null)).andReturn(new MessageIterator(topic, data));
+        final AtomicReference<Message> msg = new AtomicReference<Message>();
+        EasyMock.expect(this.consumer.getMessageListener(topic)).andReturn(new MessageListener() {
+
+            @Override
+            public void recieveMessages(final Message message) {
+                fail();
+            }
+
+
+            @Override
+            public Executor getExecutor() {
+                return null;
+            }
+        });
+        // Don't accept all messages.
+        EasyMock.expect(this.consumer.getMessageFilter(topic)).andReturn(new ConsumerMessageFilter() {
+
+            @Override
+            public boolean accept(String group, Message message) {
+                // always return false.
+                return false;
+            }
+        });
+        EasyMock.expect(this.consumer.getConsumerConfig()).andReturn(new ConsumerConfig("test"));
+        EasyMock.replay(this.consumer);
+        runner.processRequest(request);
+        EasyMock.verify(this.consumer);
+        assertNull(msg.get());
+    }
+
+
+    @Test
+    public void testProcessRequestWithMessageFilterThrowException() throws Exception {
+
+        final String topic = "topic1";
+        final int maxSize = 1024;
+        final Partition partition = new Partition("0-0");
+        final long offset = 12;
+        final Broker broker = new Broker(0, "meta://localhost:0");
+        final int msgId = 1111;
+        final byte[] data =
+                MessageUtils.makeMessageBuffer(msgId,
+                    new PutCommand(topic, partition.getPartition(), "hello".getBytes(), null, 0, 0)).array();
+        final FetchRequest request =
+                new FetchRequest(broker, 0, new TopicPartitionRegInfo(topic, partition, offset), maxSize);
+
+        final FetchRequestRunner runner = this.fetchManager.new FetchRequestRunner();
+
+        EasyMock.expect(this.consumer.fetch(request, -1, null)).andReturn(new MessageIterator(topic, data));
+        final AtomicReference<Message> msg = new AtomicReference<Message>();
+        EasyMock.expect(this.consumer.getMessageListener(topic)).andReturn(new MessageListener() {
+
+            @Override
+            public void recieveMessages(final Message message) {
+                fail();
+            }
+
+
+            @Override
+            public Executor getExecutor() {
+                return null;
+            }
+        });
+        // Don't accept all messages.
+        EasyMock.expect(this.consumer.getMessageFilter(topic)).andReturn(new ConsumerMessageFilter() {
+
+            @Override
+            public boolean accept(String group, Message message) {
+                throw new RuntimeException();
+            }
+        });
+        EasyMock.expect(this.consumer.getConsumerConfig()).andReturn(new ConsumerConfig("test"));
+
+        EasyMock.replay(this.consumer);
+        runner.processRequest(request);
+        EasyMock.verify(this.consumer);
+        assertNull(msg.get());
+    }
+
+
     public static ByteBuffer makeInvalidMessageBuffer(final long msgId, final PutCommand req) {
         // message length + checksum + id +flag + data
         final ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 8 + 4 + req.getData().length);
@@ -113,6 +272,12 @@ public class SimpleFetchManagerUnitTest {
         buffer.put(req.getData());
         buffer.flip();
         return buffer;
+    }
+
+
+    private void mockFilterAndGroup(String topic) {
+        EasyMock.expect(this.consumer.getMessageFilter(topic)).andReturn(null);
+        EasyMock.expect(this.consumer.getConsumerConfig()).andReturn(new ConsumerConfig("test"));
     }
 
 
@@ -147,7 +312,7 @@ public class SimpleFetchManagerUnitTest {
                 return null;
             }
         });
-
+        this.mockFilterAndGroup(topic);
         // query offset
         final long newOffset = 13;
         EasyMock.expect(this.consumer.offset(request)).andReturn(newOffset);
@@ -194,6 +359,7 @@ public class SimpleFetchManagerUnitTest {
                 return null;
             }
         });
+        this.mockFilterAndGroup(topic);
         final FetchRequestRunner runner = this.fetchManager.new FetchRequestRunner();
         // EasyMock.expect(this.fetchManager.isRetryTooMany(request)).andReturn(true);
         final Message message = new Message(topic, "hello".getBytes());
@@ -241,6 +407,7 @@ public class SimpleFetchManagerUnitTest {
                 return null;
             }
         });
+        this.mockFilterAndGroup(topic);
 
         final FetchRequest newRequest =
                 new FetchRequest(broker, this.consumerConfig.getMaxDelayFetchTimeInMills() / 10,
@@ -283,6 +450,52 @@ public class SimpleFetchManagerUnitTest {
                 return null;
             }
         });
+        this.mockFilterAndGroup(topic);
+
+        final FetchRequest newRequest =
+                new FetchRequest(broker, this.consumerConfig.getMaxDelayFetchTimeInMills() / 10,
+                    new TopicPartitionRegInfo(topic, partition, offset, 1111), maxSize);
+        newRequest.incrementRetriesAndGet();
+
+        EasyMock.replay(this.consumer);
+        runner.processRequest(request);
+        EasyMock.verify(this.consumer);
+        assertEquals(newRequest, this.fetchManager.takeFetchRequest());
+    }
+
+
+    @Test
+    public void testProcessRequestMessageRollbackOnly() throws Exception {
+        // this.mockConsumerReInitializeFetchManager();
+        final String topic = "topic1";
+        final int maxSize = 1024;
+        final Partition partition = new Partition("0-0");
+        final long offset = 12;
+        final Broker broker = new Broker(0, "meta://localhost:0");
+        final byte[] data =
+                MessageUtils.makeMessageBuffer(1111,
+                    new PutCommand(topic, partition.getPartition(), "hello".getBytes(), null, 0, 0)).array();
+        final FetchRequest request =
+                new FetchRequest(broker, 0, new TopicPartitionRegInfo(topic, partition, offset), maxSize);
+
+        final FetchRequestRunner runner = this.fetchManager.new FetchRequestRunner();
+
+        EasyMock.expect(this.consumer.fetch(request, -1, null)).andReturn(new MessageIterator(topic, data));
+        EasyMock.expect(this.consumer.getMessageListener(topic)).andReturn(new MessageListener() {
+
+            @Override
+            public void recieveMessages(final Message message) {
+                System.out.println("Rollback current message");
+                message.setRollbackOnly();
+            }
+
+
+            @Override
+            public Executor getExecutor() {
+                return null;
+            }
+        });
+        this.mockFilterAndGroup(topic);
 
         final FetchRequest newRequest =
                 new FetchRequest(broker, this.consumerConfig.getMaxDelayFetchTimeInMills() / 10,
@@ -326,6 +539,7 @@ public class SimpleFetchManagerUnitTest {
                 return null;
             }
         });
+        this.mockFilterAndGroup(topic);
         final int newMaxSize = maxSize * 2;
         final FetchRequest newRequest =
                 new FetchRequest(broker, this.consumerConfig.getMaxDelayFetchTimeInMills() / 10,

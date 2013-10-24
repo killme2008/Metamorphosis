@@ -47,7 +47,6 @@ public class MetaMorphosisBrokerUnitTest {
     @Before
     public void setUp() {
         this.metaConfig = new MetaConfig();
-        this.metaConfig.setDiamondZKDataId("metamorphosis.testZkConfig");
         final List<String> topics = new ArrayList<String>();
         topics.add("topic1");
         topics.add("topic2");

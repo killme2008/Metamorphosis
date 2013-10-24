@@ -28,10 +28,21 @@ import javax.transaction.xa.XAException;
  */
 public class TransactionInfo {
 
+    private String uniqueQualifier;
     private TransactionId transactionId;
     private final String sessionId;
     private final TransactionType type;
     private int timeout = 0;
+
+
+    public void setUniqueQualifier(String uniqueQualifier) {
+        this.uniqueQualifier = uniqueQualifier;
+    }
+
+
+    public String getUniqueQualifier() {
+        return this.uniqueQualifier;
+    }
 
     /**
      * ÊÂÎñ×´Ì¬
@@ -71,16 +82,23 @@ public class TransactionInfo {
 
 
     public TransactionInfo(final TransactionId transactionId, final String sessionId, final TransactionType type) {
-        this(transactionId, sessionId, type, 0);
+        this(transactionId, sessionId, type, null, 0);
     }
 
 
     public TransactionInfo(final TransactionId transactionId, final String sessionId, final TransactionType type,
-            final int timeout) {
+            final String uniqueQualifier) {
+        this(transactionId, sessionId, type, uniqueQualifier, 0);
+    }
+
+
+    public TransactionInfo(final TransactionId transactionId, final String sessionId, final TransactionType type,
+            final String uniqueQualifier, final int timeout) {
         super();
         this.setTransactionId(transactionId);
         this.sessionId = sessionId;
         this.type = type;
+        this.uniqueQualifier = uniqueQualifier;
         this.timeout = timeout;
     }
 
@@ -118,6 +136,7 @@ public class TransactionInfo {
         result = prime * result + this.timeout;
         result = prime * result + (this.transactionId == null ? 0 : this.transactionId.hashCode());
         result = prime * result + (this.type == null ? 0 : this.type.hashCode());
+        result = prime * result + (this.uniqueQualifier == null ? 0 : this.uniqueQualifier.hashCode());
         return result;
     }
 
@@ -153,6 +172,14 @@ public class TransactionInfo {
         else if (!this.transactionId.equals(other.transactionId)) {
             return false;
         }
+        if (this.uniqueQualifier == null) {
+            if (other.uniqueQualifier != null) {
+                return false;
+            }
+        }
+        else if (!this.uniqueQualifier.equals(other.uniqueQualifier)) {
+            return false;
+        }
         if (this.type != other.type) {
             return false;
         }
@@ -163,7 +190,7 @@ public class TransactionInfo {
     @Override
     public String toString() {
         return "TransactionInfo [transactionId=" + this.transactionId + ", sessionId=" + this.sessionId + ", type="
-                + this.type + ", timeout=" + this.timeout + "]";
+                + this.type + ", uniqueQualifier=" + this.uniqueQualifier + ", timeout=" + this.timeout + "]";
     }
 
 }

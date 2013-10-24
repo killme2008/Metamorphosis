@@ -87,7 +87,7 @@ public class MetaBroadcastMessageSessionFactory extends MetaMessageSessionFactor
     static ConsumerConfig updateGroupForBroadcast(final ConsumerConfig consumerConfig) {
         try {
             consumerConfig.setGroup(consumerConfig.getGroup() + "-"
-                    + RemotingUtils.getLocalAddress().replaceAll("[\\.\\:]", "-"));
+                    + RemotingUtils.getLocalHost().replaceAll("[\\.\\:]", "-"));
             return consumerConfig;
         }
         catch (final Exception e) {

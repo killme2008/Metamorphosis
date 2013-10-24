@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 
 
 /**
@@ -41,6 +42,10 @@ public class TopicPartitionRegInfo implements Serializable {
 
     private boolean modified;
 
+
+    public TopicPartitionRegInfo clone(MessageIterator it) {
+        return new TopicPartitionRegInfo(this.topic, this.partition, this.offset.get() + it.getOffset(), this.messageId);
+    }
 
     public synchronized boolean isModified() {
         return this.modified;

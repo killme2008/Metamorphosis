@@ -28,6 +28,7 @@ import com.taobao.metamorphosis.client.producer.XAMessageProducer;
 public class XATxTenProducerTenConsumerTenGroupTest extends BaseMetaTest {
 
     private final String topic = "meta-test";
+    private final String UNIQUE_QUALIFIER = "XATxTenProducerTenConsumerTenGroupTest";
 
     private final AtomicInteger formatIdIdGenerator = new AtomicInteger();
 
@@ -36,7 +37,6 @@ public class XATxTenProducerTenConsumerTenGroupTest extends BaseMetaTest {
     @Before
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         this.sessionFactory = new XAMetaMessageSessionFactory(metaClientConfig);
         this.startServer("server1");
         System.out.println("before run");
@@ -63,18 +63,20 @@ public class XATxTenProducerTenConsumerTenGroupTest extends BaseMetaTest {
                 final byte[] data = ("hello" + j + i).getBytes();
                 final Message msg = new Message(topic, data);
                 final XAResource xares = messageProducer.getXAResource();
-                final Xid xid = XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet());
+                final Xid xid =
+                        XIDGenerator.createXID(this.formatIdIdGenerator.incrementAndGet(), this.UNIQUE_QUALIFIER);
                 xares.start(xid, XAResource.TMNOFLAGS);
                 final SendResult result = messageProducer.sendMessage(msg);
-                if (!result.isSuccess()) {
+                if (!result.isSuccess() || i % 2 == 0) {
                     xares.end(xid, XAResource.TMFAIL);
                     xares.rollback(xid);
-                    throw new RuntimeException("Send message failed:" + result.getErrorMessage());
                 }
-                xares.end(xid, XAResource.TMSUCCESS);
-                xares.prepare(xid);
-                xares.commit(xid, false);
-                this.messages.add(msg);
+                else {
+                    xares.end(xid, XAResource.TMSUCCESS);
+                    xares.prepare(xid);
+                    xares.commit(xid, false);
+                    this.messages.add(msg);
+                }
             }
         }
     }
@@ -86,11 +88,11 @@ public class XATxTenProducerTenConsumerTenGroupTest extends BaseMetaTest {
         this.create_nXAProducer(10);
 
         try {
-            // 发送消息
-            final int count = 5;
+            // 发送消息，但是一半失败
+            final int count = 10;
             this.xaTxSendMessage_nProducer(count, "hello", this.topic, 10);
             // 订阅接收消息并验证数据正确
-            this.subscribe_nConsumer(this.topic, 1024 * 1024, count, 10, 10);
+            this.subscribe_nConsumer(this.topic, 1024 * 1024, count / 2, 10, 10);
         }
         catch (final Throwable e) {
             e.printStackTrace();

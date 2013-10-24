@@ -25,6 +25,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +34,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +62,7 @@ import com.taobao.metamorphosis.server.exception.ServiceStartupException;
 import com.taobao.metamorphosis.server.exception.WrongPartitionException;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.server.utils.TopicConfig;
+import com.taobao.metamorphosis.utils.ThreadUtils;
 
 
 /**
@@ -297,17 +306,21 @@ public class MessageStoreManager implements Service {
     }
 
 
-    private void loadMessageStores(final MetaConfig metaConfig) throws IOException {
+    private void loadMessageStores(final MetaConfig metaConfig) throws IOException, InterruptedException {
         for (final File dir : this.getDataDirSet(metaConfig)) {
             this.loadDataDir(metaConfig, dir);
         }
     }
 
 
-    private void loadDataDir(final MetaConfig metaConfig, final File dir) throws IOException {
+    private void loadDataDir(final MetaConfig metaConfig, final File dir) throws IOException, InterruptedException {
         log.warn("Begin to scan data path:" + dir.getAbsolutePath());
         final long start = System.currentTimeMillis();
         final File[] ls = dir.listFiles();
+        int nThreads = Runtime.getRuntime().availableProcessors() + 2;
+        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+        int count = 0;
+        List<Callable<MessageStore>> tasks = new ArrayList<Callable<MessageStore>>();
         for (final File subDir : ls) {
             if (!subDir.isDirectory()) {
                 log.warn("Ignore not directory path:" + subDir.getAbsolutePath());
@@ -319,22 +332,83 @@ public class MessageStoreManager implements Service {
                     log.warn("Ignore invlaid directory:" + subDir.getAbsolutePath());
                     continue;
                 }
-                log.warn("Loading data directory:" + subDir.getAbsolutePath() + "...");
-                final String topic = name.substring(0, index);
-                final int partition = Integer.parseInt(name.substring(index + 1));
 
-                final MessageStore messageStore =
-                        new MessageStore(topic, partition, metaConfig, this.deletePolicySelector.select(topic,
-                            this.deletePolicy));
-                ConcurrentHashMap<Integer/* partition */, MessageStore> map = this.stores.get(topic);
-                if (map == null) {
-                    map = new ConcurrentHashMap<Integer, MessageStore>();
-                    this.stores.put(topic, map);
+                tasks.add(new Callable<MessageStore>() {
+                    @Override
+                    public MessageStore call() throws Exception {
+                        log.warn("Loading data directory:" + subDir.getAbsolutePath() + "...");
+                        final String topic = name.substring(0, index);
+                        final int partition = Integer.parseInt(name.substring(index + 1));
+                        final MessageStore messageStore =
+                                new MessageStore(topic, partition, metaConfig,
+                                    MessageStoreManager.this.deletePolicySelector.select(topic,
+                                        MessageStoreManager.this.deletePolicy));
+                        return messageStore;
+                    }
+                });
+                count++;
+                if (count % nThreads == 0 || count == ls.length) {
+                    if (metaConfig.isLoadMessageStoresInParallel()) {
+                        this.loadStoresInParallel(executor, tasks);
+                    }
+                    else {
+                        this.loadStores(tasks);
+                    }
+                    tasks.clear();
                 }
-                map.put(partition, messageStore);
             }
         }
+        executor.shutdownNow();
         log.warn("End to scan data path in " + (System.currentTimeMillis() - start) / 1000 + " secs");
+    }
+
+
+    private void loadStores(List<Callable<MessageStore>> tasks) throws IOException, InterruptedException {
+        for (Callable<MessageStore> task : tasks) {
+            MessageStore messageStore;
+            try {
+                messageStore = task.call();
+                ConcurrentHashMap<Integer/* partition */, MessageStore> map = this.stores.get(messageStore.getTopic());
+                if (map == null) {
+                    map = new ConcurrentHashMap<Integer, MessageStore>();
+                    this.stores.put(messageStore.getTopic(), map);
+                }
+                map.put(messageStore.getPartition(), messageStore);
+            }
+            catch (IOException e) {
+                throw e;
+            }
+            catch (InterruptedException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
+
+    private void loadStoresInParallel(ExecutorService executor, List<Callable<MessageStore>> tasks)
+            throws InterruptedException {
+        CompletionService<MessageStore> completionService = new ExecutorCompletionService<MessageStore>(executor);
+        for (Callable<MessageStore> task : tasks) {
+            completionService.submit(task);
+        }
+        for (int i = 0; i < tasks.size(); i++) {
+            try {
+                MessageStore messageStore = completionService.take().get();
+
+                ConcurrentHashMap<Integer/* partition */, MessageStore> map = this.stores.get(messageStore.getTopic());
+                if (map == null) {
+                    map = new ConcurrentHashMap<Integer, MessageStore>();
+                    this.stores.put(messageStore.getTopic(), map);
+                }
+                map.put(messageStore.getPartition(), messageStore);
+            }
+            catch (ExecutionException e) {
+                throw ThreadUtils.launderThrowable(e);
+            }
+        }
     }
 
 
@@ -404,6 +478,9 @@ public class MessageStoreManager implements Service {
             log.error("load message stores failed", e);
             throw new MetamorphosisServerStartupException("Initilize message store manager failed", e);
         }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         this.startScheduleDeleteJobs();
     }
@@ -459,8 +536,8 @@ public class MessageStoreManager implements Service {
     }
 
 
-    private Set<String> getAllTopics() {
-        final Set<String> rt = new HashSet<String>();
+    public Set<String> getAllTopics() {
+        final Set<String> rt = new TreeSet<String>();
         rt.addAll(this.metaConfig.getTopics());
         rt.addAll(this.getMessageStores().keySet());
         return rt;

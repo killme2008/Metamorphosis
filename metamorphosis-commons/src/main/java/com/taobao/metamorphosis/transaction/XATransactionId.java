@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 
 import javax.transaction.xa.Xid;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.taobao.metamorphosis.utils.HexSupport;
 import com.taobao.metamorphosis.utils.PatternUtils;
 
@@ -45,6 +47,17 @@ public class XATransactionId extends TransactionId implements Xid, Comparable<XA
 
     private transient int hash;
     private transient String transactionKey;
+    private String uniqueQualifier;
+
+
+    public String getUniqueQualifier() {
+        return this.uniqueQualifier;
+    }
+
+
+    public void setUniqueQualifier(String uniqueQualifier) {
+        this.uniqueQualifier = uniqueQualifier;
+    }
 
 
     @Override
@@ -64,8 +77,10 @@ public class XATransactionId extends TransactionId implements Xid, Comparable<XA
      * @param branchQualifier
      * @param globalTransactionId
      */
-    public XATransactionId(final int formatId, final byte[] branchQualifier, final byte[] globalTransactionId) {
+    public XATransactionId(final int formatId, final byte[] branchQualifier, final byte[] globalTransactionId,
+            final String uniqueQualifier) {
         super();
+        this.uniqueQualifier = uniqueQualifier;
         this.formatId = formatId;
         this.branchQualifier = branchQualifier;
         this.globalTransactionId = globalTransactionId;
@@ -76,20 +91,25 @@ public class XATransactionId extends TransactionId implements Xid, Comparable<XA
 
     public XATransactionId(final String key) {
         final String[] tmps = PatternUtils.split(pattern, key);
-        if (tmps.length != 4) {
+        if (tmps.length != 5) {
             throw new IllegalArgumentException("Illegal transaction key" + key);
         }
         assert tmps[0].equals("XID");
         this.formatId = Integer.parseInt(tmps[1]);
         this.globalTransactionId = HexSupport.toBytesFromHex(tmps[2]);
         this.branchQualifier = HexSupport.toBytesFromHex(tmps[3]);
+        this.uniqueQualifier = tmps[4];
     }
 
 
-    public XATransactionId(final Xid xid) {
+    public XATransactionId(final Xid xid, final String uniqueQualifier) {
         this.formatId = xid.getFormatId();
         this.globalTransactionId = xid.getGlobalTransactionId();
         this.branchQualifier = xid.getBranchQualifier();
+        this.uniqueQualifier = uniqueQualifier;
+        if (StringUtils.isBlank(uniqueQualifier)) {
+            throw new IllegalArgumentException("Blank uniqueQualifier");
+        }
     }
 
 
@@ -98,7 +118,7 @@ public class XATransactionId extends TransactionId implements Xid, Comparable<XA
         if (this.transactionKey == null) {
             this.transactionKey =
                     "XID:" + this.formatId + ":" + HexSupport.toHexFromBytes(this.globalTransactionId) + ":"
-                            + HexSupport.toHexFromBytes(this.branchQualifier);
+                            + HexSupport.toHexFromBytes(this.branchQualifier) + ":" + this.uniqueQualifier;
         }
         return this.transactionKey;
     }
@@ -173,6 +193,8 @@ public class XATransactionId extends TransactionId implements Xid, Comparable<XA
             this.hash = this.formatId;
             this.hash = hash(this.globalTransactionId, this.hash);
             this.hash = hash(this.branchQualifier, this.hash);
+            final int prime = 31;
+            this.hash = prime * this.hash + this.uniqueQualifier.hashCode();
             if (this.hash == 0) {
                 this.hash = 0xaceace;
             }
@@ -197,7 +219,8 @@ public class XATransactionId extends TransactionId implements Xid, Comparable<XA
         }
         final XATransactionId xid = (XATransactionId) o;
         return xid.formatId == this.formatId && Arrays.equals(xid.globalTransactionId, this.globalTransactionId)
-                && Arrays.equals(xid.branchQualifier, this.branchQualifier);
+                && Arrays.equals(xid.branchQualifier, this.branchQualifier)
+                && this.uniqueQualifier.equals(xid.uniqueQualifier);
     }
 
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * Authors:
- *   wuhua <wq163@163.com> 
+ *   wuhua <wq163@163.com>
  */
 package com.taobao.metamorphosis.metaslave;
 
@@ -85,7 +85,7 @@ public class MetaSlaveListener implements MessageListener {
 
 
     @Override
-    public void recieveMessages(final Message message) {
+    public void recieveMessages(final Message message) throws InterruptedException {
 
         this.statsManager.statsSlavePut(message.getTopic(), message.getPartition().toString(), 1);
         this.statsManager.statsMessageSize(message.getTopic(), message.getData().length);
@@ -97,17 +97,16 @@ public class MetaSlaveListener implements MessageListener {
             this.brokerZooKeeper.registerTopicInZk(message.getTopic(), false);
 
             final AppendOp cb = new AppendOp();
-            store.append(messageId,
-                new PutCommand(message.getTopic(), partition, MessageUtils.encodePayload(message), null,
-                    MessageAccessor.getFlag(message), 0), cb);
+            store.append(messageId, new PutCommand(message.getTopic(), partition, MessageUtils.encodePayload(message),
+                null, MessageAccessor.getFlag(message), 0), cb);
             cb.latch.await(APPEND_TIMEOUT, TimeUnit.MILLISECONDS);
             if (cb.offset < 0) {
                 log.error("offset wasless then 0 when append meta slave message");
                 throw new AppendMessageErrorException("Append message failed,topic=" + message.getTopic());
             }
         }
-        catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
+        catch (InterruptedException e) {
+            throw e;
         }
         catch (final Throwable e) {
             this.statsManager.statsSlavePutFailed(message.getTopic(), message.getPartition().toString(), 1);

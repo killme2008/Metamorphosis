@@ -52,6 +52,10 @@ public class XATransaction extends Transaction implements Serializable {
     private transient CommandProcessor brokerProcessor;
 
 
+    public String getUniqueQualifier() {
+        return this.xid.getUniqueQualifier();
+    }
+
     public XATransaction() {
         super();
     }

@@ -33,7 +33,7 @@ public class TransactionCommandUnitTest {
     @Test
     public void testEncode() {
         final TransactionId id = new LocalTransactionId("sessionId", 99);
-        final TransactionInfo info = new TransactionInfo(id, "sessionId", TransactionType.COMMIT_ONE_PHASE);
+        final TransactionInfo info = new TransactionInfo(id, "sessionId", TransactionType.COMMIT_ONE_PHASE, null);
 
         final TransactionCommand cmd = new TransactionCommand(info, 100);
         final IoBuffer buf = cmd.encode();
@@ -44,10 +44,32 @@ public class TransactionCommandUnitTest {
     @Test
     public void testEncodeWithTimeout() {
         final TransactionId id = new LocalTransactionId("sessionId", 99);
-        final TransactionInfo info = new TransactionInfo(id, "sessionId", TransactionType.BEGIN, 3);
+        final TransactionInfo info = new TransactionInfo(id, "sessionId", TransactionType.BEGIN, null, 3);
 
         final TransactionCommand cmd = new TransactionCommand(info, 100);
         final IoBuffer buf = cmd.encode();
         assertEquals("transaction TX:sessionId:99 sessionId BEGIN 3 100\r\n", new String(buf.array()));
+    }
+
+
+    @Test
+    public void testEncodeWithUniqueQualifier() {
+        final TransactionId id = new LocalTransactionId("sessionId", 99);
+        final TransactionInfo info = new TransactionInfo(id, "sessionId", TransactionType.BEGIN, "unique-qualifier");
+
+        final TransactionCommand cmd = new TransactionCommand(info, 100);
+        final IoBuffer buf = cmd.encode();
+        assertEquals("transaction TX:sessionId:99 sessionId BEGIN unique-qualifier 100\r\n", new String(buf.array()));
+    }
+
+
+    @Test
+    public void testEncodeWithUniqueQualifierAndTimeout() {
+        final TransactionId id = new LocalTransactionId("sessionId", 99);
+        final TransactionInfo info = new TransactionInfo(id, "sessionId", TransactionType.BEGIN, "unique-qualifier", 3);
+
+        final TransactionCommand cmd = new TransactionCommand(info, 100);
+        final IoBuffer buf = cmd.encode();
+        assertEquals("transaction TX:sessionId:99 sessionId BEGIN 3 unique-qualifier 100\r\n", new String(buf.array()));
     }
 }

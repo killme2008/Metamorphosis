@@ -17,6 +17,8 @@
  */
 package com.taobao.metamorphosis.network;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.taobao.gecko.core.buffer.IoBuffer;
 import com.taobao.gecko.core.command.CommandHeader;
 import com.taobao.gecko.core.command.RequestCommand;
@@ -25,7 +27,7 @@ import com.taobao.metamorphosis.transaction.TransactionInfo;
 
 /**
  * 事务命令,协议格式如下：</br> transaction transactionKey sessionId type [timeout]
- * opaque\r\n
+ * [uniqueQualifier] opaque\r\n
  * 
  * 
  * @author boyan
@@ -114,18 +116,35 @@ public class TransactionCommand implements RequestCommand, MetaEncodeCommand {
         final String type = this.transactionInfo.getType().name();
         int capacity =
                 17 + transactionKey.length() + this.transactionInfo.getSessionId().length() + type.length()
-                        + ByteUtils.stringSize(this.opaque);
+                + ByteUtils.stringSize(this.opaque);
         if (this.transactionInfo.getTimeout() > 0) {
             capacity += 1 + ByteUtils.stringSize(this.transactionInfo.getTimeout());
         }
+        if (!StringUtils.isBlank(this.transactionInfo.getUniqueQualifier())) {
+            capacity += 1 + this.transactionInfo.getUniqueQualifier().length();
+        }
         final IoBuffer buffer = IoBuffer.allocate(capacity);
         if (this.transactionInfo.getTimeout() > 0) {
-            ByteUtils.setArguments(buffer, MetaEncodeCommand.TRANS_CMD, transactionKey,
-                this.transactionInfo.getSessionId(), type, this.transactionInfo.getTimeout(), this.opaque);
+            if (StringUtils.isBlank(this.transactionInfo.getUniqueQualifier())) {
+                ByteUtils.setArguments(buffer, MetaEncodeCommand.TRANS_CMD, transactionKey,
+                    this.transactionInfo.getSessionId(), type, this.transactionInfo.getTimeout(), this.opaque);
+            }
+            else {
+                ByteUtils.setArguments(buffer, MetaEncodeCommand.TRANS_CMD, transactionKey,
+                    this.transactionInfo.getSessionId(), type, this.transactionInfo.getTimeout(),
+                    this.transactionInfo.getUniqueQualifier(), this.opaque);
+            }
         }
         else {
-            ByteUtils.setArguments(buffer, MetaEncodeCommand.TRANS_CMD, transactionKey,
-                this.transactionInfo.getSessionId(), type, this.opaque);
+            if (StringUtils.isBlank(this.transactionInfo.getUniqueQualifier())) {
+                ByteUtils.setArguments(buffer, MetaEncodeCommand.TRANS_CMD, transactionKey,
+                    this.transactionInfo.getSessionId(), type, this.opaque);
+            }
+            else {
+                ByteUtils.setArguments(buffer, MetaEncodeCommand.TRANS_CMD, transactionKey,
+                    this.transactionInfo.getSessionId(), type, this.transactionInfo.getUniqueQualifier(), this.opaque);
+            }
+
         }
         buffer.flip();
         return buffer;

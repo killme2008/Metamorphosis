@@ -24,6 +24,7 @@ import com.taobao.gecko.service.Connection;
 import com.taobao.metamorphosis.server.BrokerZooKeeper;
 import com.taobao.metamorphosis.server.assembly.BrokerCommandProcessor;
 import com.taobao.metamorphosis.server.assembly.ExecutorsManager;
+import com.taobao.metamorphosis.server.filter.ConsumerFilterManager;
 import com.taobao.metamorphosis.server.stats.StatsManager;
 import com.taobao.metamorphosis.server.store.MessageStoreManager;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
@@ -42,6 +43,7 @@ public abstract class BaseProcessorUnitTest {
     protected BrokerZooKeeper brokerZooKeeper;
     protected ExecutorsManager executorsManager;
     protected SessionContext sessionContext;
+    protected ConsumerFilterManager consumerFilterManager;
 
 
     protected void mock() {
@@ -50,9 +52,15 @@ public abstract class BaseProcessorUnitTest {
         this.mocksControl = EasyMock.createControl();
         this.storeManager = this.mocksControl.createMock(MessageStoreManager.class);
         this.conn = this.mocksControl.createMock(Connection.class);
+        try {
+            this.consumerFilterManager = new ConsumerFilterManager(this.metaConfig);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         this.sessionContext = new SessionContextImpl(null, this.conn);
         EasyMock.expect(this.conn.getAttribute(SessionContextHolder.GLOBAL_SESSION_KEY)).andReturn(this.sessionContext)
-            .anyTimes();
+        .anyTimes();
         this.statsManager = new StatsManager(new MetaConfig(), null, null);
         this.idWorker = this.mocksControl.createMock(IdWorker.class);
         this.brokerZooKeeper = this.mocksControl.createMock(BrokerZooKeeper.class);
@@ -64,6 +72,7 @@ public abstract class BaseProcessorUnitTest {
         this.commandProcessor.setBrokerZooKeeper(this.brokerZooKeeper);
         this.commandProcessor.setIdWorker(this.idWorker);
         this.commandProcessor.setExecutorsManager(this.executorsManager);
+        this.commandProcessor.setConsumerFilterManager(this.consumerFilterManager);
     }
 
 }

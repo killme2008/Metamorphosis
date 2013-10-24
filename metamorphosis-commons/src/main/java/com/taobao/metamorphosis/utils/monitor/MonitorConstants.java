@@ -39,8 +39,8 @@ public class MonitorConstants {
 
     public static final String DIR_NAME = "logs" + File.separator + "monitor";
 
-    public static final String APP_FILE_NAME = "monitor-app-";
-    public static final String MIDDLEWARE_FILE_NAME = "monitor-middleware-";
+    public static final String APP_FILE_NAME = "monitor.app.";
+    public static final String MIDDLEWARE_FILE_NAME = "monitor.middleware.";
     public static final String FILE_SUFFIX = ".log";
 
     public static final String WRITETHREAD_NAME = "LOGSTAT-WRITE";

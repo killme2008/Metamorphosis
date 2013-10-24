@@ -40,10 +40,15 @@ public class Cluster {
     transient private final static Random random = new Random();
 
 
+    public ConcurrentHashMap<Integer, Set<Broker>> getBrokers() {
+        return this.brokers;
+    }
+
+
     /** 返回broker总数,包括master和slave */
     public int size() {
         int size = 0;
-        for (Map.Entry<Integer/* broker id */, Set<Broker>> entry : brokers.entrySet()) {
+        for (Map.Entry<Integer/* broker id */, Set<Broker>> entry : this.brokers.entrySet()) {
             Set<Broker> brokers = entry.getValue();
             if (brokers != null) {
                 size = size + brokers.size();
@@ -60,6 +65,12 @@ public class Cluster {
         }
         if (set.size() == 1) {
             return (Broker) set.toArray()[0];
+        }
+        // prefer master.
+        for (Broker broker : set) {
+            if (!broker.isSlave()) {
+                return broker;
+            }
         }
         return (Broker) set.toArray()[random.nextInt(set.size())];
     }
@@ -106,7 +117,7 @@ public class Cluster {
 
     public Cluster masterCluster() {
         Cluster cluster = new Cluster();
-        for (Map.Entry<Integer, Set<Broker>> entry : brokers.entrySet()) {
+        for (Map.Entry<Integer, Set<Broker>> entry : this.brokers.entrySet()) {
             Set<Broker> set = entry.getValue();
             if (set == null || set.isEmpty()) {
                 continue;
@@ -137,6 +148,6 @@ public class Cluster {
 
     @Override
     public int hashCode() {
-        return brokers.hashCode();
+        return this.brokers.hashCode();
     }
 }

@@ -135,7 +135,7 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             public void run() {
                 try {
                     TransactionalCommandProcessor.this.heuristicTransactionJournal
-                        .write(TransactionalCommandProcessor.this.xaHeuristicTransactions);
+                    .write(TransactionalCommandProcessor.this.xaHeuristicTransactions);
                 }
                 catch (final Exception e) {
                     log.error("Write xaHeuristicTransactions to journal failed", e);
@@ -147,12 +147,15 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
 
 
     @Override
-    public TransactionId[] getPreparedTransactions(final SessionContext context) throws Exception {
+    public TransactionId[] getPreparedTransactions(final SessionContext context, final String uniqueQualifier)
+            throws Exception {
         final List<TransactionId> txs = new ArrayList<TransactionId>();
         synchronized (this.xaTransactions) {
             for (final Iterator<XATransaction> iter = this.xaTransactions.values().iterator(); iter.hasNext();) {
-                final Transaction tx = iter.next();
-                if (tx.isPrepared()) {
+                final XATransaction tx = iter.next();
+                // Only tx that the unique qualifier is equals to the request
+                // one.
+                if (tx.isPrepared() && this.isValidTx(uniqueQualifier, tx)) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("prepared transaction: " + tx.getTransactionId());
                     }
@@ -163,8 +166,12 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
         synchronized (this.xaHeuristicTransactions) {
             // 手工处理的事务，都是prepare状态的xa事务
             for (final Iterator<XATransaction> iter = this.xaHeuristicTransactions.values().iterator(); iter.hasNext();) {
-                final Transaction tx = iter.next();
-                txs.add(tx.getTransactionId());
+                final XATransaction tx = iter.next();
+                // Only tx that the unique qualifier is equals to the request
+                // one.
+                if (this.isValidTx(uniqueQualifier, tx)) {
+                    txs.add(tx.getTransactionId());
+                }
             }
         }
         final XATransactionId rc[] = new XATransactionId[txs.size()];
@@ -173,6 +180,13 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             LOG.debug("prepared transacton list size: " + rc.length);
         }
         return rc;
+    }
+
+
+    private boolean isValidTx(final String uniqueQualifier, final XATransaction tx) {
+        assert tx.getUniqueQualifier() != null;
+        // uniqueQualifier should not be null,but it may be sent by old clients.
+        return tx.getUniqueQualifier().equals(uniqueQualifier) || uniqueQualifier == null;
     }
 
 
@@ -330,8 +344,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             if (context.isInRecoverMode()) {
                 // 恢复模式，不需要处理
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, "The broker is in recover mode.",
-                        cmd.getOpaque()));
+                    cb.putComplete(new BooleanCommand(HttpStatus.Forbidden, "The broker is in recover mode.", cmd
+                        .getOpaque()));
                 }
                 return;
             }
@@ -342,8 +356,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             if (partition == Partition.RandomPartiton.getPartition()) {
                 this.statsManager.statsPutFailed(topic, partitionString, 1);
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "Invalid partition for transaction command:" + partition,
-                        cmd.getOpaque()));
+                    cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError,
+                        "Invalid partition for transaction command:" + partition, cmd.getOpaque()));
                 }
                 return;
             }
@@ -351,8 +365,9 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             if (store == null) {
                 this.statsManager.statsPutFailed(topic, partitionString, 1);
                 if (cb != null) {
-                    cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError, "Could not get or create message store for topic=" + topic + ",partition=" + partition,
-                        cmd.getOpaque()));
+                    cb.putComplete(new BooleanCommand(HttpStatus.InternalServerError,
+                        "Could not get or create message store for topic=" + topic + ",partition=" + partition, cmd
+                        .getOpaque()));
                 }
                 return;
             }
@@ -360,8 +375,8 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
             this.transactionStore.addMessage(store, msgId, cmd, null);
             this.statsManager.statsPut(topic, partitionString, 1);
             if (cb != null) {
-                cb.putComplete(new BooleanCommand(HttpStatus.Success, this.genPutResultString(
-                    partition, msgId, -1), cmd.getOpaque()));
+                cb.putComplete(new BooleanCommand(HttpStatus.Success, this.genPutResultString(partition, msgId, -1),
+                    cmd.getOpaque()));
             }
         }
         else {
@@ -381,7 +396,7 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
     private String genPutResultString(final int partition, final long messageId, final long offset) {
         final StringBuilder sb =
                 new StringBuilder(ByteUtils.stringSize(offset) + ByteUtils.stringSize(messageId)
-                        + ByteUtils.stringSize(partition) + 2);
+                    + ByteUtils.stringSize(partition) + 2);
         sb.append(messageId).append(" ").append(partition).append(" ").append(offset);
         return sb.toString();
     }
@@ -498,7 +513,7 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
 
     @Override
     public String[] getPreparedTransactions() throws Exception {
-        final TransactionId[] ids = this.getPreparedTransactions(null);
+        final TransactionId[] ids = this.getPreparedTransactions(null, null);
         final String[] rt = new String[ids.length];
         for (int i = 0; i < ids.length; i++) {
             rt[i] = ids[i].getTransactionKey();
@@ -509,7 +524,7 @@ public class TransactionalCommandProcessor extends CommandProcessorFilter implem
 
     @Override
     public int getPreparedTransactionCount() throws Exception {
-        return this.getPreparedTransactions(null).length;
+        return this.getPreparedTransactions(null, null).length;
     }
 
 

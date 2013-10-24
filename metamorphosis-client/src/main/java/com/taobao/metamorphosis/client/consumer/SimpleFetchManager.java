@@ -17,15 +17,20 @@
  */
 package com.taobao.metamorphosis.client.consumer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.taobao.gecko.core.util.ConcurrentHashSet;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.MessageAccessor;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.utils.MetaStatLog;
@@ -43,7 +48,9 @@ public class SimpleFetchManager implements FetchManager {
 
     private volatile boolean shutdown = false;
 
-    private Thread[] fetchRunners;
+    private Thread[] fetchThreads;
+
+    private FetchRequestRunner[] requestRunners;
 
     private volatile int fetchRequestCount;
 
@@ -51,7 +58,34 @@ public class SimpleFetchManager implements FetchManager {
 
     private final ConsumerConfig consumerConfig;
 
+    private static final ThreadLocal<TopicPartitionRegInfo> currentTopicRegInfo =
+            new ThreadLocal<TopicPartitionRegInfo>();
+
     private final InnerConsumer consumer;
+
+    public static final Byte PROCESSED = (byte) 1;
+
+    private final static int CACAHE_SIZE = Integer.parseInt(System.getProperty(
+        "metaq.consumer.message_ids.lru_cache.size", "4096"));
+
+    private static MessageIdCache messageIdCache = new ConcurrentLRUHashMap(CACAHE_SIZE);
+
+
+    /**
+     * Set new message id cache to prevent duplicated messages for the same
+     * consumer group.
+     * 
+     * @since 1.4.6
+     * @param newCache
+     */
+    public static void setMessageIdCache(MessageIdCache newCache) {
+        messageIdCache = newCache;
+    }
+
+
+    MessageIdCache getMessageIdCache() {
+        return messageIdCache;
+    }
 
 
     public SimpleFetchManager(final ConsumerConfig consumerConfig, final InnerConsumer consumer) {
@@ -61,6 +95,18 @@ public class SimpleFetchManager implements FetchManager {
     }
 
 
+    /**
+     * Returns current thread processing message's TopicPartitionRegInfo.
+     * 
+     * @since 1.4.6
+     * @return
+     */
+    public static TopicPartitionRegInfo currentTopicRegInfo() {
+        return currentTopicRegInfo.get();
+    }
+
+
+    @Override
     public int getFetchRequestCount() {
         return this.fetchRequestCount;
     }
@@ -75,13 +121,29 @@ public class SimpleFetchManager implements FetchManager {
     @Override
     public void stopFetchRunner() throws InterruptedException {
         this.shutdown = true;
+        this.interruptRunners();
+        // 等待所有任务结束
+        if (this.requestQueue != null) {
+            while (this.requestQueue.size() < this.fetchRequestCount) {
+                this.interruptRunners();
+            }
+        }
+        this.fetchRequestCount = 0;
+    }
+
+
+    private void interruptRunners() {
         // 中断所有任务
-        if (this.fetchRunners != null) {
-            for (final Thread thread : this.fetchRunners) {
+        if (this.fetchThreads != null) {
+            for (int i = 0; i < this.fetchThreads.length; i++) {
+                Thread thread = this.fetchThreads[i];
+                FetchRequestRunner runner = this.requestRunners[i];
                 if (thread != null) {
+                    runner.shutdown();
+                    runner.interruptExecutor();
                     thread.interrupt();
                     try {
-                        thread.join(5000);
+                        thread.join(100);
                     }
                     catch (final InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -90,26 +152,21 @@ public class SimpleFetchManager implements FetchManager {
 
             }
         }
-        // 等待所有任务结束
-        if (this.requestQueue != null) {
-            while (this.requestQueue.size() != this.fetchRequestCount) {
-                Thread.sleep(50);
-            }
-        }
-        this.fetchRequestCount = 0;
-
     }
 
 
     @Override
     public void resetFetchState() {
+        this.fetchRequestCount = 0;
         this.requestQueue = new FetchRequestQueue();
-        this.fetchRunners = new Thread[this.consumerConfig.getFetchRunnerCount()];
-        for (int i = 0; i < this.fetchRunners.length; i++) {
-            this.fetchRunners[i] = new Thread(new FetchRequestRunner());
-            this.fetchRunners[i].setName(this.consumerConfig.getGroup() + "Fetch-Runner-" + i);
+        this.fetchThreads = new Thread[this.consumerConfig.getFetchRunnerCount()];
+        this.requestRunners = new FetchRequestRunner[this.consumerConfig.getFetchRunnerCount()];
+        for (int i = 0; i < this.fetchThreads.length; i++) {
+            FetchRequestRunner runner = new FetchRequestRunner();
+            this.requestRunners[i] = runner;
+            this.fetchThreads[i] = new Thread(runner);
+            this.fetchThreads[i].setName(this.consumerConfig.getGroup() + "-fetch-Runner-" + i);
         }
-
     }
 
 
@@ -118,7 +175,7 @@ public class SimpleFetchManager implements FetchManager {
         // 保存请求数目，在停止的时候要检查
         this.fetchRequestCount = this.requestQueue.size();
         this.shutdown = false;
-        for (final Thread thread : this.fetchRunners) {
+        for (final Thread thread : this.fetchThreads) {
             thread.start();
         }
 
@@ -142,10 +199,17 @@ public class SimpleFetchManager implements FetchManager {
 
         private static final int DELAY_NPARTS = 10;
 
+        private volatile boolean stopped = false;
+
+
+        void shutdown() {
+            this.stopped = true;
+        }
+
 
         @Override
         public void run() {
-            while (!SimpleFetchManager.this.shutdown) {
+            while (!this.stopped) {
                 try {
                     final FetchRequest request = SimpleFetchManager.this.requestQueue.take();
                     this.processRequest(request);
@@ -163,15 +227,17 @@ public class SimpleFetchManager implements FetchManager {
                 final MessageIterator iterator = SimpleFetchManager.this.consumer.fetch(request, -1, null);
                 final MessageListener listener =
                         SimpleFetchManager.this.consumer.getMessageListener(request.getTopic());
-                this.notifyListener(request, iterator, listener);
+                final ConsumerMessageFilter filter =
+                        SimpleFetchManager.this.consumer.getMessageFilter(request.getTopic());
+                this.notifyListener(request, iterator, listener, filter, SimpleFetchManager.this.consumer
+                    .getConsumerConfig().getGroup());
             }
             catch (final MetaClientException e) {
                 this.updateDelay(request);
                 this.LogAddRequest(request, e);
             }
             catch (final InterruptedException e) {
-                // 仍然需要加入队列，可能是停止信号
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
             }
             catch (final Throwable e) {
                 this.updateDelay(request);
@@ -195,7 +261,7 @@ public class SimpleFetchManager implements FetchManager {
             else {
                 log.error("获取消息失败,topic=" + request.getTopic() + ",partition=" + request.getPartition(), e);
             }
-            SimpleFetchManager.this.addFetchRequest(request);
+            this.reAddFetchRequest2Queue(request);
         }
 
 
@@ -203,25 +269,46 @@ public class SimpleFetchManager implements FetchManager {
             try {
                 final long newOffset = SimpleFetchManager.this.consumer.offset(request);
                 request.resetRetries();
-                request.setOffset(newOffset, request.getLastMessageId(), request.getPartitionObject().isAutoAck());
+                if (!this.stopped) {
+                    request.setOffset(newOffset, request.getLastMessageId(), request.getPartitionObject().isAutoAck());
+                }
             }
             catch (final MetaClientException ex) {
                 log.error("查询offset失败,topic=" + request.getTopic() + ",partition=" + request.getPartition(), e);
             }
             finally {
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
             }
         }
 
 
-        private void notifyListener(final FetchRequest request, final MessageIterator it, final MessageListener listener) {
+        public void interruptExecutor() {
+            for (Thread thread : this.executorThreads) {
+                if (!thread.isInterrupted()) {
+                    thread.interrupt();
+                }
+            }
+        }
+
+        private final ConcurrentHashSet<Thread> executorThreads = new ConcurrentHashSet<Thread>();
+
+
+        private void notifyListener(final FetchRequest request, final MessageIterator it,
+                final MessageListener listener, final ConsumerMessageFilter filter, final String group) {
             if (listener != null) {
                 if (listener.getExecutor() != null) {
                     try {
                         listener.getExecutor().execute(new Runnable() {
                             @Override
                             public void run() {
-                                FetchRequestRunner.this.receiveMessages(request, it, listener);
+                                Thread currentThread = Thread.currentThread();
+                                FetchRequestRunner.this.executorThreads.add(currentThread);
+                                try {
+                                    FetchRequestRunner.this.receiveMessages(request, it, listener, filter, group);
+                                }
+                                finally {
+                                    FetchRequestRunner.this.executorThreads.remove(currentThread);
+                                }
                             }
                         });
                     }
@@ -229,14 +316,19 @@ public class SimpleFetchManager implements FetchManager {
                         log.error(
                             "MessageListener线程池繁忙，无法处理消息,topic=" + request.getTopic() + ",partition="
                                     + request.getPartition(), e);
-                        SimpleFetchManager.this.addFetchRequest(request);
+                        this.reAddFetchRequest2Queue(request);
                     }
 
                 }
                 else {
-                    this.receiveMessages(request, it, listener);
+                    this.receiveMessages(request, it, listener, filter, group);
                 }
             }
+        }
+
+
+        private void reAddFetchRequest2Queue(final FetchRequest request) {
+            SimpleFetchManager.this.addFetchRequest(request);
         }
 
 
@@ -261,13 +353,13 @@ public class SimpleFetchManager implements FetchManager {
          * @param listener
          */
         private void receiveMessages(final FetchRequest request, final MessageIterator it,
-                final MessageListener listener) {
+                final MessageListener listener, final ConsumerMessageFilter filter, final String group) {
             if (it != null && it.hasNext()) {
                 if (this.processWhenRetryTooMany(request, it)) {
                     return;
                 }
                 final Partition partition = request.getPartitionObject();
-                if (this.processReceiveMessage(request, it, listener, partition)) {
+                if (this.processReceiveMessage(request, it, listener, filter, partition, group)) {
                     return;
                 }
                 this.postReceiveMessage(request, it, partition);
@@ -287,7 +379,7 @@ public class SimpleFetchManager implements FetchManager {
                 }
 
                 this.updateDelay(request);
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
             }
         }
 
@@ -302,31 +394,66 @@ public class SimpleFetchManager implements FetchManager {
          * @return
          */
         private boolean processReceiveMessage(final FetchRequest request, final MessageIterator it,
-                final MessageListener listener, final Partition partition) {
+                final MessageListener listener, final ConsumerMessageFilter filter, final Partition partition,
+                final String group) {
             int count = 0;
+            List<Long> inTransactionMsgIds = new ArrayList<Long>();
             while (it.hasNext()) {
                 final int prevOffset = it.getOffset();
                 try {
                     final Message msg = it.next();
+                    // If the message is processed before,don't process it
+                    // again.
+                    if (this.isProcessed(msg.getId(), group)) {
+                        continue;
+                    }
                     MessageAccessor.setPartition(msg, partition);
-                    listener.recieveMessages(msg);
+                    boolean accept = this.isAcceptable(request, filter, group, msg);
+                    if (accept) {
+                        currentTopicRegInfo.set(request.getTopicPartitionRegInfo().clone(it));
+                        try {
+                            listener.recieveMessages(msg);
+                        }
+                        finally {
+                            currentTopicRegInfo.remove();
+                        }
+                    }
+                    // rollback message if it is in rollback only state.
+                    if (MessageAccessor.isRollbackOnly(msg)) {
+                        it.setOffset(prevOffset);
+                        break;
+                    }
                     if (partition.isAutoAck()) {
                         count++;
+                        this.markProcessed(msg.getId(), group);
                     }
                     else {
                         // 提交或者回滚都必须跳出循环
                         if (partition.isAcked()) {
                             count++;
+                            // mark all in transaction messages were processed.
+                            for (Long msgId : inTransactionMsgIds) {
+                                this.markProcessed(msgId, group);
+                            }
+                            this.markProcessed(msg.getId(), group);
                             break;
                         }
                         else if (partition.isRollback()) {
                             break;
                         }
                         else {
+                            inTransactionMsgIds.add(msg.getId());
                             // 不是提交也不是回滚，仅递增计数
                             count++;
                         }
                     }
+                }
+                catch (InterruptedException e) {
+                    // Receive messages thread is interrupted
+                    it.setOffset(prevOffset);
+                    log.error("Process messages thread was interrupted,topic=" + request.getTopic() + ",partition="
+                            + request.getPartition(), e);
+                    break;
                 }
                 catch (final InvalidMessageException e) {
                     MetaStatLog.addStat(null, StatConstants.INVALID_MSG_STAT, request.getTopic());
@@ -338,13 +465,56 @@ public class SimpleFetchManager implements FetchManager {
                     // 将指针移到上一条消息
                     it.setOffset(prevOffset);
                     log.error(
-                        "MessageListener处理消息异常,topic=" + request.getTopic() + ",partition=" + request.getPartition(), e);
+                        "Process messages failed,topic=" + request.getTopic() + ",partition=" + request.getPartition(),
+                        e);
                     // 跳出循环，处理消息异常，到此为止
                     break;
                 }
             }
             MetaStatLog.addStatValue2(null, StatConstants.GET_MSG_COUNT_STAT, request.getTopic(), count);
             return false;
+        }
+
+
+        private boolean isProcessed(final Long id, String group) {
+            if (messageIdCache != null) {
+                return messageIdCache.get(this.cacheKey(id, group)) != null;
+            }
+            else {
+                return false;
+            }
+        }
+
+
+        private String cacheKey(final Long id, String group) {
+            return group + id;
+        }
+
+
+        private void markProcessed(final Long msgId, String group) {
+            if (messageIdCache != null) {
+                messageIdCache.put(this.cacheKey(msgId, group), PROCESSED);
+            }
+        }
+
+
+        private boolean isAcceptable(final FetchRequest request, final ConsumerMessageFilter filter,
+                final String group, final Message msg) {
+            if (filter == null) {
+                return true;
+            }
+            else {
+                try {
+                    return filter.accept(group, msg);
+                }
+                catch (Exception e) {
+                    log.error("Filter message failed,topic=" + request.getTopic() + ",group=" + group + ",filterClass="
+                            + filter.getClass().getCanonicalName());
+                    // If accept throw exception,we think we can't accept
+                    // this message.
+                    return false;
+                }
+            }
         }
 
 
@@ -369,10 +539,12 @@ public class SimpleFetchManager implements FetchManager {
 
                 request.resetRetries();
                 // 跳过这条不能处理的消息
-                request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage().getId(), true);
+                if (!this.stopped) {
+                    request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage().getId(), true);
+                }
                 // 强制设置延迟为0
                 request.setDelay(0);
-                SimpleFetchManager.this.addFetchRequest(request);
+                this.reAddFetchRequest2Queue(request);
                 return true;
             }
             else {
@@ -416,8 +588,8 @@ public class SimpleFetchManager implements FetchManager {
 
 
         private void ackRequest(final FetchRequest request, final MessageIterator it, final boolean ack) {
-            request.setOffset(request.getOffset() + it.getOffset(), it.getPrevMessage() != null ? it.getPrevMessage()
-                    .getId() : -1, ack);
+            long msgId = it.getPrevMessage() != null ? it.getPrevMessage().getId() : -1;
+            request.setOffset(request.getOffset() + it.getOffset(), msgId, ack);
             this.addRequst(request);
         }
 
@@ -425,7 +597,7 @@ public class SimpleFetchManager implements FetchManager {
         private void addRequst(final FetchRequest request) {
             final long delay = this.getRetryDelay(request);
             request.setDelay(delay);
-            SimpleFetchManager.this.addFetchRequest(request);
+            this.reAddFetchRequest2Queue(request);
         }
 
 

@@ -17,6 +17,8 @@
  */
 package com.taobao.metamorphosis.client.producer;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,9 +28,12 @@ import java.util.Set;
 
 import javax.transaction.xa.XAResource;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.taobao.gecko.core.util.ConcurrentHashSet;
 import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
 import com.taobao.metamorphosis.client.RemotingClientWrapper;
+import com.taobao.metamorphosis.client.producer.ProducerZooKeeper.BrokerChangeListener;
 import com.taobao.metamorphosis.client.transaction.TransactionContext;
 import com.taobao.metamorphosis.exception.InvalidBrokerException;
 import com.taobao.metamorphosis.exception.MetaClientException;
@@ -40,7 +45,25 @@ import com.taobao.metamorphosis.exception.MetaClientException;
  * @author boyan
  * 
  */
-public class SimpleXAMessageProducer extends SimpleMessageProducer implements XAMessageProducer {
+public class SimpleXAMessageProducer extends SimpleMessageProducer implements XAMessageProducer, BrokerChangeListener {
+    private String uniqueQualifier = DEFAULT_UNIQUE_QUALIFIER_PREFIX + "-" + getLocalhostName();
+
+    private static final String OVERWRITE_HOSTNAME_SYSTEM_PROPERTY = "metaq.client.xaproducer.hostname";
+
+
+    public static String getLocalhostName() {
+        String property = System.getProperty(OVERWRITE_HOSTNAME_SYSTEM_PROPERTY);
+        if (property != null && property.trim().length() > 0) {
+            return property;
+        }
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        }
+        catch (final UnknownHostException e) {
+            throw new RuntimeException("unable to retrieve localhost name");
+        }
+    }
+
 
     public SimpleXAMessageProducer(final MetaMessageSessionFactory messageSessionFactory,
             final RemotingClientWrapper remotingClient, final PartitionSelector partitionSelector,
@@ -50,37 +73,52 @@ public class SimpleXAMessageProducer extends SimpleMessageProducer implements XA
 
     final Set<String> publishedTopics = new ConcurrentHashSet<String>();
 
-    // 本事务会话选定的broker url
-    // TODO
-    // 这里有两种情况：
-    // （1）如果TM和producer跑在同一个应用，需要保证每次启动使用固定的url
-    // （2）如果使用单独部署的TM，每次启动使用不同的url也可以，那么还需要考虑在连接断开的时候再次选择一个url
-    private String selectedServerUrl;
-
     private final Random rand = new Random();
+
+    private volatile String[] urls;
 
 
     @Override
     public void publish(final String topic) {
         super.publish(topic);
         if (this.publishedTopics.add(topic)) {
-            this.selectedServerUrl = this.selectTransactionBroker();
+            // try to select a broker that contains those topics.
+            this.generateTransactionBrokerURLs();
         }
     }
 
 
-    private String selectTransactionBroker() {
+    @Override
+    public void brokersChanged(String topic) {
+        this.generateTransactionBrokerURLs();
+    }
+
+
+    private void generateTransactionBrokerURLs() {
         final List<Set<String>> brokerUrls = new ArrayList<Set<String>>();
         for (final String topic : this.publishedTopics) {
             brokerUrls.add(this.producerZooKeeper.getServerUrlSetByTopic(topic));
+            // Listen for brokers changing.
+            this.producerZooKeeper.onBrokerChange(topic, this);
         }
         final Set<String> resultSet = intersect(brokerUrls);
         if (resultSet.isEmpty()) {
             throw new InvalidBrokerException("Could not select a common broker url for  topics:" + this.publishedTopics);
         }
-        final String[] urls = resultSet.toArray(new String[resultSet.size()]);
-        Arrays.sort(urls);
-        return urls[this.rand.nextInt(urls.length)];
+        String[] newUrls = resultSet.toArray(new String[resultSet.size()]);
+        Arrays.sort(newUrls);
+        // Set new urls array.
+        this.urls = newUrls;
+
+    }
+
+
+    private String selectTransactionBrokerURL() {
+        String[] copiedUrls = this.urls;
+        if (copiedUrls == null || copiedUrls.length == 0) {
+            throw new InvalidBrokerException("Could not select a common broker url for  topics:" + this.publishedTopics);
+        }
+        return copiedUrls[this.rand.nextInt(copiedUrls.length)];
     }
 
 
@@ -99,6 +137,37 @@ public class SimpleXAMessageProducer extends SimpleMessageProducer implements XA
 
 
     @Override
+    public String getUniqueQualifier() {
+        return this.uniqueQualifier;
+    }
+
+
+    @Override
+    public void setUniqueQualifier(String uniqueQualifier) {
+        this.checkUniqueQualifier(this.uniqueQualifier);
+        this.uniqueQualifier = uniqueQualifier;
+    }
+
+
+    @Override
+    public void setUniqueQualifierPrefix(String prefix) {
+        this.checkUniqueQualifier(prefix);
+        this.uniqueQualifier = prefix + "-" + getLocalhostName();
+    }
+
+
+    private void checkUniqueQualifier(String prefix) {
+        if (StringUtils.isBlank(prefix)) {
+            throw new IllegalArgumentException("Blank unique qualifier for SimpleXAMessageProducer");
+        }
+        if (StringUtils.containsAny(prefix, "\r\n\t: ")) {
+            throw new IllegalArgumentException(
+                    "Invalid unique qualifier,it should not contains newline,':' or blank characters.");
+        }
+    }
+
+
+    @Override
     public XAResource getXAResource() throws MetaClientException {
         TransactionContext xares = this.transactionContext.get();
         if (xares != null) {
@@ -108,11 +177,23 @@ public class SimpleXAMessageProducer extends SimpleMessageProducer implements XA
             this.beginTransaction();
             xares = this.transactionContext.get();
             // 设置启用选定的broker
-            xares.setServerUrl(this.selectedServerUrl);
+            String selectedServer = this.selectTransactionBrokerURL();
+            xares.setServerUrl(selectedServer);
+            xares.setUniqueQualifier(this.uniqueQualifier);
+            xares.setXareresourceURLs(this.urls);
             // 指定发送的url
-            this.logLastSentInfo(this.selectedServerUrl);
+            this.logLastSentInfo(selectedServer);
             return xares;
         }
+    }
+
+
+    @Override
+    public synchronized void shutdown() throws MetaClientException {
+        for (String topic : this.publishedTopics) {
+            this.producerZooKeeper.deregisterBrokerChangeListener(topic, this);
+        }
+        super.shutdown();
     }
 
 }

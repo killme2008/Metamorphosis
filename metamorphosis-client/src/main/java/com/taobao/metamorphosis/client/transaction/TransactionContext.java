@@ -17,7 +17,12 @@
  */
 package com.taobao.metamorphosis.client.transaction;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,9 +34,12 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.taobao.gecko.core.command.ResponseCommand;
 import com.taobao.gecko.core.command.ResponseStatus;
 import com.taobao.gecko.core.util.OpaqueGenerator;
+import com.taobao.gecko.service.Connection;
 import com.taobao.gecko.service.RemotingClient;
+import com.taobao.gecko.service.SingleRequestCallBackListener;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.exception.TransactionInProgressException;
 import com.taobao.metamorphosis.network.BooleanCommand;
@@ -53,6 +61,30 @@ import com.taobao.metamorphosis.utils.StatConstants;
  * 
  */
 public class TransactionContext implements XAResource {
+
+    private static final class EndXATransactionListener implements SingleRequestCallBackListener {
+        @Override
+        public void onResponse(ResponseCommand responseCommand, Connection conn) {
+
+        }
+
+
+        @Override
+        public void onException(Exception e) {
+            log.warn("End xa transaction failed:" + e.getMessage());
+        }
+
+
+        @Override
+        public ThreadPoolExecutor getExecutor() {
+            return null;
+        }
+    }
+
+    public static final EndXATransactionListener END_XA_TX_LISTENER = new EndXATransactionListener();
+
+    public static final Log log = LogFactory.getLog(TransactionContext.class);
+
     private final RemotingClient remotingClient;
 
     private Xid associatedXid;
@@ -69,6 +101,34 @@ public class TransactionContext implements XAResource {
 
     private final long startMs;
 
+    // Unique qualifier for XAResource.
+    private String uniqueQualifier;
+
+    // XAResource urls
+    private String[] xareresourceURLs;
+
+    private final long transactionRequestTimeoutInMills;
+
+
+    public String[] getXareresourceURLs() {
+        return this.xareresourceURLs;
+    }
+
+
+    public void setXareresourceURLs(String[] xareresourceURLs) {
+        this.xareresourceURLs = xareresourceURLs;
+    }
+
+
+    public String getUniqueQualifier() {
+        return this.uniqueQualifier;
+    }
+
+
+    public void setUniqueQualifier(String uniqueQualifier) {
+        this.uniqueQualifier = uniqueQualifier;
+    }
+
 
     public TransactionId getTransactionId() {
         return this.transactionId;
@@ -81,14 +141,16 @@ public class TransactionContext implements XAResource {
 
 
     public TransactionContext(final RemotingClient remotingClient, final String serverUrl,
-            final TransactionSession session, final LongSequenceGenerator localTransactionIdGenerator, final int seconds) {
+            final TransactionSession session, final LongSequenceGenerator localTransactionIdGenerator,
+            final int transactionTimeout, final long transactionRequestTimeoutInMills) {
         super();
         this.remotingClient = remotingClient;
         this.serverUrl = serverUrl;
         this.localTransactionIdGenerator = localTransactionIdGenerator;
         this.associatedSession = session;
         this.sessionId = session.getSessionId();
-        this.transactionTimeout = seconds;
+        this.transactionTimeout = transactionTimeout;
+        this.transactionRequestTimeoutInMills = transactionRequestTimeoutInMills;
         this.startMs = System.currentTimeMillis();
     }
 
@@ -125,7 +187,7 @@ public class TransactionContext implements XAResource {
             throw new XAException(XAException.XAER_PROTO);
         }
         else {
-            x = new XATransactionId(xid);
+            x = new XATransactionId(xid, this.uniqueQualifier);
         }
 
         MetaStatLog.addStat(null, StatConstants.TX_COMMIT);
@@ -135,7 +197,7 @@ public class TransactionContext implements XAResource {
             // Notify the server that the tx was committed back
             final TransactionInfo info =
                     new TransactionInfo(x, this.sessionId, onePhase ? TransactionInfo.TransactionType.COMMIT_ONE_PHASE
-                            : TransactionInfo.TransactionType.COMMIT_TWO_PHASE);
+                            : TransactionInfo.TransactionType.COMMIT_TWO_PHASE, this.uniqueQualifier);
 
             this.syncSendXATxCommand(info);
         }
@@ -214,10 +276,11 @@ public class TransactionContext implements XAResource {
             x = (XATransactionId) this.transactionId;
         }
         else {
-            x = new XATransactionId(xid);
+            x = new XATransactionId(xid, this.uniqueQualifier);
         }
 
-        final TransactionInfo info = new TransactionInfo(x, this.sessionId, TransactionInfo.TransactionType.FORGET);
+        final TransactionInfo info =
+                new TransactionInfo(x, this.sessionId, TransactionInfo.TransactionType.FORGET, this.uniqueQualifier);
         this.syncSendXATxCommand(info);
     }
 
@@ -264,11 +327,12 @@ public class TransactionContext implements XAResource {
             throw new XAException(XAException.XAER_PROTO);
         }
         else {
-            x = new XATransactionId(xid);
+            x = new XATransactionId(xid, this.uniqueQualifier);
         }
         MetaStatLog.addStat(null, StatConstants.TX_PREPARE);
 
-        final TransactionInfo info = new TransactionInfo(x, this.sessionId, TransactionInfo.TransactionType.PREPARE);
+        final TransactionInfo info =
+                new TransactionInfo(x, this.sessionId, TransactionInfo.TransactionType.PREPARE, this.uniqueQualifier);
 
         final BooleanCommand response = this.syncSendXATxCommand(info);
         final int result = Integer.parseInt(response.getErrorMsg());
@@ -289,36 +353,52 @@ public class TransactionContext implements XAResource {
     @Override
     public Xid[] recover(final int flag) throws XAException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Recover: " + flag);
+            LOG.debug("Recover with flag: " + flag);
         }
-        this.checkConnectionConnected();
-        final TransactionInfo info = new TransactionInfo(null, this.sessionId, TransactionInfo.TransactionType.RECOVER);
+        final TransactionInfo info =
+                new TransactionInfo(null, this.sessionId, TransactionInfo.TransactionType.RECOVER, this.uniqueQualifier);
         try {
-
-            final BooleanCommand receipt =
-                    (BooleanCommand) this.remotingClient.invokeToGroup(this.serverUrl, new TransactionCommand(info,
-                        OpaqueGenerator.getNextOpaque()));
-            if (receipt.getCode() != HttpStatus.Success) {
-                throw new XAException(receipt.getErrorMsg());
+            final List<XATransactionId> xidList = new ArrayList<XATransactionId>();
+            if (this.xareresourceURLs == null || this.xareresourceURLs.length == 0) {
+                throw new XAException(XAException.XAER_RMFAIL);
             }
-            final String data = receipt.getErrorMsg();
-            if (StringUtils.isBlank(data)) {
-                return EMPTY_IDS;
-            }
-            final String[] xidStrs = NEW_LINE_PATTERN.split(data);
-
-            final XATransactionId[] answer = new XATransactionId[xidStrs.length];
-            int i = 0;
-            for (final String key : xidStrs) {
-                if (!StringUtils.isBlank(key)) {
-                    answer[i++] = new XATransactionId(key);
+            // Recover from all XA resources.
+            for (final String serverUrl : this.xareresourceURLs) {
+                try {
+                    final BooleanCommand receipt =
+                            (BooleanCommand) this.remotingClient.invokeToGroup(serverUrl, new TransactionCommand(info,
+                                OpaqueGenerator.getNextOpaque()), this.transactionRequestTimeoutInMills,
+                                TimeUnit.MILLISECONDS);
+                    if (receipt.getCode() != HttpStatus.Success) {
+                        log.warn("Recover XAResource(" + serverUrl + ") failed,error message:" + receipt.getErrorMsg());
+                        continue;
+                    }
+                    final String data = receipt.getErrorMsg();
+                    if (StringUtils.isBlank(data)) {
+                        continue;
+                    }
+                    final String[] xidStrs = NEW_LINE_PATTERN.split(data);
+                    for (final String key : xidStrs) {
+                        if (!StringUtils.isBlank(key)) {
+                            xidList.add(new XATransactionId(key));
+                        }
+                    }
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw this.toXAException(e);
+                }
+                catch (Exception e) {
+                    log.error("Recover XAResource(" + serverUrl + ") faile", e);
                 }
             }
-            return answer;
-        }
-        catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw this.toXAException(e);
+            if (xidList.isEmpty()) {
+                return EMPTY_IDS;
+            }
+            else {
+                Xid[] rt = new Xid[xidList.size()];
+                return xidList.toArray(rt);
+            }
         }
         catch (final Exception e) {
             throw this.toXAException(e);
@@ -340,14 +420,15 @@ public class TransactionContext implements XAResource {
             x = (XATransactionId) this.transactionId;
         }
         else {
-            x = new XATransactionId(xid);
+            x = new XATransactionId(xid, this.uniqueQualifier);
         }
         MetaStatLog.addStat(null, StatConstants.TX_ROLLBACK);
         this.checkConnectionConnected();
         try {
 
             final TransactionInfo info =
-                    new TransactionInfo(x, this.sessionId, TransactionInfo.TransactionType.ROLLBACK);
+                    new TransactionInfo(x, this.sessionId, TransactionInfo.TransactionType.ROLLBACK,
+                        this.uniqueQualifier);
             this.syncSendXATxCommand(info);
         }
         finally {
@@ -364,7 +445,7 @@ public class TransactionContext implements XAResource {
         try {
             final BooleanCommand resp =
                     (BooleanCommand) this.remotingClient.invokeToGroup(this.serverUrl, new TransactionCommand(info,
-                        OpaqueGenerator.getNextOpaque()));
+                        OpaqueGenerator.getNextOpaque()), this.transactionRequestTimeoutInMills, TimeUnit.MILLISECONDS);
             if (resp.getResponseStatus() != ResponseStatus.NO_ERROR) {
                 final String msg = resp.getErrorMsg();
                 if (msg.startsWith("XAException:")) {
@@ -421,6 +502,12 @@ public class TransactionContext implements XAResource {
      * @return
      */
     XAException toXAException(final Exception e) {
+        if (e instanceof TimeoutException) {
+            final XAException xae = new XAException(e.getMessage());
+            xae.errorCode = XAException.XA_RBTIMEOUT;
+            xae.initCause(e);
+            return xae;
+        }
         if (e.getCause() != null && e.getCause() instanceof XAException) {
             final XAException original = (XAException) e.getCause();
             final XAException xae = new XAException(original.getMessage());
@@ -456,10 +543,12 @@ public class TransactionContext implements XAResource {
         if (this.transactionId != null) {
             MetaStatLog.addStat(null, StatConstants.TX_END);
             final TransactionInfo info =
-                    new TransactionInfo(this.transactionId, this.sessionId, TransactionInfo.TransactionType.END);
+                    new TransactionInfo(this.transactionId, this.sessionId, TransactionInfo.TransactionType.END,
+                        this.uniqueQualifier);
             try {
                 this.remotingClient.sendToGroup(this.serverUrl,
-                    new TransactionCommand(info, OpaqueGenerator.getNextOpaque()));
+                    new TransactionCommand(info, OpaqueGenerator.getNextOpaque()), END_XA_TX_LISTENER,
+                    this.transactionRequestTimeoutInMills, TimeUnit.MILLISECONDS);
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Ended XA transaction: " + this.transactionId);
                 }
@@ -477,11 +566,11 @@ public class TransactionContext implements XAResource {
     private void startXATransaction(final Xid xid) throws XAException {
         MetaStatLog.addStat(null, StatConstants.TX_BEGIN);
         this.associatedXid = xid;
-        this.transactionId = new XATransactionId(xid);
+        this.transactionId = new XATransactionId(xid, this.uniqueQualifier);
 
         final TransactionInfo info =
                 new TransactionInfo(this.transactionId, this.sessionId, TransactionInfo.TransactionType.BEGIN,
-                    this.transactionTimeout);
+                    this.uniqueQualifier, this.transactionTimeout);
         this.syncSendXATxCommand(info);
     }
 
@@ -517,16 +606,17 @@ public class TransactionContext implements XAResource {
 
         if (this.isInXATransaction()) {
             throw new TransactionInProgressException(
-                "Cannot start local transaction.  XA transaction is already in progress.");
+                    "Cannot start local transaction.  XA transaction is already in progress.");
         }
 
         if (this.transactionId == null) {
             MetaStatLog.addStat(null, StatConstants.TX_BEGIN);
             this.transactionId =
                     new LocalTransactionId(this.sessionId, this.localTransactionIdGenerator.getNextSequenceId());
+            // Local transaction doesn't need unique qualifier.
             final TransactionInfo info =
                     new TransactionInfo(this.transactionId, this.sessionId, TransactionInfo.TransactionType.BEGIN,
-                        this.transactionTimeout);
+                        this.uniqueQualifier, this.transactionTimeout);
             try {
                 this.checkConnectionConnected();
                 this.syncSendLocalTxCommand(info);
@@ -554,7 +644,7 @@ public class TransactionContext implements XAResource {
             throw new TransactionInProgressException("Cannot commit() if an XA transaction is already in progress ");
         }
 
-        // Only send commit if the transaction was started.
+        // Only send commit command if the transaction was started.
         if (this.transactionId != null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Commit: " + this.transactionId);
@@ -562,11 +652,16 @@ public class TransactionContext implements XAResource {
             }
             MetaStatLog.addStat(null, StatConstants.TX_COMMIT);
             try {
+                // Local transaction doesn't need unique qualifier.
                 final TransactionInfo info =
                         new TransactionInfo(this.transactionId, this.sessionId,
-                            TransactionInfo.TransactionType.COMMIT_ONE_PHASE);
+                            TransactionInfo.TransactionType.COMMIT_ONE_PHASE, this.uniqueQualifier);
                 this.transactionId = null;
                 this.syncSendLocalTxCommand(info);
+            }
+            catch (TimeoutException e) {
+                throw new MetaClientException(
+                    "Commit transaction timeout,the transaction state is unknown,you must check it by yourself.", e);
             }
             finally {
                 this.logTxTime();
@@ -584,15 +679,18 @@ public class TransactionContext implements XAResource {
     }
 
 
-    private void syncSendLocalTxCommand(final TransactionInfo info) throws MetaClientException {
+    private void syncSendLocalTxCommand(final TransactionInfo info) throws MetaClientException, TimeoutException {
         try {
 
             final BooleanCommand resp =
                     (BooleanCommand) this.remotingClient.invokeToGroup(this.serverUrl, new TransactionCommand(info,
-                        OpaqueGenerator.getNextOpaque()));
+                        OpaqueGenerator.getNextOpaque()), this.transactionRequestTimeoutInMills, TimeUnit.MILLISECONDS);
             if (resp.getResponseStatus() != ResponseStatus.NO_ERROR) {
                 throw new MetaClientException(resp.getErrorMsg());
             }
+        }
+        catch (TimeoutException te) {
+            throw te;
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -617,9 +715,13 @@ public class TransactionContext implements XAResource {
             try {
                 final TransactionInfo info =
                         new TransactionInfo(this.transactionId, this.sessionId,
-                            TransactionInfo.TransactionType.ROLLBACK);
+                            TransactionInfo.TransactionType.ROLLBACK, this.uniqueQualifier);
                 this.transactionId = null;
                 this.syncSendLocalTxCommand(info);
+            }
+            catch (TimeoutException e) {
+                throw new MetaClientException(
+                    "Rollback transaction timeout,the transaction state is unknown,you must check it by yourself.", e);
             }
             finally {
                 this.logTxTime();

@@ -1,0 +1,26 @@
+<div>
+  #foreach ($node in $nodes)
+  <table class= "table table-bordered">
+	<caption><h3>Broker $node.id</h3></caption>
+	<thead>
+	  <tr>
+		<th>Slave ?</th>
+		<th>Broker URI</th>
+		<th>Dashboard</th>
+	  </tr>
+	</thead>
+	#foreach($broker in $node.brokers)
+	<tr>
+	  <td>
+		$broker.slave</td>
+	  <td>$broker.broker-uri</td>
+	  <td><a href="$broker.dashboard-uri"> $broker.dashboard-uri</a>
+        #if ($current.equals($broker.broker-uri))
+		<span class="badge badge-success">Current</span>
+        #end
+	  </td>
+	</tr>
+	#end
+  </table>
+  #end
+</div>

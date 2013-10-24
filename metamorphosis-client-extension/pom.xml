@@ -3,7 +3,7 @@
 	<parent>
 		<artifactId>metamorphosis-all</artifactId>
 		<groupId>com.taobao.metamorphosis</groupId>
-		<version>1.4.4-SNAPSHOT</version>
+		<version>1.4.6.3-SNAPSHOT</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>

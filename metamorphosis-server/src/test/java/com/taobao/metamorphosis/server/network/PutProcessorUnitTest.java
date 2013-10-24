@@ -85,7 +85,7 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
 
             @Override
             public Object answer() throws Throwable {
-                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(new Location(offset, 1024));
+                ((StoreAppendCallback) EasyMock.getCurrentArguments()[2]).appendComplete(Location.create(offset, 1024));
                 return null;
             }
 
@@ -113,12 +113,15 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
         EasyMock.expect(this.storeManager.getOrCreateMessageStore(this.topic, partition)).andReturn(store);
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final BooleanCommand expectResp =
-                new BooleanCommand(HttpStatus.InternalServerError, "put message failed", request.getOpaque());
+                new BooleanCommand(HttpStatus.InternalServerError,
+                    "Put message to [broker 'meta://localhost:8123'] [partition 'PutProcessorUnitTest-1'] failed.",
+                    request.getOpaque());
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectResp.equals(resp)) {
                     throw new RuntimeException();
                 }
@@ -138,6 +141,7 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
         });
         this.brokerZooKeeper.registerTopicInZk(this.topic, false);
         EasyMock.expectLastCall();
+        EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");
         this.mocksControl.replay();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);
         this.mocksControl.verify();
@@ -157,19 +161,23 @@ public class PutProcessorUnitTest extends BaseProcessorUnitTest {
         this.metaConfig.setTopics(Arrays.asList(this.topic));
         this.metaConfig.closePartitions(this.topic, partition, partition);
         final BooleanCommand expectedResp =
-                new BooleanCommand(HttpStatus.Forbidden, "Partition["
-                        + this.metaConfig.getBrokerId() + "-" + request.getPartition() + "] has been closed", request.getOpaque());
+                new BooleanCommand(
+                    HttpStatus.Forbidden,
+                    "Put message to [broker 'meta://localhost:8123'] [partition 'PutProcessorUnitTest-1'] failed.Detail:partition[0-1] has been closed",
+                    request.getOpaque());
         final AtomicBoolean invoked = new AtomicBoolean(false);
         final PutCallback cb = new PutCallback() {
 
             @Override
             public void putComplete(final ResponseCommand resp) {
                 invoked.set(true);
+                System.out.println(((BooleanCommand) resp).getErrorMsg());
                 if (!expectedResp.equals(resp)) {
                     throw new RuntimeException();
                 }
             }
         };
+        EasyMock.expect(this.brokerZooKeeper.getBrokerString()).andReturn("meta://localhost:8123");
         this.mocksControl.replay();
         this.commandProcessor.processPutCommand(request, this.sessionContext, cb);
 

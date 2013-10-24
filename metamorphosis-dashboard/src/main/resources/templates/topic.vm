@@ -1,0 +1,150 @@
+<div id="query-pending-msgs" class="form-search">
+  <form autocomplete="on" autofill="on" onsubmit="return false;">
+	<legend>Query pending messages for topic <strong>$topic.topic</strong> by consumer group:</legend>
+	<input placeholder="Consumer group" type="text" name="group"  class="input-medium search-query" value="$!group">
+	<button class="btn">Query</button>
+  </form>
+</div>
+<br />
+<div>
+  #if($pending-stats.error)
+<div class="alert alert-error">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Warning!</strong> $pending-stats.error
+</div>
+  #else
+    #if ($pending-stats)
+      <div id="alert" class="alert alert-info">
+		<ul>
+		  <li>Group name: $group</li>
+		  <li>Group filter: $!group-filter</li>
+		<ul>
+	  </div>
+	  <input type= "hidden" id="consumer_group" value= "$!group"/>
+	  <input type= "hidden" id="consumer_topic" value= "$!topic.topic"/>
+      <table class= "table table-bordered" id= "group-stats-table">
+	  <thead>
+		<tr>
+		  <th>Parition</th>
+		  <th>Partition owner</th>
+		  <th>Pending messages (estimated) </th>
+		  <th>Pending message bytes</th>
+		  <th>Consumed messages (estimated) </th>
+		  <th>Consumed message bytes</th>
+		  <th>Operations</th>
+		</tr>
+	  </thead>
+	  <tbody>
+      #foreach ($stats in $pending-stats)
+        <tr>
+		  <td>$!stats.partition</td>
+		  <td>$!stats.owner</td>
+		  <td>$!stats.pending-messages</td>
+		  <td>$!stats.pending-bytes</td>
+		  <td>$!stats.consumed-messages</td>
+		  <td>$!stats.consumed-bytes</td>
+		  <td><button class= "btn" partition="$!stats.partition">Skip pending messages</button></td>
+		</tr>
+      #end
+      </tbody>
+	  </table>
+    #end
+  #end
+</div>
+<div class= "mini-layout">
+  <h3>$topic.topic</h3>
+  <table class="table ">
+	<tr>
+	  <td>Partitions</td>
+	  <td>$topic.partitions</td>
+	</tr>
+	<tr>
+	  <td>Accept Pub</td>
+	  <td>$topic.topicConfig.acceptPublish</td>
+	</tr>
+	<tr>
+	  <td>Accept Sub</td>
+	  <td>$topic.topicConfig.acceptSubscribe</td>
+	</tr>
+	<tr>
+	  <td>Unflush Threshold</td>
+	  <td>$topic.topicConfig.unflushThreshold</td>
+	</tr>
+	<tr>
+	  <td>Unflush Interval</td>
+	  <td>$topic.topicConfig.unflushInterval</td>
+	</tr>
+	<tr>
+	  <td>Data Path</td>
+	  <td>$topic.topicConfig.dataPath</td>
+	</tr>
+	<tr>
+	  <td>Delete Policy</td>
+	  <td>$topic.topicConfig.deletePolicy</td>
+	</tr>
+	<tr>
+	  <td>Delete When</td>
+	  <td>$topic.topicConfig.deleteWhen</td>
+	</tr>
+	<tr>
+	  <td>Messages</td>
+	  <td>$topic.messageCount</td>
+	</tr>
+	<tr>
+	  <td>Messages Bytes</td>
+	  <td>$topic.messageBytes</td>
+	</tr>
+	<tr>
+	  <td>Realtime statistics</td>
+	  <td>
+		<table class="table">
+		  <tr>
+			<td>Put</td>
+			<td>$topic.puts</td>
+		  </tr>
+		  <tr>
+			<td>Put Failed</td>
+			<td>$topic.putFailed</td>
+		  </tr>
+		  <tr>
+			<td>Get</td>
+			<td>$topic.gets</td>
+		  </tr>
+		  <tr>
+			<td>Get Missed</td>
+			<td>$topic.getMissed</td>
+		  </tr>
+		</table>
+	  </td>
+	</tr>
+  </table>
+</div>
+<script type="text/javascript">
+  	$("#query-pending-msgs button").on("click", function(e) {
+		var group = $("#query-pending-msgs input").val();
+	    var url = "#topics/$topic.topic?group=" + group
+	    window.location.href = url;
+    });
+	$("#query-pending-msgs input").keyup(function(event){
+       if(event.keyCode == 13){
+          $("#query-pending-msgs button").click();
+       }
+    });
+	$("#query-pending-msgs input").focus();
+  	$("#group-stats-table tr td button").on("click", function(e) {
+	    var partition = $(e.target).attr ("partition");
+	    var group = $("#consumer_group").val ();
+        var topic = $("#consumer_topic").val ();
+	    if (confirm ("Are u sure want to skip all pending messages in topic " + topic + " for group " + group + " and partition " + partition + "?")) {
+            var url = "/topics/" + topic + "/groups/" + group + "/partitions/" + partition + "/skip";
+	        $.post (url, {} ,function (resp){
+              if (resp == "success")
+	              window.location.reload();
+              else {
+	             $("#alert").attr("class", "alert alert-error");
+	             $("#alert").html("<strong>Warning!</strong>"+resp);
+              }
+	        });
+       }
+    });
+</script>

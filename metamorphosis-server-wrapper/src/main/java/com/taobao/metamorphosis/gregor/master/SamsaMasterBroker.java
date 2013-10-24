@@ -38,7 +38,7 @@ import com.taobao.gecko.service.config.ClientConfig;
 import com.taobao.gecko.service.exception.NotifyRemotingException;
 import com.taobao.metamorphosis.AbstractBrokerPlugin;
 import com.taobao.metamorphosis.Message;
-import com.taobao.metamorphosis.client.consumer.MessageIterator;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.InvalidMessageException;
 import com.taobao.metamorphosis.network.MetamorphosisWireFormatType;
 import com.taobao.metamorphosis.server.assembly.MetaMorphosisBroker;
@@ -360,7 +360,7 @@ public class SamsaMasterBroker extends AbstractBrokerPlugin {
 
 
     private TreeMap<Long, List<OffsetInfo>> getOffsetInfosFromZk(final ZkClient zkClient, final String consumersPath,
-            final int brokerId, final List<String> consumers, final RecoverPartition recoverPartition) {
+        final int brokerId, final List<String> consumers, final RecoverPartition recoverPartition) {
         final TreeMap<Long, List<OffsetInfo>> offsetInfos = new TreeMap<Long, List<OffsetInfo>>();
 
         // 从zk上获取需要recover的offset信息
@@ -558,6 +558,12 @@ public class SamsaMasterBroker extends AbstractBrokerPlugin {
         }
     }
 
+    private long sendToSlaveTimeoutInMills = 2000;
+
+    private long checkSlaveIntervalInMills = 100;
+
+    private int slaveContinuousFailureThreshold = 100;
+
 
     @Override
     public void init(final MetaMorphosisBroker metaMorphosisBroker, final Properties props) {
@@ -577,6 +583,7 @@ public class SamsaMasterBroker extends AbstractBrokerPlugin {
         if (StringUtils.isBlank(slave)) {
             throw new IllegalArgumentException("Blank slave");
         }
+        this.setConfigs(props);
         final ClientConfig clientConfig = new ClientConfig();
         // 只使用1个reactor
         clientConfig.setSelectorPoolSize(1);
@@ -589,7 +596,9 @@ public class SamsaMasterBroker extends AbstractBrokerPlugin {
                         metaMorphosisBroker.getExecutorsManager(), metaMorphosisBroker.getStatsManager(),
                         metaMorphosisBroker.getRemotingServer(), metaMorphosisBroker.getMetaConfig(),
                         metaMorphosisBroker.getIdWorker(), metaMorphosisBroker.getBrokerZooKeeper(),
-                        this.remotingClient, slave, callbackThreadCount);
+                        this.remotingClient, metaMorphosisBroker.getConsumerFilterManager(), slave,
+                        callbackThreadCount, this.sendToSlaveTimeoutInMills, this.checkSlaveIntervalInMills,
+                        this.slaveContinuousFailureThreshold);
             // 替换处理器
             this.broker.setBrokerProcessor(this.masterProcessor);
             log.info("Init samsa mater successfully with config:" + props);
@@ -599,6 +608,29 @@ public class SamsaMasterBroker extends AbstractBrokerPlugin {
         }
         catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+
+    private void setConfigs(final Properties props) {
+        if (!StringUtils.isBlank(props.getProperty("sendToSlaveTimeoutInMills"))) {
+            this.sendToSlaveTimeoutInMills = Long.parseLong(props.getProperty("sendToSlaveTimeoutInMills"));
+            if (this.sendToSlaveTimeoutInMills <= 0) {
+                throw new IllegalArgumentException("Invalid sendToSlaveTimeoutInMills value");
+            }
+        }
+        if (!StringUtils.isBlank(props.getProperty("checkSlaveIntervalInMills"))) {
+            this.checkSlaveIntervalInMills = Long.parseLong(props.getProperty("checkSlaveIntervalInMills"));
+            if (this.checkSlaveIntervalInMills <= 0) {
+                throw new IllegalArgumentException("Invalid checkSlaveIntervalInMills value");
+            }
+        }
+        if (!StringUtils.isBlank(props.getProperty("slaveContinuousFailureThreshold"))) {
+            this.slaveContinuousFailureThreshold =
+                    Integer.parseInt(props.getProperty("slaveContinuousFailureThreshold"));
+            if (this.slaveContinuousFailureThreshold <= 0) {
+                throw new IllegalArgumentException("Invalid slaveContinuousFailureThreshold value");
+            }
         }
     }
 

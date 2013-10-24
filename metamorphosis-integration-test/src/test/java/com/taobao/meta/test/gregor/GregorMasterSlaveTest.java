@@ -35,7 +35,6 @@ public class GregorMasterSlaveTest extends BaseMetaTest {
     @Override
     public void setUp() throws Exception {
         final MetaClientConfig metaClientConfig = new MetaClientConfig();
-        metaClientConfig.setDiamondZKDataId(Utils.diamondZKDataId);
         super.sessionFactory = new MetaMessageSessionFactory(metaClientConfig);
         this.log.info("before run");
     }
@@ -120,6 +119,7 @@ public class GregorMasterSlaveTest extends BaseMetaTest {
     protected EnhancedBroker startEnhanceBroker(final String name, final boolean isClearConsumerInfo,
             final boolean isClearMsg, final Map<String, Properties> pluginsInfo) throws Exception {
         final MetaConfig metaConfig = this.metaConfig(name);
+        metaConfig.setDashboardHttpPort(metaConfig.getServerPort() - 80);
         if (isClearMsg) {
             Utils.clearDataDir(metaConfig);
         }

@@ -19,17 +19,25 @@ package com.taobao.metamorphosis.server.network;
 
 import static org.junit.Assert.assertEquals;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.easymock.IAnswer;
 import org.easymock.classextension.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.taobao.metamorphosis.Message;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
 import com.taobao.metamorphosis.network.BooleanCommand;
+import com.taobao.metamorphosis.network.DataCommand;
 import com.taobao.metamorphosis.network.GetCommand;
 import com.taobao.metamorphosis.network.HttpStatus;
+import com.taobao.metamorphosis.network.PutCommand;
+import com.taobao.metamorphosis.server.filter.ConsumerFilterManager;
 import com.taobao.metamorphosis.server.store.MessageSet;
 import com.taobao.metamorphosis.server.store.MessageStore;
+import com.taobao.metamorphosis.utils.MessageUtils;
 
 
 public class GetProcessorUnitTest extends BaseProcessorUnitTest {
@@ -195,6 +203,104 @@ public class GetProcessorUnitTest extends BaseProcessorUnitTest {
         EasyMock.expect(store.slice(offset, maxSize)).andReturn(set);
         final GetCommand request = new GetCommand(this.topic, this.group, partition, offset, maxSize, opaque);
         set.write(request, this.sessionContext);
+        EasyMock.expectLastCall();
+        this.mocksControl.replay();
+
+        this.getProcessor.handleRequest(request, this.conn);
+        this.mocksControl.verify();
+        assertEquals(0, this.statsManager.getCmdGetMiss());
+        assertEquals(1, this.statsManager.getCmdGets());
+        assertEquals(0, this.statsManager.getCmdOffsets());
+    }
+
+    public static class AcceptMessageFilter implements ConsumerMessageFilter {
+
+        @Override
+        public boolean accept(String group, Message message) {
+            return true;
+        }
+    }
+
+    @Test
+    public void testHandleRequestNormalWithMessageFilter() throws Exception {
+        final int partition = 1;
+        final int opaque = 0;
+        final int maxSize = 1024;
+        final long offset = 10;
+        final ByteBuffer msgBuf =
+                MessageUtils.makeMessageBuffer(999, new PutCommand(this.topic, partition, "hello world".getBytes(),
+                    null, 0, opaque));
+        final MessageStore store = this.mocksControl.createMock(MessageStore.class);
+        EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
+        final MessageSet set = this.mocksControl.createMock(MessageSet.class);
+        EasyMock.expect(store.slice(offset, maxSize)).andReturn(set);
+        final GetCommand request = new GetCommand(this.topic, this.group, partition, offset, maxSize, opaque);
+        set.read((ByteBuffer) EasyMock.anyObject());
+        EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
+
+            @Override
+            public Void answer() throws Throwable {
+                final Object[] args = EasyMock.getCurrentArguments();
+                ByteBuffer buf = (ByteBuffer) args[0];
+                buf.put(msgBuf);
+                return null;
+            }
+
+        });
+        this.consumerFilterManager = this.mocksControl.createMock(ConsumerFilterManager.class);
+        EasyMock.expect(this.consumerFilterManager.findFilter(this.topic, this.group))
+        .andReturn(
+            new AcceptMessageFilter());
+        this.commandProcessor.setConsumerFilterManager(this.consumerFilterManager);
+        this.conn.response(new DataCommand(msgBuf.array(), opaque, true));
+        EasyMock.expectLastCall();
+        this.mocksControl.replay();
+
+        this.getProcessor.handleRequest(request, this.conn);
+        this.mocksControl.verify();
+        assertEquals(0, this.statsManager.getCmdGetMiss());
+        assertEquals(1, this.statsManager.getCmdGets());
+        assertEquals(0, this.statsManager.getCmdOffsets());
+    }
+
+
+    @Test
+    public void testHandleRequestNormalWithMessageFilter_NotAccept() throws Exception {
+        final int partition = 1;
+        final int opaque = 0;
+        final int maxSize = 1024;
+        final long offset = 10;
+        final ByteBuffer msgBuf =
+                MessageUtils.makeMessageBuffer(999, new PutCommand(this.topic, partition, "hello world".getBytes(),
+                    null, 0, opaque));
+        final MessageStore store = this.mocksControl.createMock(MessageStore.class);
+        EasyMock.expect(this.storeManager.getMessageStore(this.topic, partition)).andReturn(store);
+        final MessageSet set = this.mocksControl.createMock(MessageSet.class);
+        EasyMock.expect(store.slice(offset, maxSize)).andReturn(set);
+        final GetCommand request = new GetCommand(this.topic, this.group, partition, offset, maxSize, opaque);
+        set.read((ByteBuffer) EasyMock.anyObject());
+        EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
+
+            @Override
+            public Void answer() throws Throwable {
+                final Object[] args = EasyMock.getCurrentArguments();
+                ByteBuffer buf = (ByteBuffer) args[0];
+                buf.put(msgBuf);
+                return null;
+            }
+
+        });
+        this.consumerFilterManager = this.mocksControl.createMock(ConsumerFilterManager.class);
+        EasyMock.expect(this.consumerFilterManager.findFilter(this.topic, this.group)).andReturn(
+            new ConsumerMessageFilter() {
+
+                @Override
+                public boolean accept(String group, Message message) {
+                    return false;
+                }
+            });
+        this.commandProcessor.setConsumerFilterManager(this.consumerFilterManager);
+        this.conn.response(new BooleanCommand(HttpStatus.Moved, String.valueOf(offset + msgBuf.capacity()), opaque));
         EasyMock.expectLastCall();
         this.mocksControl.replay();
 

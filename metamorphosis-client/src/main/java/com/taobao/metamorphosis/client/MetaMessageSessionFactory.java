@@ -85,6 +85,8 @@ import com.taobao.metamorphosis.utils.ZkUtils.ZKConfig;
  * @Date 2011-8-4
  */
 public class MetaMessageSessionFactory implements MessageSessionFactory {
+    private static final int MAX_RECONNECT_TIMES = Integer.valueOf(System.getProperty(
+        "metaq.client.network.max.reconnect.times", "350"));
     private static final int STATS_OPTIMEOUT = 3000;
     protected RemotingClientWrapper remotingClient;
     private final MetaClientConfig metaClientConfig;
@@ -118,9 +120,9 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             public void exceptionCaught(final Throwable cause) {
                 boolean isResetConnEx =
                         cause instanceof IOException && cause.getMessage().indexOf("Connection reset by peer") >= 0;
-                if (log.isErrorEnabled() && !isResetConnEx) {
-                    log.error("Networking unexpected exception", cause);
-                }
+                        if (log.isErrorEnabled() && !isResetConnEx) {
+                            log.error("Networking unexpected exception", cause);
+                        }
             }
         });
     }
@@ -195,53 +197,68 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         return this.children;
     }
 
+    public static final boolean TCP_NO_DELAY = Boolean.valueOf(System.getProperty("metaq.network.tcp_nodelay", "true"));
+    public static final long MAX_SCHEDULE_WRITTEN_BYTES = Long.valueOf(System.getProperty(
+        "metaq.network.max_schedule_written_bytes", String.valueOf(Runtime.getRuntime().maxMemory() / 3)));
+
 
     public MetaMessageSessionFactory(final MetaClientConfig metaClientConfig) throws MetaClientException {
         super();
-        this.checkConfig(metaClientConfig);
-        this.metaClientConfig = metaClientConfig;
-        final ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setTcpNoDelay(false);
-        clientConfig.setWireFormatType(new MetamorphosisWireFormatType());
-        clientConfig.setMaxScheduleWrittenBytes(Runtime.getRuntime().maxMemory() / 3);
         try {
-            this.remotingClient = new RemotingClientWrapper(RemotingFactory.connect(clientConfig));
-        }
-        catch (final NotifyRemotingException e) {
-            throw new NetworkException("Create remoting client failed", e);
-        }
-        // 如果有设置，则使用设置的url并连接，否则使用zk发现服务器
-        if (this.metaClientConfig.getServerUrl() != null) {
-            this.connectServer(this.metaClientConfig);
-        }
-        else {
-            this.initZooKeeper();
-        }
-
-        this.producerZooKeeper =
-                new ProducerZooKeeper(this.metaZookeeper, this.remotingClient, this.zkClient, metaClientConfig);
-        this.sessionIdGenerator = new IdGenerator();
-        // modify by wuhua
-        this.consumerZooKeeper = this.initConsumerZooKeeper(this.remotingClient, this.zkClient, this.zkConfig);
-        this.zkClientChangedListeners.add(this.producerZooKeeper);
-        this.zkClientChangedListeners.add(this.consumerZooKeeper);
-        this.subscribeInfoManager = new SubscribeInfoManager();
-        this.recoverManager = new RecoverStorageManager(this.metaClientConfig, this.subscribeInfoManager);
-        this.shutdownHook = new Thread() {
-
-            @Override
-            public void run() {
-                try {
-                    MetaMessageSessionFactory.this.isHutdownHookCalled = true;
-                    MetaMessageSessionFactory.this.shutdown();
-                }
-                catch (final MetaClientException e) {
-                    log.error("关闭session factory失败", e);
-                }
+            this.checkConfig(metaClientConfig);
+            this.metaClientConfig = metaClientConfig;
+            final ClientConfig clientConfig = new ClientConfig();
+            clientConfig.setTcpNoDelay(TCP_NO_DELAY);
+            clientConfig.setMaxReconnectTimes(MAX_RECONNECT_TIMES);
+            clientConfig.setWireFormatType(new MetamorphosisWireFormatType());
+            clientConfig.setMaxScheduleWrittenBytes(MAX_SCHEDULE_WRITTEN_BYTES);
+            try {
+                this.remotingClient = new RemotingClientWrapper(RemotingFactory.connect(clientConfig));
+            }
+            catch (final NotifyRemotingException e) {
+                throw new NetworkException("Create remoting client failed", e);
+            }
+            // 如果有设置，则使用设置的url并连接，否则使用zk发现服务器
+            if (this.metaClientConfig.getServerUrl() != null) {
+                this.connectServer(this.metaClientConfig);
+            }
+            else {
+                this.initZooKeeper();
             }
 
-        };
-        Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+            this.producerZooKeeper =
+                    new ProducerZooKeeper(this.metaZookeeper, this.remotingClient, this.zkClient, metaClientConfig);
+            this.sessionIdGenerator = new IdGenerator();
+            // modify by wuhua
+            this.consumerZooKeeper = this.initConsumerZooKeeper(this.remotingClient, this.zkClient, this.zkConfig);
+            this.zkClientChangedListeners.add(this.producerZooKeeper);
+            this.zkClientChangedListeners.add(this.consumerZooKeeper);
+            this.subscribeInfoManager = new SubscribeInfoManager();
+            this.recoverManager = new RecoverStorageManager(this.metaClientConfig, this.subscribeInfoManager);
+            this.shutdownHook = new Thread() {
+
+                @Override
+                public void run() {
+                    try {
+                        MetaMessageSessionFactory.this.isHutdownHookCalled = true;
+                        MetaMessageSessionFactory.this.shutdown();
+                    }
+                    catch (final MetaClientException e) {
+                        log.error("关闭session factory失败", e);
+                    }
+                }
+
+            };
+            Runtime.getRuntime().addShutdownHook(this.shutdownHook);
+        }
+        catch (MetaClientException e) {
+            this.shutdown();
+            throw e;
+        }
+        catch (Exception e) {
+            this.shutdown();
+            throw new MetaClientException("Construct message session factory failed.", e);
+        }
     }
 
 
@@ -302,7 +319,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
      * @see com.taobao.metamorphosis.client.SessionFactory#close()
      */
     @Override
-    public void shutdown() throws MetaClientException {
+    public synchronized void shutdown() throws MetaClientException {
         if (this.shutdown) {
             return;
         }
@@ -310,13 +327,19 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         // if (this.diamondManager != null) {
         // this.diamondManager.close();
         // }
-        this.recoverManager.shutdown();
+        if (this.recoverManager != null) {
+            this.recoverManager.shutdown();
+        }
         // this.localMessageStorageManager.shutdown();
         for (final Shutdownable child : this.children) {
-            child.shutdown();
+            if (child != null) {
+                child.shutdown();
+            }
         }
         try {
-            this.remotingClient.stop();
+            if (this.remotingClient != null) {
+                this.remotingClient.stop();
+            }
         }
         catch (final NotifyRemotingException e) {
             throw new NetworkException("Stop remoting client failed", e);
@@ -324,7 +347,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
         if (this.zkClient != null) {
             this.zkClient.close();
         }
-        if (!this.isHutdownHookCalled) {
+        if (!this.isHutdownHookCalled && this.shutdownHook != null) {
             Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
         }
 
@@ -602,7 +625,7 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
     }
 
     static final char[] INVALID_GROUP_CHAR = { '~', '!', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '`', '\'',
-                                              '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':' };
+                                               '"', ',', ';', '/', '?', '[', ']', '<', '>', '.', ':', ' ' };
 
 
     protected void checkConsumerConfig(final ConsumerConfig consumerConfig) {
@@ -625,6 +648,20 @@ public class MetaMessageSessionFactory implements MessageSessionFactory {
             throw new InvalidConsumerConfigException("Invalid fetchTimeoutInMills:"
                     + consumerConfig.getFetchTimeoutInMills());
         }
+    }
+
+
+    @Override
+    public TopicBrowser createTopicBrowser(String topic) {
+        return this.createTopicBrowser(topic, 1024 * 1024, 5, TimeUnit.SECONDS);
+    }
+
+
+    @Override
+    public TopicBrowser createTopicBrowser(String topic, int maxSize, long timeout, TimeUnit timeUnit) {
+        MessageConsumer consumer = this.createConsumer(new ConsumerConfig("Just_for_Browser"));
+        return new MetaTopicBrowser(topic, maxSize, TimeUnit.MILLISECONDS.convert(timeout, timeUnit), consumer,
+            this.getPartitionsForTopic(topic));
     }
 
 }

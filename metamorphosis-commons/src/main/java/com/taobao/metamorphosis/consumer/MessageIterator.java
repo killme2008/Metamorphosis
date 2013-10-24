@@ -15,8 +15,9 @@
  * Authors:
  *   wuhua <wq163@163.com> , boyan <killme2008@gmail.com>
  */
-package com.taobao.metamorphosis.server.transaction.store;
+package com.taobao.metamorphosis.consumer;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
@@ -26,17 +27,18 @@ import com.taobao.metamorphosis.utils.MessageUtils;
 
 
 /**
- * 消息迭代器，解析传输过来的数据，暂时为了做测试复制
+ * 消息迭代器，解析传输过来的数据
  * 
  * @author boyan
  * @Date 2011-4-20
  * 
  */
-// TODO 将此类从client迁移到commons
 public class MessageIterator {
     private final String topic;
     private final byte[] data;
     private int offset;
+    private Message message;
+    private ByteBuffer currentMsgBuf;
 
 
     public MessageIterator(final String topic, final byte[] data) {
@@ -47,13 +49,23 @@ public class MessageIterator {
     }
 
 
-    /**
-     * just for test
-     * 
-     * @param offset
-     */
-    void setOffset(final int offset) {
+    public ByteBuffer getCurrentMsgBuf() {
+        return this.currentMsgBuf;
+    }
+
+
+    public int getDataLength() {
+        return this.data != null ? this.data.length : 0;
+    }
+
+
+    public void setOffset(final int offset) {
         this.offset = offset;
+    }
+
+
+    public Message getPrevMessage() {
+        return this.message;
     }
 
 
@@ -103,7 +115,9 @@ public class MessageIterator {
         }
         final MessageUtils.DecodedMessage decodeMessage =
                 MessageUtils.decodeMessage(this.topic, this.data, this.offset);
-        this.offset = decodeMessage.newOffset;
+        this.setOffset(decodeMessage.newOffset);
+        this.message = decodeMessage.message;
+        this.currentMsgBuf = decodeMessage.buf;
         return decodeMessage.message;
     }
 

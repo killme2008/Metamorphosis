@@ -35,11 +35,14 @@ import com.taobao.gecko.core.util.OpaqueGenerator;
 import com.taobao.metamorphosis.Message;
 import com.taobao.metamorphosis.client.MetaMessageSessionFactory;
 import com.taobao.metamorphosis.client.RemotingClientWrapper;
+import com.taobao.metamorphosis.client.consumer.ConsumerZooKeeper.ZKLoadRebalanceListener;
 import com.taobao.metamorphosis.client.consumer.SimpleFetchManager.FetchRequestRunner;
 import com.taobao.metamorphosis.client.consumer.storage.OffsetStorage;
 import com.taobao.metamorphosis.client.producer.ProducerZooKeeper;
 import com.taobao.metamorphosis.cluster.Broker;
 import com.taobao.metamorphosis.cluster.Partition;
+import com.taobao.metamorphosis.consumer.ConsumerMessageFilter;
+import com.taobao.metamorphosis.consumer.MessageIterator;
 import com.taobao.metamorphosis.exception.MetaClientException;
 import com.taobao.metamorphosis.exception.MetaOpeartionTimeoutException;
 import com.taobao.metamorphosis.network.BooleanCommand;
@@ -92,6 +95,8 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
 
     private final ConcurrentHashSet<String> publishedTopics = new ConcurrentHashSet<String>();
 
+    private RejectConsumptionHandler rejectConsumptionHandler;
+
 
     public SimpleMessageConsumer(final MetaMessageSessionFactory messageSessionFactory,
             final RemotingClientWrapper remotingClient, final ConsumerConfig consumerConfig,
@@ -110,6 +115,8 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         this.fetchManager = new SimpleFetchManager(consumerConfig, this);
         this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         this.loadBalanceStrategy = loadBalanceStrategy;
+        // Use local recover policy by default.
+        this.rejectConsumptionHandler = new LocalRecoverPolicy(this.recoverStorageManager);
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -175,6 +182,13 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
     @Override
     public MessageConsumer subscribe(final String topic, final int maxSize, final MessageListener messageListener)
             throws MetaClientException {
+        return this.subscribe(topic, maxSize, messageListener, null);
+    }
+
+
+    @Override
+    public MessageConsumer subscribe(final String topic, final int maxSize, final MessageListener messageListener,
+            ConsumerMessageFilter filter) throws MetaClientException {
         this.checkState();
         if (StringUtils.isBlank(topic)) {
             throw new IllegalArgumentException("Blank topic");
@@ -183,11 +197,11 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
             throw new IllegalArgumentException("Null messageListener");
         }
         // 先添加到公共管理器
-        this.subscribeInfoManager.subscribe(topic, this.consumerConfig.getGroup(), maxSize, messageListener);
+        this.subscribeInfoManager.subscribe(topic, this.consumerConfig.getGroup(), maxSize, messageListener, filter);
         // 然后添加到自身的管理器
         SubscriberInfo info = this.topicSubcriberRegistry.get(topic);
         if (info == null) {
-            info = new SubscriberInfo(messageListener, maxSize);
+            info = new SubscriberInfo(messageListener, filter, maxSize);
             final SubscriberInfo oldInfo = this.topicSubcriberRegistry.putIfAbsent(topic, info);
             if (oldInfo != null) {
                 throw new MetaClientException("Topic=" + topic + " has been subscribered");
@@ -202,10 +216,13 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
 
     @Override
     public void appendCouldNotProcessMessage(final Message message) throws IOException {
-        // 目前的处理是交给本地存储管理并重试
-        log.warn("Message could not process,save to local.MessageId=" + message.getId() + ",Topic="
-                + message.getTopic() + ",Partition=" + message.getPartition());
-        this.recoverStorageManager.append(this.consumerConfig.getGroup(), message);
+        if (log.isInfoEnabled()) {
+            log.info("Message could not process,save to local.MessageId=" + message.getId() + ",Topic="
+                    + message.getTopic() + ",Partition=" + message.getPartition());
+        }
+        if (this.rejectConsumptionHandler != null) {
+            this.rejectConsumptionHandler.rejectConsumption(message, this);
+        }
     }
 
 
@@ -236,6 +253,16 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
             return null;
         }
         return info.getMessageListener();
+    }
+
+
+    @Override
+    public ConsumerMessageFilter getMessageFilter(final String topic) {
+        final SubscriberInfo info = this.topicSubcriberRegistry.get(topic);
+        if (info == null) {
+            return null;
+        }
+        return info.getConsumerMessageFilter();
     }
 
 
@@ -294,11 +321,21 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         boolean success = false;
         try {
             final long currentOffset = fetchRequest.getOffset();
+            final String serverUrl = fetchRequest.getBroker().getZKString();
+            if (!this.remotingClient.isConnected(serverUrl)) {
+                // Try to heal the connection.
+                ZKLoadRebalanceListener listener =
+                        this.consumerZooKeeper.getBrokerConnectionListener(this.fetchManager);
+                if (listener.oldBrokerSet.contains(fetchRequest.getBroker())) {
+                    this.remotingClient.connectWithRef(serverUrl, listener);
+                }
+                return null;
+            }
+
             final GetCommand getCmd =
                     new GetCommand(fetchRequest.getTopic(), this.consumerConfig.getGroup(),
                         fetchRequest.getPartition(), currentOffset, fetchRequest.getMaxSize(),
                         OpaqueGenerator.getNextOpaque());
-            final String serverUrl = fetchRequest.getBroker().getZKString();
             final ResponseCommand response = this.remotingClient.invokeToGroup(serverUrl, getCmd, timeout, timeUnit);
             if (response instanceof DataCommand) {
                 final DataCommand dataCmd = (DataCommand) response;
@@ -325,7 +362,8 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
                     fetchRequest.setOffset(Long.parseLong(booleanCmd.getErrorMsg()), -1, true);
                     return null;
                 default:
-                    throw new MetaClientException(((BooleanCommand) response).getErrorMsg());
+                    throw new MetaClientException("Status:" + booleanCmd.getCode() + ",Error message:"
+                            + ((BooleanCommand) response).getErrorMsg());
                 }
             }
 
@@ -382,6 +420,21 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
 
 
     @Override
+    public RejectConsumptionHandler getRejectConsumptionHandler() {
+        return this.rejectConsumptionHandler;
+    }
+
+
+    @Override
+    public void setRejectConsumptionHandler(RejectConsumptionHandler rejectConsumptionHandler) {
+        if (rejectConsumptionHandler == null) {
+            throw new NullPointerException("Null rejectConsumptionHandler");
+        }
+        this.rejectConsumptionHandler = rejectConsumptionHandler;
+    }
+
+
+    @Override
     public ConsumerConfig getConsumerConfig() {
         return this.consumerConfig;
     }
@@ -393,4 +446,39 @@ public class SimpleMessageConsumer implements MessageConsumer, InnerConsumer {
         return this.get(topic, partition, offset, maxSize, DEFAULT_OP_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     * Created with IntelliJ IDEA. User: dennis (xzhuang@avos.com) Date: 13-2-5
+     * Time: 上午11:29
+     */
+    public static class DropPolicy implements RejectConsumptionHandler {
+        @Override
+        public void rejectConsumption(Message message, MessageConsumer messageConsumer) {
+            // Drop the message.
+        }
+    }
+
+    /**
+     * Created with IntelliJ IDEA. User: dennis (xzhuang@avos.com) Date: 13-2-5
+     * Time: 上午11:25
+     */
+    public static class LocalRecoverPolicy implements RejectConsumptionHandler {
+        private final RecoverManager recoverManager;
+        static final Log log = LogFactory.getLog(LocalRecoverPolicy.class);
+
+
+        public LocalRecoverPolicy(RecoverManager recoverManager) {
+            this.recoverManager = recoverManager;
+        }
+
+
+        @Override
+        public void rejectConsumption(Message message, MessageConsumer messageConsumer) {
+            try {
+                this.recoverManager.append(messageConsumer.getConsumerConfig().getGroup(), message);
+            }
+            catch (IOException e) {
+                log.error("Append message to local recover manager failed", e);
+            }
+        }
+    }
 }
