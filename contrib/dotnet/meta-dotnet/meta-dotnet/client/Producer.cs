@@ -5,6 +5,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using Metaq.cluster;
+using System.Diagnostics;
 
 namespace Metaq.client
 {
@@ -14,11 +15,13 @@ namespace Metaq.client
         Socket socket;
         String host = "127.0.0.1";
         int port = 8123;
+
+        Broker broker;
         public Producer(string zkconfig, string topic)
         {
             zk = new ZKClient(zkconfig);
             zk.push(topic);
-            Broker broker = zk.findBroker();
+            broker = zk.findBroker();
             if (broker != null)
             {
                 string[] uri = broker.brokerUri.Split(':');
@@ -33,7 +36,7 @@ namespace Metaq.client
             }
             catch (SocketException e)
             {
-                Console.Write(e.ToString());
+                Debug.Write(e.ToString());
             }
 
         }
@@ -42,8 +45,13 @@ namespace Metaq.client
         {
 
             byte[] data = new byte[4096];
-
-            byte[] ms = message.encode(0,1);
+            int n = 0;
+            if (broker.partitions.Count > 1)
+            {
+                n = Utils.GenerateSequence() % broker.partitions.Count;
+                Debug.WriteLine("select partition: " + n);
+            }
+            byte[] ms = message.encode(n,1);
             
             socket.Send(ms);
             int recv = 0;
@@ -54,7 +62,7 @@ namespace Metaq.client
                 result += (Encoding.UTF8.GetString(data, 0, recv));
             } //while (recv != 0);
 
-            Console.WriteLine(result);
+            Debug.WriteLine(result);
            
         }
 

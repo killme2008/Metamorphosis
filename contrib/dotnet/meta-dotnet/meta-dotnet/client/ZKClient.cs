@@ -5,6 +5,7 @@ using System.Text;
 using System.Collections;
 using Metaq.cluster;
 using ZooKeeperNet;
+using System.Diagnostics;
 
 namespace Metaq.client
 {
@@ -30,10 +31,14 @@ namespace Metaq.client
                     var id = Convert.ToInt32(s.Split('-')[0]);
                     var broker_full_uri = this.getData("/meta/brokers/ids/" + id + "/master");
                     var broker_uri = broker_full_uri.Replace("meta://", "");
-
-                    brokers.Add(id, new Broker(id, broker_uri));
-                    Console.WriteLine("========= brokers list ==========");
-                    Console.WriteLine("broker: " + id + " -> " + broker_uri);
+                    Broker broker = new Broker(id, broker_uri);
+                    for (int index = 0; index < n; index++)
+                    {
+                        broker.partitions.Add(new Partition(id,index));
+                    }
+                    brokers.Add(id, broker);
+                    Debug.WriteLine("========= brokers list ==========");
+                    Debug.WriteLine("broker: " + id + " -> " + broker_uri);
                 });
 
             }

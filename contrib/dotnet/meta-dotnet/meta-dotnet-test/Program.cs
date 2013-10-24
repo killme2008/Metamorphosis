@@ -24,8 +24,15 @@ namespace Metaq
             Producer producer = new Producer("127.0.0.1:2181", "test");
             producer.Send(message);
             producer.Send(message1);
+            DateTime d1 = DateTime.Now;
+            for (int i = 0; i < 1000; i++)
+            {
+                producer.Send(Message.create("test", "hello-"+i));
+            }
+            DateTime d2 = DateTime.Now;
+            Console.WriteLine((d2-d1).TotalSeconds);
             producer.Close();
-             
+            
             Console.ReadKey();
         }
     }

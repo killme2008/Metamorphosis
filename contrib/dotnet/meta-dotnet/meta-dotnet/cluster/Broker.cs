@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 
@@ -14,6 +15,8 @@ namespace Metaq.cluster
         }
         public int brokerId { set; get; }
         public string brokerUri { set; get; }
+
+        public ArrayList partitions = new ArrayList();
 
     }
 }
