@@ -40,7 +40,7 @@ function running(){
 			return 1;
 		process=`ps aux | grep " $pid " | grep -v grep`;
 		if [ -z "$process" ]; then
-	    	return 1;
+	    		return 1;
 		else
 			return 0;
 		fi
