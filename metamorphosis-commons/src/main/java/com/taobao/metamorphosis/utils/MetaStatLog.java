@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.taobao.metamorphosis.utils.monitor.MonitorLog;
-
 
 /**
  * 
@@ -219,7 +217,6 @@ public final class MetaStatLog {
     public static final void addStat(final String appName, final String keyOne, final String keyTwo,
             final String keyThree) {
         realTimeStat(keyOne, keyTwo, keyThree, 0);
-        MonitorLog.addStat(keyOne, keyTwo, keyThree, 0L, 1L);
     }
 
     @SuppressWarnings("unused")
@@ -310,38 +307,28 @@ public final class MetaStatLog {
 
     public static final void addStat(final String appName, final String keyOne, final String keyTwo) {
         realTimeStat(keyOne, keyTwo, "*", 0);
-
-        MonitorLog.addStat(keyOne, keyTwo, null, 0L, 1L);
     }
 
 
     public static final void addStat(final String appName, final String keyOne) {
-
         realTimeStat(keyOne, "*", "*", 0);
-        MonitorLog.addStat(keyOne, null, null, 0L, 1L);
     }
 
 
     public static final void addStatValue2(final String appName, final String keyOne, final long value) {
         realTimeStat(keyOne, "*", "*", value);
-
-        MonitorLog.addStat(keyOne, null, null, value, 1L);
     }
 
 
     public static final void addStatValue2(final String appName, final String keyOne, final String keyTwo,
             final long value) {
         realTimeStat(keyOne, keyTwo, "*", value);
-
-        MonitorLog.addStatValue2(keyOne, keyTwo, null, value);
     }
 
 
     public static final void addStatValue2(final String appName, final String keyOne, final String keyTwo,
             final String keyThree, final long value) {
         realTimeStat(keyOne, keyTwo, keyThree, value);
-
-        MonitorLog.addStat(keyOne, keyTwo, keyThree, value, 1L);
     }
 
 }
