@@ -9,6 +9,8 @@ dist/
 .DS_Store
 *.pyc
 build/
+bin/
+obj/
 *.log
 *.log.*
 *.out.*
