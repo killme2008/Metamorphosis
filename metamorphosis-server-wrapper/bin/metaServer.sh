@@ -36,9 +36,11 @@ fi
 function running(){
 	if [ -f "$PID_FILE" ]; then
 		pid=$(cat "$PID_FILE")
+		if [ -z "$pid" ]; then
+			return 1;
 		process=`ps aux | grep " $pid " | grep -v grep`;
 		if [ -z "$process" ]; then
-	    	return 1;
+	    		return 1;
 		else
 			return 0;
 		fi
