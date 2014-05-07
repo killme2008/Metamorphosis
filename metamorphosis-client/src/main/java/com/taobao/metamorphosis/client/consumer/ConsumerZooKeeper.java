@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -274,8 +275,6 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
         return topicSb.toString();
     }
 
-    private final AtomicInteger counter = new AtomicInteger(0);
-
 
     protected String getConsumerUUID(final ConsumerConfig consumerConfig) throws Exception {
         String consumerUUID = null;
@@ -283,9 +282,8 @@ public class ConsumerZooKeeper implements ZkClientChangedListener {
             consumerUUID = consumerConfig.getConsumerId();
         }
         else {
-            consumerUUID =
-                    RemotingUtils.getLocalHost() + "-" + this.getPid() + "-" + System.currentTimeMillis() + "-"
-                            + this.counter.incrementAndGet();
+          consumerUUID =
+            RemotingUtils.getLocalHost() + "-" + this.getPid() + "-" + UUID.randomUUID();
         }
         return consumerUUID;
     }
