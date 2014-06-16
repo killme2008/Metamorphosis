@@ -305,11 +305,11 @@ public class JournalTransactionStore implements TransactionStore, JournalTransac
         }
         final TransactionOperation to =
                 TransactionOperation.newBuilder().setType(TransactionType.XA_PREPARE)
-                    .setTransactionId(txid.getTransactionKey()).setWasPrepared(false).build();
+                .setTransactionId(txid.getTransactionKey()).setWasPrepared(false).build();
         // prepare,必须force
         final TxCommand msg =
                 TxCommand.newBuilder().setCmdType(TxCommandType.TX_OP).setCmdContent(to.toByteString()).setForce(true)
-                    .build();
+                .build();
         this.journalStore.write(msg, null, tx.location, false);
 
         synchronized (this.preparedTransactions) {
@@ -432,25 +432,25 @@ public class JournalTransactionStore implements TransactionStore, JournalTransac
                             final int attachmentLen = localtionBytes.remaining();
                             if (txid.isXATransaction()) {
                                 final TransactionOperation to = TransactionOperation.newBuilder() //
-                                    .setType(TransactionType.XA_COMMIT) //
-                                    .setTransactionId(txid.getTransactionKey()) //
-                                    .setWasPrepared(wasPrepared) //
-                                    .setDataLength(attachmentLen) // 设置附加数据长度
-                                    .build();
+                                        .setType(TransactionType.XA_COMMIT) //
+                                        .setTransactionId(txid.getTransactionKey()) //
+                                        .setWasPrepared(wasPrepared) //
+                                        .setDataLength(attachmentLen) // 设置附加数据长度
+                                        .build();
                                 msg =
                                         TxCommand.newBuilder().setCmdType(TxCommandType.TX_OP)
-                                            .setCmdContent(to.toByteString()).build();
+                                        .setCmdContent(to.toByteString()).build();
                             }
                             else {
                                 final TransactionOperation to = TransactionOperation.newBuilder() //
-                                    .setType(TransactionType.LOCAL_COMMIT) //
-                                    .setTransactionId(txid.getTransactionKey()) //
-                                    .setWasPrepared(wasPrepared) //
-                                    .setDataLength(attachmentLen)// 设置附加数据长度
-                                    .build();
+                                        .setType(TransactionType.LOCAL_COMMIT) //
+                                        .setTransactionId(txid.getTransactionKey()) //
+                                        .setWasPrepared(wasPrepared) //
+                                        .setDataLength(attachmentLen)// 设置附加数据长度
+                                        .build();
                                 msg =
                                         TxCommand.newBuilder().setCmdType(TxCommandType.TX_OP)
-                                            .setCmdContent(to.toByteString()).build();
+                                        .setCmdContent(to.toByteString()).build();
                             }
                             // 记录commit日志，并附加位置信息
                             try {
@@ -497,20 +497,20 @@ public class JournalTransactionStore implements TransactionStore, JournalTransac
         if (tx != null) {
             if (txid.isXATransaction()) {
                 final TransactionOperation to = TransactionOperation.newBuilder() //
-                    .setType(TransactionType.XA_ROLLBACK) //
-                    .setTransactionId(txid.getTransactionKey()) //
-                    .setWasPrepared(false) //
-                    .build();
+                        .setType(TransactionType.XA_ROLLBACK) //
+                        .setTransactionId(txid.getTransactionKey()) //
+                        .setWasPrepared(false) //
+                        .build();
                 final TxCommand msg =
                         TxCommand.newBuilder().setCmdType(TxCommandType.TX_OP).setCmdContent(to.toByteString()).build();
                 this.journalStore.write(msg, null, tx.location, true);
             }
             else {
                 final TransactionOperation to = TransactionOperation.newBuilder() //
-                    .setType(TransactionType.LOCAL_ROLLBACK) //
-                    .setTransactionId(txid.getTransactionKey()) //
-                    .setWasPrepared(false) //
-                    .build();
+                        .setType(TransactionType.LOCAL_ROLLBACK) //
+                        .setTransactionId(txid.getTransactionKey()) //
+                        .setWasPrepared(false) //
+                        .build();
                 final TxCommand msg =
                         TxCommand.newBuilder().setCmdType(TxCommandType.TX_OP).setCmdContent(to.toByteString()).build();
                 this.journalStore.write(msg, null, tx.location, true);
@@ -593,10 +593,10 @@ public class JournalTransactionStore implements TransactionStore, JournalTransac
             // 非重放，添加put日志
             final AppendMessageCommand appendCmd =
                     AppendMessageCommand.newBuilder().setMessageId(msgId)
-                        .setPutCommand(ByteString.copyFrom(putCmd.encode().array())).build();
+                    .setPutCommand(ByteString.copyFrom(putCmd.encode().array())).build();
             final TxCommand txCommand =
                     TxCommand.newBuilder().setCmdType(TxCommandType.APPEND_MSG).setCmdContent(appendCmd.toByteString())
-                        .build();
+                    .build();
             final Tx tx = this.getInflyTx(putCmd.getTransactionId());
             if (tx != null) {
                 location = this.journalStore.write(txCommand, null, tx.location, false);
@@ -624,7 +624,7 @@ public class JournalTransactionStore implements TransactionStore, JournalTransac
             for (final Iterator<Tx> iter = this.inflightTransactions.values().iterator(); iter.hasNext();) {
                 final Tx tx = iter.next();
                 final JournalLocation location = tx.location;
-                if (rc == null || rc.compareTo(location) < 0) {
+                if (rc == null || rc.compareTo(location) > 0) {
                     rc = location;
                 }
             }
@@ -633,7 +633,7 @@ public class JournalTransactionStore implements TransactionStore, JournalTransac
             for (final Iterator<Tx> iter = this.preparedTransactions.values().iterator(); iter.hasNext();) {
                 final Tx tx = iter.next();
                 final JournalLocation location = tx.location;
-                if (rc == null || rc.compareTo(location) < 0) {
+                if (rc == null || rc.compareTo(location) > 0) {
                     rc = location;
                 }
             }

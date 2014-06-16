@@ -300,6 +300,7 @@ public class JournalTransactionStoreUnitTest extends BaseTransactionUnitTest {
     }
 
 
+    @Test
     public void testCheckpoint() throws Exception {
         // 事务1
         final LocalTransactionId xid1 = new LocalTransactionId("session1", 1);
@@ -308,13 +309,13 @@ public class JournalTransactionStoreUnitTest extends BaseTransactionUnitTest {
             null);
 
         // 事务2
-        final LocalTransactionId xid2 = new LocalTransactionId("session1", 1);
+        final LocalTransactionId xid2 = new LocalTransactionId("session2", 1);
         final MessageStore store2 = this.messageStoreManager.getOrCreateMessageStore("topic1", 3);
         this.transactionStore.addMessage(store2, 1, new PutCommand("topic1", 3, ("msg" + 3).getBytes(), xid2, 0, 1),
             null);
 
         // 事务3，已经提交
-        final LocalTransactionId xid3 = new LocalTransactionId("session1", 1);
+        final LocalTransactionId xid3 = new LocalTransactionId("session3", 1);
         final MessageStore store3 = this.messageStoreManager.getOrCreateMessageStore("topic1", 0);
         this.transactionStore.addMessage(store3, 1, new PutCommand("topic1", 0, ("msg" + 0).getBytes(), xid3, 0, 1),
             null);
