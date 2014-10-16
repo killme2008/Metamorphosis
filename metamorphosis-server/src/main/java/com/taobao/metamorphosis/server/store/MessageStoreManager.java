@@ -17,44 +17,6 @@
  */
 package com.taobao.metamorphosis.server.store;
 
-import static org.quartz.CronScheduleBuilder.cronSchedule;
-import static org.quartz.JobBuilder.newJob;
-import static org.quartz.TriggerBuilder.newTrigger;
-
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.quartz.JobDetail;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.Trigger;
-import org.quartz.impl.DirectSchedulerFactory;
-
 import com.taobao.metamorphosis.server.Service;
 import com.taobao.metamorphosis.server.exception.IllegalTopicException;
 import com.taobao.metamorphosis.server.exception.MetamorphosisServerStartupException;
@@ -63,6 +25,25 @@ import com.taobao.metamorphosis.server.exception.WrongPartitionException;
 import com.taobao.metamorphosis.server.utils.MetaConfig;
 import com.taobao.metamorphosis.server.utils.TopicConfig;
 import com.taobao.metamorphosis.utils.ThreadUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.quartz.JobDetail;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.Trigger;
+import org.quartz.impl.DirectSchedulerFactory;
+
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.regex.Pattern;
+
+import static org.quartz.CronScheduleBuilder.cronSchedule;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 
 /**
@@ -134,6 +115,7 @@ public class MessageStoreManager implements Service {
             public void propertyChange(final PropertyChangeEvent evt) {
                 MessageStoreManager.this.makeTopicsPatSet();
                 MessageStoreManager.this.newDeletePolicySelector();
+                MessageStoreManager.this.rescheduleDeleteJobs();
             }
         });
 
@@ -485,6 +467,20 @@ public class MessageStoreManager implements Service {
         this.startScheduleDeleteJobs();
     }
 
+    //add by jenwang
+    private void rescheduleDeleteJobs() {
+        if (this.scheduler != null) {
+            try {
+                log.info("Begin clear delete jobs...");
+                scheduler.clear();
+
+                startScheduleDeleteJobs();
+                log.info("Reschedule delete jobs successful !");
+            } catch (final SchedulerException e) {
+                log.error("Reschedule delete jobs failed", e);
+            }
+        }
+    }
 
     private void startScheduleDeleteJobs() {
         final Map<String/* deleteWhen */, JobInfo> jobs = new HashMap<String, MessageStoreManager.JobInfo>();
