@@ -152,13 +152,19 @@ public class RecoverStorageManager extends AbstractRecoverManager {
                         final Iterator<byte[]> it = store.iterator();
                         int count = 0;
                         while (it.hasNext()) {
-                            final byte[] key = it.next();
-                            final Message msg =
+                            try {
+                                final byte[] key = it.next();
+                                final Message msg =
                                     (Message) RecoverStorageManager.this.deserializer.decodeObject(store.get(key));
-                            if (msg != null) {
-                                RecoverStorageManager.this.receiveMessage(store, key, msg, listener);
+                                if (msg != null) {
+                                    RecoverStorageManager.this.receiveMessage(store, key, msg, listener);
+                                }
+                                count++;
+                            }catch (InterruptedException e){
+                                throw e;
+                            }catch (Exception e){
+                                log.error("Recover message failed,topic=" + topic+",skip it.", e);
                             }
-                            count++;
                         }
                         log.info("Recover topic=" + topic + "»Ö¸´ÏûÏ¢" + count + "Ìõ");
                     }
