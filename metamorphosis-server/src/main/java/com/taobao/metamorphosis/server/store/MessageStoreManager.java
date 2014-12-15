@@ -304,6 +304,9 @@ public class MessageStoreManager implements Service {
         int count = 0;
         List<Callable<MessageStore>> tasks = new ArrayList<Callable<MessageStore>>();
         for (final File subDir : ls) {
+
+            count++;
+
             if (!subDir.isDirectory()) {
                 log.warn("Ignore not directory path:" + subDir.getAbsolutePath());
             }
@@ -328,7 +331,7 @@ public class MessageStoreManager implements Service {
                         return messageStore;
                     }
                 });
-                count++;
+
                 if (count % nThreads == 0 || count == ls.length) {
                     if (metaConfig.isLoadMessageStoresInParallel()) {
                         this.loadStoresInParallel(executor, tasks);
