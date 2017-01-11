@@ -21,20 +21,20 @@ import com.taobao.metamorphosis.client.MetaClientConfig;
 
 
 /**
- * Ïû·ÑÕßÅäÖÃ£¬Ö÷ÒªÅäÖÃÑ¡ÏîÈçÏÂ£º
+ * æ¶ˆè´¹è€…é…ç½®ï¼Œä¸»è¦é…ç½®é€‰é¡¹å¦‚ä¸‹ï¼š
  * <ul>
- * <li>group:·Ö×éÃû³Æ£¬±ØĞë£¬±íÊ¾¸ÃÏû·ÑÕßËùÔÚ·Ö×é£¬Í¬Ò»·Ö×éµÄÏû·ÑÕßÕı³£Çé¿öÏÂ²»»á½ÓÊÕÖØ¸´ÏûÏ¢£¬¹²Í¬Ïû·ÑÄ³Ò»topic</li>
- * <li>consumerId: Ïû·ÑÕßid£¬ÓÃÓÚÎ¨Ò»±êÊ¶Ò»¸öÏû·ÑÕß£¬¿É²»ÉèÖÃ£¬ÏµÍ³»á¸ù¾İ·Ö×éÃû³Æ×Ô¶¯Éú³É</li>
- * <li>commitOffsetPeriodInMills: ±£´æoffsetµÄÊ±¼ä¼ä¸ô£¬Ä¬ÈÏ5Ãë£¬µ¥Î»ºÁÃë</li>
- * <li>fetchTimeoutInMills: Í¬²½»ñÈ¡ÏûÏ¢µÄÄ¬ÈÏ³¬Ê±Ê±¼ä£¬Ä¬ÈÏ10Ãë£¬µ¥Î»ºÁÃë</li>
- * <li>maxDelayFetchTimeInMills: µ±»ñÈ¡ÏûÏ¢Ê§°ÜµÄÊ±ºò£¨°üÀ¨get
- * miss»òÕßÈÎºÎÒì³£Çé¿ö)»áÑÓ³Ù»ñÈ¡£¬´ËÖµÉèÖÃ×î´óµÄÑÓ³ÙÊ±¼ä£¬µ¥Î»ºÁÃë</li>
- * <li>fetchRunnerCount: »ñÈ¡ÏûÏ¢µÄÏß³ÌÊı£¬Ä¬ÈÏcpu¸ö¡£</li>
- * <li>partition:µ±Ê¹ÓÃÖ±Á¬Ä£Ê½Ê±£¬´ËÖµÖ¸¶¨Á¬½ÓµÄ·ÖÇø£¬ĞÎÈç"brokerId-partition"µÄ×Ö·û´®</li>
- * <li>offset:Ö¸¶¨¶ÁÈ¡µÄoffsetÆ«ÒÆÁ¿,Ä¬ÈÏ´Ó0¿ªÊ¼</li>
- * <li>maxFetchRetries:Í¬Ò»ÌõÏûÏ¢ÔÚ´¦ÀíÊ§°ÜÇé¿öÏÂ×î´óÖØÊÔ´ÎÊı£¬Ä¬ÈÏ5´Î£¬³¬¹ı¾ÍÌø¹ıÕâÌõÏûÏ¢²¢¼ÇÂ¼</li>
- * <li>maxIncreaseFetchDataRetries:À­È¡Êı¾İÖØÊÔ´ÎÊı³¬¹ıÕâ¸öÖµ,ÔòÔö³¤Ã¿´ÎÀ­È¡µÄÊı¾İÁ¿</li>
- * <li>loadBalanceStrategyType: Ïû·ÑÕß¸ºÔØ¾ùºâ²ßÂÔ</li>
+ * <li>group:åˆ†ç»„åç§°ï¼Œå¿…é¡»ï¼Œè¡¨ç¤ºè¯¥æ¶ˆè´¹è€…æ‰€åœ¨åˆ†ç»„ï¼ŒåŒä¸€åˆ†ç»„çš„æ¶ˆè´¹è€…æ­£å¸¸æƒ…å†µä¸‹ä¸ä¼šæ¥æ”¶é‡å¤æ¶ˆæ¯ï¼Œå…±åŒæ¶ˆè´¹æŸä¸€topic</li>
+ * <li>consumerId: æ¶ˆè´¹è€…idï¼Œç”¨äºå”¯ä¸€æ ‡è¯†ä¸€ä¸ªæ¶ˆè´¹è€…ï¼Œå¯ä¸è®¾ç½®ï¼Œç³»ç»Ÿä¼šæ ¹æ®åˆ†ç»„åç§°è‡ªåŠ¨ç”Ÿæˆ</li>
+ * <li>commitOffsetPeriodInMills: ä¿å­˜offsetçš„æ—¶é—´é—´éš”ï¼Œé»˜è®¤5ç§’ï¼Œå•ä½æ¯«ç§’</li>
+ * <li>fetchTimeoutInMills: åŒæ­¥è·å–æ¶ˆæ¯çš„é»˜è®¤è¶…æ—¶æ—¶é—´ï¼Œé»˜è®¤10ç§’ï¼Œå•ä½æ¯«ç§’</li>
+ * <li>maxDelayFetchTimeInMills: å½“è·å–æ¶ˆæ¯å¤±è´¥çš„æ—¶å€™ï¼ˆåŒ…æ‹¬get
+ * missæˆ–è€…ä»»ä½•å¼‚å¸¸æƒ…å†µ)ä¼šå»¶è¿Ÿè·å–ï¼Œæ­¤å€¼è®¾ç½®æœ€å¤§çš„å»¶è¿Ÿæ—¶é—´ï¼Œå•ä½æ¯«ç§’</li>
+ * <li>fetchRunnerCount: è·å–æ¶ˆæ¯çš„çº¿ç¨‹æ•°ï¼Œé»˜è®¤cpuä¸ªã€‚</li>
+ * <li>partition:å½“ä½¿ç”¨ç›´è¿æ¨¡å¼æ—¶ï¼Œæ­¤å€¼æŒ‡å®šè¿æ¥çš„åˆ†åŒºï¼Œå½¢å¦‚"brokerId-partition"çš„å­—ç¬¦ä¸²</li>
+ * <li>offset:æŒ‡å®šè¯»å–çš„offsetåç§»é‡,é»˜è®¤ä»0å¼€å§‹</li>
+ * <li>maxFetchRetries:åŒä¸€æ¡æ¶ˆæ¯åœ¨å¤„ç†å¤±è´¥æƒ…å†µä¸‹æœ€å¤§é‡è¯•æ¬¡æ•°ï¼Œé»˜è®¤5æ¬¡ï¼Œè¶…è¿‡å°±è·³è¿‡è¿™æ¡æ¶ˆæ¯å¹¶è®°å½•</li>
+ * <li>maxIncreaseFetchDataRetries:æ‹‰å–æ•°æ®é‡è¯•æ¬¡æ•°è¶…è¿‡è¿™ä¸ªå€¼,åˆ™å¢é•¿æ¯æ¬¡æ‹‰å–çš„æ•°æ®é‡</li>
+ * <li>loadBalanceStrategyType: æ¶ˆè´¹è€…è´Ÿè½½å‡è¡¡ç­–ç•¥</li>
  * </ul>
  * 
  * @author boyan
@@ -58,9 +58,9 @@ public class ConsumerConfig extends MetaClientConfig {
     private boolean alwaysConsumeFromMaxOffset = false;
     private LoadBalanceStrategy.Type loadBalanceStrategyType = LoadBalanceStrategy.Type.DEFAULT;
 
-    // °ÑÏûÏ¢´¦ÀíÊ§°ÜÖØÊÔ¸úÀ­È¡Êı¾İ²»×ãÖØÊÔ·Ö¿ª,
-    // ÒòÎªÓĞÊ±²»ĞèÒª´¦ÀíÊ§°ÜÖØÊÔ(maxFetchRetriesÉèÎªmaxIntValue),
-    // µ«ĞèÒª×ÔÔö³¤À­È¡µÄÊı¾İÁ¿
+    // æŠŠæ¶ˆæ¯å¤„ç†å¤±è´¥é‡è¯•è·Ÿæ‹‰å–æ•°æ®ä¸è¶³é‡è¯•åˆ†å¼€,
+    // å› ä¸ºæœ‰æ—¶ä¸éœ€è¦å¤„ç†å¤±è´¥é‡è¯•(maxFetchRetriesè®¾ä¸ºmaxIntValue),
+    // ä½†éœ€è¦è‡ªå¢é•¿æ‹‰å–çš„æ•°æ®é‡
     private int maxIncreaseFetchDataRetries = 5;
 
 
@@ -80,7 +80,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * À­È¡Êı¾İÖØÊÔ´ÎÊı³¬¹ıÕâ¸öÖµ,ÔòÔö³¤Ã¿´ÎÀ­È¡µÄÊı¾İÁ¿
+     * æ‹‰å–æ•°æ®é‡è¯•æ¬¡æ•°è¶…è¿‡è¿™ä¸ªå€¼,åˆ™å¢é•¿æ¯æ¬¡æ‹‰å–çš„æ•°æ®é‡
      * 
      * @return
      */
@@ -90,7 +90,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÀ­È¡Êı¾İÖØÊÔ´ÎÊı³¬¹ıÕâ¸öÖµ,ÔòÔö³¤Ã¿´ÎÀ­È¡µÄÊı¾İÁ¿
+     * è®¾ç½®æ‹‰å–æ•°æ®é‡è¯•æ¬¡æ•°è¶…è¿‡è¿™ä¸ªå€¼,åˆ™å¢é•¿æ¯æ¬¡æ‹‰å–çš„æ•°æ®é‡
      * 
      * @param maxFetchRetriesForDataNotEnough
      */
@@ -102,7 +102,7 @@ public class ConsumerConfig extends MetaClientConfig {
     /**
      * 
      * @param group
-     *            ·Ö×éÃû³Æ
+     *            åˆ†ç»„åç§°
      */
     public ConsumerConfig(final String group) {
         super();
@@ -113,7 +113,7 @@ public class ConsumerConfig extends MetaClientConfig {
     /**
      * 
      * @param consumerId
-     *            Ïû·ÑÕßid£¬Èç¹û²»ÉèÖÃ£¬ÏµÍ³»á×Ô¶¯²úÉú "ip_Ê±¼ä"
+     *            æ¶ˆè´¹è€…idï¼Œå¦‚æœä¸è®¾ç½®ï¼Œç³»ç»Ÿä¼šè‡ªåŠ¨äº§ç”Ÿ "ip_æ—¶é—´"
      * @param group
      */
     public ConsumerConfig(final String consumerId, final String group) {
@@ -129,7 +129,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÇëÇóÏß³ÌÊı£¬Ä¬ÈÏcpus¸ö
+     * è¯·æ±‚çº¿ç¨‹æ•°ï¼Œé»˜è®¤cpusä¸ª
      * 
      * @return
      */
@@ -139,7 +139,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÇëÇóoffsetÆğµã
+     * è¯·æ±‚offsetèµ·ç‚¹
      * 
      * @return
      */
@@ -149,7 +149,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÇëÇóoffset
+     * è®¾ç½®è¯·æ±‚offset
      * 
      * @param offset
      */
@@ -159,7 +159,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÊ×´Î¶©ÔÄÊÇ·ñ´Ó×îĞÂÎ»ÖÃ¿ªÊ¼Ïû·Ñ¡£
+     * è®¾ç½®é¦–æ¬¡è®¢é˜…æ˜¯å¦ä»æœ€æ–°ä½ç½®å¼€å§‹æ¶ˆè´¹ã€‚
      * 
      * @param offset
      */
@@ -169,20 +169,23 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÃ¿´Î¶©ÔÄÊÇ·ñ´Ó×îĞÂÎ»ÖÃ¿ªÊ¼Ïû·Ñ¡£
+     * è®¾ç½®æ¯æ¬¡è®¢é˜…æ˜¯å¦ä»æœ€æ–°ä½ç½®å¼€å§‹æ¶ˆè´¹ã€‚
      * 
      * @since 1.4.5
      * @param always
-     *            Èç¹ûÎªtrue£¬±íÊ¾Ã¿´ÎÆô¶¯¶¼´Ó×îĞÂÎ»ÖÃ¿ªÊ¼Ïû·Ñ¡£Í¨³£ÔÚ²âÊÔµÄÊ±ºò¿ÉÒÔÉèÖÃÎªtrue¡£
+     *            å¦‚æœä¸ºtrueï¼Œè¡¨ç¤ºæ¯æ¬¡å¯åŠ¨éƒ½ä»æœ€æ–°ä½ç½®å¼€å§‹æ¶ˆè´¹ã€‚é€šå¸¸åœ¨æµ‹è¯•çš„æ—¶å€™å¯ä»¥è®¾ç½®ä¸ºtrueã€‚
      */
     public void setConsumeFromMaxOffset(boolean always) {
         this.alwaysConsumeFromMaxOffset = always;
-        this.setOffset(Long.MAX_VALUE);
+        //trueæ‰è®¾ç½® offset ä¸º MAX 
+        if(always){
+            this.setOffset(Long.MAX_VALUE);
+         }
     }
 
 
     /**
-     * Ïû·ÑÕß·Ö×éÃû
+     * æ¶ˆè´¹è€…åˆ†ç»„å
      * 
      * @return
      */
@@ -192,10 +195,10 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÏû·ÑÕß·Ö×éÃû
+     * è®¾ç½®æ¶ˆè´¹è€…åˆ†ç»„å
      * 
      * @param group
-     *            ·Ö×éÃû£¬²»µÃÎª¿Õ
+     *            åˆ†ç»„åï¼Œä¸å¾—ä¸ºç©º
      */
     public void setGroup(final String group) {
         this.group = group;
@@ -203,7 +206,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ·ÖÇø£¬½öÔÚÖ±½ÓÁ¬½Ó·şÎñÆ÷µÄÊ±ºòÓĞĞ§
+     * åˆ†åŒºï¼Œä»…åœ¨ç›´æ¥è¿æ¥æœåŠ¡å™¨çš„æ—¶å€™æœ‰æ•ˆ
      * 
      * @return
      */
@@ -213,10 +216,10 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃ·ÖÇø,½öÔÚÖ±½ÓÁ¬½Ó·şÎñÆ÷µÄÊ±ºòÓĞĞ§
+     * è®¾ç½®åˆ†åŒº,ä»…åœ¨ç›´æ¥è¿æ¥æœåŠ¡å™¨çš„æ—¶å€™æœ‰æ•ˆ
      * 
      * @param partition
-     *            ĞÎÈç"brokerId-partition"µÄ×Ö·û´®
+     *            å½¢å¦‚"brokerId-partition"çš„å­—ç¬¦ä¸²
      */
     public void setPartition(final String partition) {
         this.partition = partition;
@@ -224,7 +227,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * Ïû·ÑÕßid
+     * æ¶ˆè´¹è€…id
      * 
      * @return
      */
@@ -234,7 +237,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÏû·ÑÕßid£¬¿É²»ÉèÖÃ£¬ÏµÍ³½«°´ÕÕ"ip_Ê±¼ä"µÄ¹æÔò×Ô¶¯²úÉú
+     * è®¾ç½®æ¶ˆè´¹è€…idï¼Œå¯ä¸è®¾ç½®ï¼Œç³»ç»Ÿå°†æŒ‰ç…§"ip_æ—¶é—´"çš„è§„åˆ™è‡ªåŠ¨äº§ç”Ÿ
      * 
      * @param consumerId
      */
@@ -244,7 +247,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÇëÇó³¬Ê±Ê±¼ä£¬ºÁÃëÎªµ¥Î»£¬Ä¬ÈÏ10Ãë
+     * è¯·æ±‚è¶…æ—¶æ—¶é—´ï¼Œæ¯«ç§’ä¸ºå•ä½ï¼Œé»˜è®¤10ç§’
      * 
      * @return
      */
@@ -254,10 +257,10 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÇëÇó³¬Ê±Ê±¼ä£¬ºÁÃëÎªµ¥Î»£¬Ä¬ÈÏ10Ãë
+     * è®¾ç½®è¯·æ±‚è¶…æ—¶æ—¶é—´ï¼Œæ¯«ç§’ä¸ºå•ä½ï¼Œé»˜è®¤10ç§’
      * 
      * @param fetchTimeoutInMills
-     *            ºÁÃë
+     *            æ¯«ç§’
      */
     public void setFetchTimeoutInMills(final long fetchTimeoutInMills) {
         this.fetchTimeoutInMills = fetchTimeoutInMills;
@@ -265,7 +268,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÇëÇó¼ä¸ôµÄ×î´óÊ±¼ä£¬µ¥Î»ºÁÃë£¬Ä¬ÈÏ5Ãë
+     * è¯·æ±‚é—´éš”çš„æœ€å¤§æ—¶é—´ï¼Œå•ä½æ¯«ç§’ï¼Œé»˜è®¤5ç§’
      * 
      * @return
      */
@@ -275,7 +278,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÇëÇó¼ä¸ôµÄ×î´óÊ±¼ä£¬µ¥Î»ºÁÃë£¬Ä¬ÈÏ5Ãë
+     * è®¾ç½®è¯·æ±‚é—´éš”çš„æœ€å¤§æ—¶é—´ï¼Œå•ä½æ¯«ç§’ï¼Œé»˜è®¤5ç§’
      * 
      * @param maxDelayFetchTimeInMills
      */
@@ -285,9 +288,9 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * µ±ÇëÇó·¢ÉúÒì³£Ê±(ÀıÈçÎŞ¿ÉÓÃÁ¬½ÓµÈ),ÇëÇó¼ä¸ôµÄ×î´óÊ±¼ä£¬µ¥Î»ºÁÃë£¬Ä¬ÈÏ10Ãë
+     * å½“è¯·æ±‚å‘ç”Ÿå¼‚å¸¸æ—¶(ä¾‹å¦‚æ— å¯ç”¨è¿æ¥ç­‰),è¯·æ±‚é—´éš”çš„æœ€å¤§æ—¶é—´ï¼Œå•ä½æ¯«ç§’ï¼Œé»˜è®¤10ç§’
      * 
-     * @deprecated 1.4¿ªÊ¼·Ï³ı£¬ÇëÊ¹ÓÃmaxDelayFetchTimeInMills
+     * @deprecated 1.4å¼€å§‹åºŸé™¤ï¼Œè¯·ä½¿ç”¨maxDelayFetchTimeInMills
      * @return
      */
     @Deprecated
@@ -297,9 +300,9 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * µ±ÇëÇó·¢ÉúÒì³£Ê±(ÀıÈçÎŞ¿ÉÓÃÁ¬½ÓµÈ),ÉèÖÃÇëÇó¼ä¸ôµÄ×î´óÊ±¼ä£¬µ¥Î»ºÁÃë£¬Ä¬ÈÏ10Ãë
+     * å½“è¯·æ±‚å‘ç”Ÿå¼‚å¸¸æ—¶(ä¾‹å¦‚æ— å¯ç”¨è¿æ¥ç­‰),è®¾ç½®è¯·æ±‚é—´éš”çš„æœ€å¤§æ—¶é—´ï¼Œå•ä½æ¯«ç§’ï¼Œé»˜è®¤10ç§’
      * 
-     * @deprecated 1.4¿ªÊ¼·Ï³ı£¬ÇëÊ¹ÓÃmaxDelayFetchTimeInMills
+     * @deprecated 1.4å¼€å§‹åºŸé™¤ï¼Œè¯·ä½¿ç”¨maxDelayFetchTimeInMills
      * @param maxDelayFetchTimeWhenExceptionInMills
      */
     @Deprecated
@@ -309,7 +312,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃÇëÇóÏß³ÌÊı£¬Ä¬ÈÏcpus¸ö
+     * è®¾ç½®è¯·æ±‚çº¿ç¨‹æ•°ï¼Œé»˜è®¤cpusä¸ª
      * 
      * @param fetchRunnerCount
      */
@@ -319,7 +322,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ±£´æoffsetµÄ¼ä¸ôÊ±¼ä£¬µ¥Î»ºÁÃë£¬Ä¬ÈÏ5Ãë
+     * ä¿å­˜offsetçš„é—´éš”æ—¶é—´ï¼Œå•ä½æ¯«ç§’ï¼Œé»˜è®¤5ç§’
      * 
      * @return
      */
@@ -329,10 +332,10 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃ±£´æoffsetµÄ¼ä¸ôÊ±¼ä£¬µ¥Î»ºÁÃë£¬Ä¬ÈÏ5Ãë
+     * è®¾ç½®ä¿å­˜offsetçš„é—´éš”æ—¶é—´ï¼Œå•ä½æ¯«ç§’ï¼Œé»˜è®¤5ç§’
      * 
      * @param commitOffsetPeriodInMills
-     *            ºÁÃë
+     *            æ¯«ç§’
      */
     public void setCommitOffsetPeriodInMills(final long commitOffsetPeriodInMills) {
         this.commitOffsetPeriodInMills = commitOffsetPeriodInMills;
@@ -340,7 +343,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * »ñÈ¡¸ºÔØ¾ùºâ²ßÂÔÀàĞÍ
+     * è·å–è´Ÿè½½å‡è¡¡ç­–ç•¥ç±»å‹
      * 
      * @return
      */
@@ -350,7 +353,7 @@ public class ConsumerConfig extends MetaClientConfig {
 
 
     /**
-     * ÉèÖÃ¸ºÔØ¾ùºâ²ßÂÔÀàĞÍ
+     * è®¾ç½®è´Ÿè½½å‡è¡¡ç­–ç•¥ç±»å‹
      * 
      * @param loadBalanceStrategyType
      */
