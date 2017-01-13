@@ -175,10 +175,13 @@ public class ConsumerConfig extends MetaClientConfig {
      * @param always
      *            如果为true，表示每次启动都从最新位置开始消费。通常在测试的时候可以设置为true。
      */
-    public void setConsumeFromMaxOffset(boolean always) {
-        this.alwaysConsumeFromMaxOffset = always;
-        this.setOffset(Long.MAX_VALUE);
-    }
+	public void setConsumeFromMaxOffset(boolean always) {
+		this.alwaysConsumeFromMaxOffset = always;
+		//修正设置false 和预计不一致的问题
+		if (always) {
+			this.setOffset(Long.MAX_VALUE);
+		}
+	}
 
 
     /**
