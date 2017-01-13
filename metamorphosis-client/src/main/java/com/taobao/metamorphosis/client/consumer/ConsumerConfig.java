@@ -177,9 +177,11 @@ public class ConsumerConfig extends MetaClientConfig {
      */
     public void setConsumeFromMaxOffset(boolean always) {
         this.alwaysConsumeFromMaxOffset = always;
-        this.setOffset(Long.MAX_VALUE);
+        // 修正设置false 和预计不一致的问题
+        if (always) {
+            this.setOffset(Long.MAX_VALUE);
+        } 
     }
-
 
     /**
      * 消费者分组名
